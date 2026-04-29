@@ -9,6 +9,7 @@ interface Body {
   description: string;
   answers?: Record<string, string>;
   hourlyRate: number;
+  rateLabel?: string;
   materialMarkup: number;
   qualityLevel: string;
   vatRate: number;
@@ -42,7 +43,7 @@ ${body.answers && Object.keys(body.answers).length > 0
   ? `Zusatzinfos:\n${Object.entries(body.answers).map(([q, a]) => `- ${q}: ${a}`).join("\n")}`
   : ""}
 
-Stundenverrechnungssatz: ${body.hourlyRate} €/h netto
+Stundenverrechnungssatz: ${body.hourlyRate} €/h netto${body.rateLabel ? ` (Rolle: ${body.rateLabel})` : ""}
 Materialaufschlag: ${body.materialMarkup}%
 Qualitätsniveau: ${body.qualityLevel}
 Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen erlaubt" : "Finalisierung - keine Rückfragen mehr, fertige Kalkulation"}`;
