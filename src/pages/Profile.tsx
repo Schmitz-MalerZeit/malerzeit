@@ -1,0 +1,114 @@
+import { useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { Loader2, Upload, ImageIcon } from "lucide-react";
+import { extractDominantColors } from "@/lib/colorExtractor";
+
+export default function Profile() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [p, setP] = useState({
+    company_name: "", contact_person: "", address: "", phone: "", email: "",
+    logo_url: "", logo_primary_color: "", logo_secondary_color: "",
+  });
+
+  useEffect(() => {
+    supabase.from("profiles").select("*").maybeSingle().then(({ data }) => {
+      if (data) setP({
+        company_name: data.company_name || "", contact_person: data.contact_person || "",
+        address: data.address || "", phone: data.phone || "", email: data.email || "",
+        logo_url: data.logo_url || "", logo_primary_color: data.logo_primary_color || "",
+        logo_secondary_color: data.logo_secondary_color || "",
+      });
+      setLoading(false);
+    });
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Nicht angemeldet");
+      const { error } = await supabase.from("profiles").update(p).eq("id", u.user.id);
+      if (error) throw error;
+      toast.success("Profil gespeichert");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSaving(false); }
+  };
+
+  const uploadLogo = async (file: File) => {
+    setUploading(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Nicht angemeldet");
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${u.user.id}/logo.${ext}`;
+      const { error } = await supabase.storage.from("company-logos").upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      const { data: pub } = supabase.storage.from("company-logos").getPublicUrl(path);
+      const url = `${pub.publicUrl}?t=${Date.now()}`;
+      const colors = await extractDominantColors(url);
+      const next = { ...p, logo_url: url, logo_primary_color: colors.primary, logo_secondary_color: colors.secondary };
+      setP(next);
+      await supabase.from("profiles").update(next).eq("id", u.user.id);
+      toast.success("Logo hochgeladen – PDF passt sich an");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setUploading(false); }
+  };
+
+  if (loading) return <AppShell title="Firmenprofil"><div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div></AppShell>;
+
+  return (
+    <AppShell title="Firmenprofil">
+      <div className="space-y-5">
+        <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
+          <Label className="text-sm font-medium">Firmenlogo</Label>
+          <div className="flex items-center gap-4 mt-3">
+            <div className="h-20 w-20 rounded-xl bg-secondary flex items-center justify-center overflow-hidden border border-border">
+              {p.logo_url ? <img src={p.logo_url} alt="Logo" className="max-h-full max-w-full object-contain" />
+                : <ImageIcon className="h-8 w-8 text-muted-foreground" />}
+            </div>
+            <label className="flex-1">
+              <input type="file" accept="image/*" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }} />
+              <div className="h-12 px-4 rounded-xl border border-input bg-background flex items-center justify-center gap-2 cursor-pointer hover:bg-secondary transition-base text-sm font-medium">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4" /> Logo hochladen</>}
+              </div>
+            </label>
+          </div>
+          {p.logo_primary_color && (
+            <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+              <span>PDF-Farben:</span>
+              <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: p.logo_primary_color }} />
+              <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: p.logo_secondary_color }} />
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl bg-card border border-border p-5 shadow-soft space-y-4">
+          {[
+            { k: "company_name", l: "Firmenname" },
+            { k: "contact_person", l: "Ansprechpartner" },
+            { k: "address", l: "Adresse" },
+            { k: "phone", l: "Telefonnummer" },
+            { k: "email", l: "E-Mail" },
+          ].map(({ k, l }) => (
+            <div key={k} className="space-y-1.5">
+              <Label htmlFor={k}>{l}</Label>
+              <Input id={k} value={(p as any)[k]} onChange={(e) => setP({ ...p, [k]: e.target.value })} className="h-11" />
+            </div>
+          ))}
+        </div>
+
+        <Button onClick={save} disabled={saving} className="w-full h-12 gradient-primary text-primary-foreground border-0 font-semibold">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
+        </Button>
+      </div>
+    </AppShell>
+  );
+}
