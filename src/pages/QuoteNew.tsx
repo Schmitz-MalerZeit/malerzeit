@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Sparkles, ArrowRight, Mic } from "lucide-react";
@@ -20,6 +21,8 @@ interface AIResp {
   pricing: { labor_cost: number; material_cost: number; net_amount: number; vat_amount: number; gross_amount: number; vat_rate: number };
 }
 
+interface Rate { id: string; label: string; rate: number; is_default: boolean; }
+
 export default function QuoteNew() {
   const nav = useNavigate();
   const [description, setDescription] = useState("");
@@ -27,21 +30,41 @@ export default function QuoteNew() {
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState({ hourly_rate: 55, material_markup: 15, quality_level: "standard", vat_rate: 19 });
+  const [settings, setSettings] = useState({ material_markup: 15, quality_level: "standard", vat_rate: 19 });
+  const [rates, setRates] = useState<Rate[]>([]);
+  const [selectedRateId, setSelectedRateId] = useState<string>("");
 
   useEffect(() => {
-    supabase.from("user_settings").select("*").maybeSingle().then(({ data }) => {
-      if (data) setSettings({ hourly_rate: Number(data.hourly_rate), material_markup: Number(data.material_markup), quality_level: data.quality_level, vat_rate: Number(data.vat_rate) });
-    });
+    (async () => {
+      const [{ data: s }, { data: hr }] = await Promise.all([
+        supabase.from("user_settings").select("*").maybeSingle(),
+        supabase.from("hourly_rates").select("*").order("sort_order", { ascending: true }),
+      ]);
+      if (s) setSettings({
+        material_markup: Number(s.material_markup),
+        quality_level: s.quality_level,
+        vat_rate: Number(s.vat_rate),
+      });
+      const list: Rate[] = (hr || []).map((r: any) => ({
+        id: r.id, label: r.label, rate: Number(r.rate), is_default: r.is_default,
+      }));
+      setRates(list);
+      const def = list.find(r => r.is_default) || list[0];
+      if (def) setSelectedRateId(def.id);
+    })();
   }, []);
 
   const callAI = async (mode: "analyze" | "finalize") => {
     setLoading(true);
     try {
+      const chosen = rates.find(r => r.id === selectedRateId) || rates[0];
+      if (!chosen) throw new Error("Bitte zuerst Stundensätze in den Einstellungen anlegen");
       const { data, error } = await supabase.functions.invoke("generate-quote", {
         body: {
           description, answers, mode,
-          hourlyRate: settings.hourly_rate, materialMarkup: settings.material_markup,
+          hourlyRate: chosen.rate,
+          rateLabel: chosen.label,
+          materialMarkup: settings.material_markup,
           qualityLevel: settings.quality_level, vatRate: settings.vat_rate,
         },
       });
@@ -52,8 +75,10 @@ export default function QuoteNew() {
         setQuestions(resp.clarifying_questions);
         setStep("questions");
       } else {
-        // store result in sessionStorage and go to result page
-        sessionStorage.setItem("currentQuote", JSON.stringify({ description, answers, ai: resp }));
+        sessionStorage.setItem("currentQuote", JSON.stringify({
+          description, answers, ai: resp,
+          rate: { label: chosen.label, value: chosen.rate },
+        }));
         nav("/quote/result");
       }
     } catch (err: any) {
