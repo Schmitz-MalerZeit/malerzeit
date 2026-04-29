@@ -134,6 +134,7 @@ export default function QuoteNew() {
             </div>
           )}
 
+          <Button
             onClick={() => callAI("analyze")}
             disabled={loading || description.trim().length < 10}
             className="w-full h-14 text-base font-semibold gradient-primary text-primary-foreground border-0 shadow-soft hover:shadow-glow transition-base"
