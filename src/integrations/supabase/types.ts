@@ -14,9 +14,43 @@ export type Database = {
   }
   public: {
     Tables: {
+      hourly_rates: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          label: string
+          rate: number
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label: string
+          rate?: number
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          label?: string
+          rate?: number
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
+          city: string | null
           company_name: string | null
           contact_person: string | null
           created_at: string
@@ -26,10 +60,14 @@ export type Database = {
           logo_secondary_color: string | null
           logo_url: string | null
           phone: string | null
+          postal_code: string | null
           updated_at: string
+          vat_id: string | null
+          website: string | null
         }
         Insert: {
           address?: string | null
+          city?: string | null
           company_name?: string | null
           contact_person?: string | null
           created_at?: string
@@ -39,10 +77,14 @@ export type Database = {
           logo_secondary_color?: string | null
           logo_url?: string | null
           phone?: string | null
+          postal_code?: string | null
           updated_at?: string
+          vat_id?: string | null
+          website?: string | null
         }
         Update: {
           address?: string | null
+          city?: string | null
           company_name?: string | null
           contact_person?: string | null
           created_at?: string
@@ -52,7 +94,10 @@ export type Database = {
           logo_secondary_color?: string | null
           logo_url?: string | null
           phone?: string | null
+          postal_code?: string | null
           updated_at?: string
+          vat_id?: string | null
+          website?: string | null
         }
         Relationships: []
       }
