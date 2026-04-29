@@ -14,7 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          address: string | null
+          company_name: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          logo_primary_color: string | null
+          logo_secondary_color: string | null
+          logo_url: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_name?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id: string
+          logo_primary_color?: string | null
+          logo_secondary_color?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_name?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_primary_color?: string | null
+          logo_secondary_color?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      quotes: {
+        Row: {
+          created_at: string
+          customer_text: string | null
+          description: string | null
+          estimated_hours: number | null
+          estimated_material: number | null
+          gross_amount: number
+          id: string
+          line_items: Json
+          net_amount: number
+          title: string
+          updated_at: string
+          user_id: string
+          vat_amount: number
+          vat_rate: number
+          whatsapp_text: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_text?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          estimated_material?: number | null
+          gross_amount?: number
+          id?: string
+          line_items?: Json
+          net_amount?: number
+          title?: string
+          updated_at?: string
+          user_id: string
+          vat_amount?: number
+          vat_rate?: number
+          whatsapp_text?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_text?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          estimated_material?: number | null
+          gross_amount?: number
+          id?: string
+          line_items?: Json
+          net_amount?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+          vat_amount?: number
+          vat_rate?: number
+          whatsapp_text?: string | null
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          hourly_rate: number
+          material_markup: number
+          quality_level: string
+          updated_at: string
+          user_id: string
+          vat_rate: number
+        }
+        Insert: {
+          created_at?: string
+          hourly_rate?: number
+          material_markup?: number
+          quality_level?: string
+          updated_at?: string
+          user_id: string
+          vat_rate?: number
+        }
+        Update: {
+          created_at?: string
+          hourly_rate?: number
+          material_markup?: number
+          quality_level?: string
+          updated_at?: string
+          user_id?: string
+          vat_rate?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
