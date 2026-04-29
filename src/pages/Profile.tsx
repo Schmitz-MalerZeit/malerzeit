@@ -47,7 +47,7 @@ export default function Profile() {
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Nicht angemeldet");
-      const { error } = await supabase.from("profiles").update(p).eq("id", u.user.id);
+      const { error } = await supabase.from("profiles").update(p as any).eq("id", u.user.id);
       if (error) throw error;
       toast.success("Profil gespeichert");
     } catch (e: any) { toast.error(e.message); }
@@ -68,7 +68,7 @@ export default function Profile() {
       const colors = await extractDominantColors(url);
       const next = { ...p, logo_url: url, logo_primary_color: colors.primary, logo_secondary_color: colors.secondary };
       setP(next);
-      await supabase.from("profiles").update(next).eq("id", u.user.id);
+      await supabase.from("profiles").update(next as any).eq("id", u.user.id);
       toast.success("Logo hochgeladen – PDF passt sich an");
     } catch (e: any) { toast.error(e.message); }
     finally { setUploading(false); }
