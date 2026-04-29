@@ -115,7 +115,25 @@ export default function QuoteNew() {
             </div>
           </div>
 
-          <Button
+          {rates.length > 0 && (
+            <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
+              <Label className="text-sm font-medium mb-2 block">Stundensatz für dieses Projekt</Label>
+              <Select value={selectedRateId} onValueChange={setSelectedRateId}>
+                <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {rates.map(r => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.label} — {r.rate.toLocaleString("de-DE")} €/Std
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-2">
+                Standard ist vorausgewählt. Sie können in den Einstellungen weitere Sätze pflegen.
+              </p>
+            </div>
+          )}
+
             onClick={() => callAI("analyze")}
             disabled={loading || description.trim().length < 10}
             className="w-full h-14 text-base font-semibold gradient-primary text-primary-foreground border-0 shadow-soft hover:shadow-glow transition-base"
