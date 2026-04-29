@@ -8,25 +8,38 @@ import { toast } from "sonner";
 import { Loader2, Upload, ImageIcon } from "lucide-react";
 import { extractDominantColors } from "@/lib/colorExtractor";
 
+const FIELDS: { k: string; l: string; type?: string }[] = [
+  { k: "company_name", l: "Firma" },
+  { k: "contact_person", l: "Inhaber / Ansprechpartner" },
+  { k: "address", l: "Straße & Hausnummer" },
+  { k: "postal_code", l: "Postleitzahl" },
+  { k: "city", l: "Ort" },
+  { k: "phone", l: "Telefon", type: "tel" },
+  { k: "email", l: "E-Mail", type: "email" },
+  { k: "website", l: "Webseite", type: "url" },
+  { k: "vat_id", l: "Umsatzsteuer-ID" },
+];
+
 export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [p, setP] = useState({
-    company_name: "", contact_person: "", address: "", phone: "", email: "",
+  const [p, setP] = useState<Record<string, string>>({
+    company_name: "", contact_person: "", address: "", postal_code: "", city: "",
+    phone: "", email: "", website: "", vat_id: "",
     logo_url: "", logo_primary_color: "", logo_secondary_color: "",
   });
 
   useEffect(() => {
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => {
-      if (data) setP({
-        company_name: data.company_name || "", contact_person: data.contact_person || "",
-        address: data.address || "", phone: data.phone || "", email: data.email || "",
-        logo_url: data.logo_url || "", logo_primary_color: data.logo_primary_color || "",
-        logo_secondary_color: data.logo_secondary_color || "",
-      });
+      if (data) {
+        const next: Record<string, string> = { ...p };
+        Object.keys(next).forEach(k => { next[k] = (data as any)[k] || ""; });
+        setP(next);
+      }
       setLoading(false);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const save = async () => {
@@ -91,16 +104,10 @@ export default function Profile() {
         </div>
 
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft space-y-4">
-          {[
-            { k: "company_name", l: "Firmenname" },
-            { k: "contact_person", l: "Ansprechpartner" },
-            { k: "address", l: "Adresse" },
-            { k: "phone", l: "Telefonnummer" },
-            { k: "email", l: "E-Mail" },
-          ].map(({ k, l }) => (
+          {FIELDS.map(({ k, l, type }) => (
             <div key={k} className="space-y-1.5">
               <Label htmlFor={k}>{l}</Label>
-              <Input id={k} value={(p as any)[k]} onChange={(e) => setP({ ...p, [k]: e.target.value })} className="h-11" />
+              <Input id={k} type={type || "text"} value={p[k] || ""} onChange={(e) => setP({ ...p, [k]: e.target.value })} className="h-11" />
             </div>
           ))}
         </div>
