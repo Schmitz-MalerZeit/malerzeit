@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Mic, Loader2, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { voiceLock } from "@/lib/voiceLock";
 
 interface VoiceInputProps {
   /** Called with the transcribed text. The component does not modify state itself. */
