@@ -117,12 +117,73 @@ export default function QuoteResult() {
       .replace(/_+$/g, "");
   };
 
+  // German + numeric/unit stop words that don't help identify a project
+  const STOP_WORDS = new Set([
+    "und", "oder", "mit", "ohne", "im", "in", "am", "an", "auf", "der", "die", "das",
+    "den", "dem", "des", "ein", "eine", "einen", "einem", "einer", "eines",
+    "ca", "circa", "bis", "von", "zu", "zum", "zur", "als", "fuer", "für",
+    "std", "stunden", "stunde", "stk", "stueck", "stück", "qm", "m2", "m",
+    "lehrjahr", "lehrling", "geselle", "junggeselle", "azubi", "helfer", "meister",
+    "projektleiter", "malermeister", "personal", "material", "materialaufwand",
+    "leistungsumfang", "arbeiten", "eingesetztes", "geschaetzter", "geschätzter",
+    "geschaetzte", "geschätzte", "vor", "aufschlag", "netto", "brutto",
+    "bewohnt", "innen", "aussen", "außen", "normaler", "zugang",
+    "kleinmaterial", "spachtel", "vlies", "farbe",
+  ]);
+
+  // Pull the "Arbeiten / Leistungsumfang" block out of the structured description
+  const extractWorkBlock = (raw: string): string => {
+    if (!raw) return "";
+    // Match block "1) Arbeiten ..." until next "2)" or end
+    const m = raw.match(/(?:^|\n)\s*1\)?\s*Arbeiten[^\n]*\n([\s\S]*?)(?:\n\s*2\)|\Z)/i);
+    return m ? m[1] : raw;
+  };
+
+  // Pick the most "interesting" tokens from a chunk of text
+  const topKeywords = (text: string, maxWords = 5): string => {
+    const tokens = text
+      .replace(/[€%]/g, " ")
+      .split(/[^a-zA-ZäöüÄÖÜß0-9-]+/)
+      .map((w) => w.trim())
+      .filter((w) =>
+        w.length >= 4 &&
+        !/^\d+$/.test(w) &&                       // skip pure numbers (12, 25, etc.)
+        !STOP_WORDS.has(w.toLowerCase()) &&
+        !/^\d+(st|stk|qm|m2|m|h|std)$/i.test(w),  // skip "12std", "25qm", etc.
+      );
+
+    // Deduplicate while preserving first-seen order (= order in description)
+    const seen = new Set<string>();
+    const unique: string[] = [];
+    for (const t of tokens) {
+      const key = t.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(t);
+      if (unique.length >= maxWords) break;
+    }
+    return unique.join(" ");
+  };
+
   const filename = () => {
     const date = new Date().toISOString().slice(0, 10);
+
     const customerSlug = slugify(data.customer?.name || "");
     if (customerSlug) return `Preisvorschlag_${customerSlug}_${date}.pdf`;
 
-    // Fallback: first ~6 words of the description
+    // 1) Prefer the first AI-curated line item (already concise & relevant)
+    const firstLine: string | undefined = ai?.line_items?.[0];
+    if (firstLine) {
+      const lineSlug = slugify(topKeywords(firstLine, 5));
+      if (lineSlug) return `Preisvorschlag_${lineSlug}_${date}.pdf`;
+    }
+
+    // 2) Fallback: keywords from the "Arbeiten" block of the description
+    const workBlock = extractWorkBlock(data.description || "");
+    const workSlug = slugify(topKeywords(workBlock, 5));
+    if (workSlug) return `Preisvorschlag_${workSlug}_${date}.pdf`;
+
+    // 3) Last resort: first ~6 words of the raw description
     const firstWords = (data.description || "").split(/\s+/).slice(0, 6).join(" ");
     const descSlug = slugify(firstWords);
     if (descSlug) return `Preisvorschlag_${descSlug}_${date}.pdf`;
