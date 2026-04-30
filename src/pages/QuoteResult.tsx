@@ -385,6 +385,8 @@ export default function QuoteResult() {
         customer_address: data.customer?.address || null,
         customer_postal_code: data.customer?.postal_code || null,
         customer_city: data.customer?.city || null,
+        customer_phone: data.customer?.phone || null,
+        customer_email: data.customer?.email || null,
       });
       if (error) throw error;
       setSaved(true);
