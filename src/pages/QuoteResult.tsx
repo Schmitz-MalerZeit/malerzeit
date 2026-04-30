@@ -727,6 +727,48 @@ export default function QuoteResult() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={shareOpen} onOpenChange={setShareOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>PDF an deinen Kunden senden?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Das PDF wurde heruntergeladen. Du kannst es jetzt direkt an{" "}
+              {data.customer?.name ? <strong>{data.customer.name}</strong> : "deinen Kunden"} senden.
+              Das PDF musst du nach dem Öffnen aus deinem Download-Ordner anhängen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-2 pt-2">
+            <Button
+              type="button"
+              onClick={sendViaEmail}
+              disabled={!customerEmail}
+              className="h-12 w-full justify-start"
+              variant="outline"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              {customerEmail ? `Per E-Mail an ${customerEmail}` : "Per E-Mail senden (keine E-Mail-Adresse hinterlegt)"}
+            </Button>
+            <Button
+              type="button"
+              onClick={sendViaWhatsapp}
+              disabled={!waPhone}
+              className="h-12 w-full justify-start"
+              variant="outline"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              {waPhone
+                ? `Per WhatsApp an ${customerPhone}`
+                : customerPhone
+                  ? "WhatsApp – Telefonnummer ungültig"
+                  : "Per WhatsApp senden (keine Handynummer hinterlegt)"}
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Schließen</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
