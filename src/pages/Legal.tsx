@@ -35,9 +35,7 @@ export default function Legal() {
               {(p.postal_code || p.city) && <p>{[p.postal_code, p.city].filter(Boolean).join(" ")}</p>}
 
               <Sub>Kontakt</Sub>
-              {p.phone && <p>Telefon: {p.phone}</p>}
-              {p.email && <p>E-Mail: {p.email}</p>}
-              {p.website && <p>Web: {p.website}</p>}
+              <p>E-Mail: support@schmitz-walsrode.de</p>
 
               {p.vat_id && (
                 <>
