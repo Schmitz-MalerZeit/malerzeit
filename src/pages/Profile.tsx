@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Upload, ImageIcon } from "lucide-react";
+import { Loader2, Upload, ImageIcon, Eye } from "lucide-react";
 import { extractDominantColors } from "@/lib/colorExtractor";
 import { VoiceInput } from "@/components/VoiceInput";
+import { LetterheadPreview } from "@/components/LetterheadPreview";
+import { useSubscription } from "@/hooks/useSubscription";
+import { canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 
 const VOICE_FIELDS = new Set(["company_name", "contact_person", "address", "city"]);
 const appendText = (prev: string, add: string) =>
