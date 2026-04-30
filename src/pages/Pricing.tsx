@@ -51,15 +51,26 @@ export default function Pricing() {
         {sub.inTrial && (
           <div className="rounded-2xl bg-accent/10 border border-accent/30 p-4 text-sm">
             <div className="font-semibold mb-1 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-accent" /> Du bist im 14-Tage-Test
+              <Sparkles className="h-4 w-4 text-accent" /> Kostenloser Test
             </div>
-            <p className="text-muted-foreground">Noch <strong>{sub.trialDaysLeft} Tage</strong> kostenlos. Wähle danach einen Tarif, um nahtlos weiterzumachen.</p>
+            <p className="text-muted-foreground">
+              Noch <strong>{sub.trialPdfsLeft} von {sub.trialPdfsLimit} Test-PDFs</strong> übrig. Wähle danach einen Tarif, um weiter PDFs zu erstellen.
+            </p>
+          </div>
+        )}
+
+        {!sub.inTrial && !sub.subscription && (
+          <div className="rounded-2xl bg-orange-50 border border-orange-300 p-4 text-sm">
+            <div className="font-semibold mb-1 text-orange-900">Test-PDFs aufgebraucht</div>
+            <p className="text-orange-800">
+              Du hast alle {sub.trialPdfsLimit} kostenlosen PDFs genutzt. Wähle jetzt einen Tarif, um weiter PDFs zu erstellen.
+            </p>
           </div>
         )}
 
         <div className="text-center">
           <h2 className="text-2xl font-bold tracking-tight mb-2">Wähle deinen Tarif</h2>
-          <p className="text-sm text-muted-foreground">Monatlich kündbar zum Monatsende. Keine versteckten Kosten.</p>
+          <p className="text-sm text-muted-foreground">Faire Kündigungsfristen. Keine versteckten Kosten.</p>
         </div>
 
         <div className="space-y-2">
@@ -133,9 +144,16 @@ export default function Pricing() {
           })}
         </div>
 
-        <p className="text-xs text-center text-muted-foreground">
-          Monatlich kündbar zum Monatsende. Zahlungsabwicklung über Paddle. Alle Preise inkl. MwSt.
-        </p>
+        <div className="rounded-2xl border border-border bg-secondary/30 p-4 text-xs text-muted-foreground space-y-1.5">
+          <p className="font-semibold text-foreground">Kündigungsfristen</p>
+          <p>
+            <strong className="text-foreground">Monatlich:</strong> Kündbar zum Ende des aktuellen Monats – das Abo endet dann zum Folgemonat.
+          </p>
+          <p>
+            <strong className="text-foreground">Jährlich:</strong> Kündbar bis spätestens <strong className="text-foreground">1 Monat vor Ablauf</strong> des Vertragsjahres. Ohne Kündigung verlängert sich der Vertrag um ein weiteres Jahr.
+          </p>
+          <p className="pt-1">Zahlungsabwicklung über Paddle. Alle Preise inkl. MwSt.</p>
+        </div>
       </div>
     </AppShell>
   );

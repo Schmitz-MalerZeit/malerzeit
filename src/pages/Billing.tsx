@@ -129,10 +129,37 @@ export default function Billing() {
         {sub.inTrial && !s && (
           <div className="rounded-2xl border border-accent/30 bg-accent/5 p-5">
             <div className="flex items-center gap-2 font-semibold mb-2">
-              <Sparkles className="h-4 w-4 text-accent" /> 14-Tage-Test aktiv
+              <Sparkles className="h-4 w-4 text-accent" /> Kostenloser Test
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Noch <strong>{sub.trialDaysLeft} Tage</strong> kostenlos. Wähle einen Tarif, um nach dem Test ohne Unterbrechung weiterzumachen.
+            <p className="text-sm text-muted-foreground mb-3">
+              Du kannst <strong>{sub.trialPdfsLimit} PDFs gratis</strong> erstellen, um Maler-Angebot in Ruhe auszuprobieren.
+            </p>
+            <div className="mb-4">
+              <div className="flex justify-between text-sm mb-1.5">
+                <span className="text-muted-foreground">Test-PDFs genutzt</span>
+                <span className="font-medium">{sub.trialPdfsUsed} / {sub.trialPdfsLimit}</span>
+              </div>
+              <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-accent transition-all"
+                  style={{ width: `${Math.min(100, (sub.trialPdfsUsed / Math.max(1, sub.trialPdfsLimit)) * 100)}%` }} />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Noch <strong>{sub.trialPdfsLeft}</strong> Test-PDF{sub.trialPdfsLeft === 1 ? "" : "s"} übrig
+              </p>
+            </div>
+            <Button onClick={() => nav("/pricing")} className="w-full h-11 gradient-primary text-primary-foreground border-0">
+              Tarif wählen
+            </Button>
+          </div>
+        )}
+
+        {!sub.inTrial && !s && (
+          <div className="rounded-2xl border border-orange-300 bg-orange-50 p-5">
+            <div className="flex items-center gap-2 font-semibold mb-2 text-orange-900">
+              Test-PDFs aufgebraucht
+            </div>
+            <p className="text-sm text-orange-800 mb-4">
+              Du hast alle {sub.trialPdfsLimit} kostenlosen Test-PDFs genutzt. Wähle einen Tarif, um weitere PDFs zu erstellen.
             </p>
             <Button onClick={() => nav("/pricing")} className="w-full h-11 gradient-primary text-primary-foreground border-0">
               Tarif wählen

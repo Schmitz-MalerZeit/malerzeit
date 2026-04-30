@@ -60,6 +60,8 @@ export default function QuoteNew() {
   }, []);
 
   // Soft pre-check only (UX). Actual increment happens server-side after PDF success.
+  // Note: trial users (no paid plan) are allowed to generate the preview even when
+  // their 3 free PDFs are used up — only the actual PDF download is blocked server-side.
   const preflightLimit = (): boolean => {
     if (subState.pdfLimit > 0 && subState.pdfUsed >= subState.pdfLimit) {
       toast.error(
