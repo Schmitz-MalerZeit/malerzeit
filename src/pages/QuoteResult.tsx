@@ -19,6 +19,10 @@ export default function QuoteResult() {
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
+  const subState = useSubscription();
+  const tier = getTier(subState);
+  const pdfAllowed = canDownloadPdf(tier);
+  const logoAllowed = canUseLogoInPdf(tier);
 
   // Revoke blob URL on unmount (only the in-memory URL; the base64 cache stays in sessionStorage)
   useEffect(() => {
