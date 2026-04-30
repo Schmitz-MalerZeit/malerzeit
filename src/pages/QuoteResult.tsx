@@ -35,6 +35,7 @@ export default function QuoteResult() {
     if (!raw) { nav("/quote/new"); return; }
     setData(JSON.parse(raw));
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => setProfile(data));
+    supabase.from("user_settings").select("*").maybeSingle().then(({ data }) => setSettings(data));
 
     // Restore previously generated PDF from sessionStorage if available
     const cachedB64 = sessionStorage.getItem("currentQuotePdf");
