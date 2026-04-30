@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 type Tier = {
   id: "starter" | "profi" | "profiplus";
   name: string;
+  tagline: string;
   monthly: number;
   yearly: number;
   pdfs: number;
@@ -17,13 +18,48 @@ type Tier = {
   features: string[];
 };
 
+// "profiplus" bleibt als Price-ID erhalten (Datenbank/Paddle), wird aber
+// in der UI als "Exklusiv" dargestellt.
 const TIERS: Tier[] = [
-  { id: "starter", name: "Starter", monthly: 14.9, yearly: 149, pdfs: 15,
-    features: ["Bis zu 15 KI-Angebote / Monat", "Alle Stundensätze", "PDF-Export & WhatsApp-Text", "Spracheingabe (Diktat)", "E-Mail-Support"] },
-  { id: "profi", name: "Profi", monthly: 24.9, yearly: 249, pdfs: 50, highlight: true,
-    features: ["Bis zu 50 KI-Angebote / Monat", "Alles aus Starter", "Eigenes Logo & Farben im PDF", "E-Mail-Support"] },
-  { id: "profiplus", name: "Profi+", monthly: 49.9, yearly: 499, pdfs: 200,
-    features: ["Bis zu 200 KI-Angebote / Monat", "Alles aus Profi", "CSV-Export aller Angebote", "E-Mail-Support"] },
+  {
+    id: "starter", name: "Starter",
+    tagline: "Nur Textgenerierung – ideal für WhatsApp & E-Mail",
+    monthly: 14.9, yearly: 149, pdfs: 15,
+    features: [
+      "Bis zu 15 KI-Angebote / Monat",
+      "Alle Stundensätze nutzbar",
+      "Spracheingabe (Diktat) überall",
+      "Kunden- & WhatsApp-Text zum Kopieren",
+      "Kein PDF-Download",
+      "Kein Firmenlogo",
+      "E-Mail-Support",
+    ],
+  },
+  {
+    id: "profi", name: "Profi",
+    tagline: "Professionelle PDFs mit deinem Logo",
+    monthly: 24.9, yearly: 249, pdfs: 50, highlight: true,
+    features: [
+      "Bis zu 50 KI-Angebote / Monat",
+      "Alles aus Starter",
+      "PDF-Download im Briefkopf-Design",
+      "Eigenes Logo & Firmenfarben im PDF",
+      "PDF-Vorschau vor dem Versand",
+      "E-Mail-Support",
+    ],
+  },
+  {
+    id: "profiplus", name: "Exklusiv",
+    tagline: "Für Betriebe, die ihre Angebote auswerten wollen",
+    monthly: 49.9, yearly: 499, pdfs: 200,
+    features: [
+      "Bis zu 200 KI-Angebote / Monat",
+      "Alles aus Profi",
+      "CSV-Export aller Angebote (für Excel)",
+      "Vollständige Kundendaten im Export",
+      "Bevorzugter Support (Antwort < 24 h)",
+    ],
+  },
 ];
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
@@ -115,6 +151,7 @@ export default function Pricing() {
                   <h3 className="font-bold text-lg">{tier.name}</h3>
                   {tier.highlight && <span className="text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">Empfohlen</span>}
                 </div>
+                <p className="text-xs text-muted-foreground mb-3">{tier.tagline}</p>
                 <div className="flex items-baseline gap-1 mb-1">
                   <span className="text-3xl font-bold">{fmt(price)}</span>
                   <span className="text-sm text-muted-foreground">/Monat</span>

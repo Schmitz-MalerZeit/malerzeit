@@ -32,7 +32,7 @@ const fmtAmount = (n: number, c: string) =>
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("de-DE");
 
 const PLAN_NAMES: Record<string, string> = {
-  starter_plan: "Starter", profi_plan: "Profi", profiplus_plan: "Profi+",
+  starter_plan: "Starter", profi_plan: "Profi", profiplus_plan: "Exklusiv",
 };
 
 export default function Billing() {

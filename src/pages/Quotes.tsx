@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { FolderOpen, Loader2, Download } from "lucide-react";
+import { FolderOpen, Loader2, Download, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
+import { canExportCsv, getTier } from "@/lib/planFeatures";
 import { toast } from "sonner";
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
-
-const PROFI_PLUS_PRICES = new Set(["profiplus_monthly", "profiplus_yearly"]);
 
 function toCsv(rows: any[]): string {
   const head = [
@@ -75,9 +75,11 @@ function toCsv(rows: any[]): string {
 
 
 export default function Quotes() {
+  const nav = useNavigate();
   const [items, setItems] = useState<any[] | null>(null);
   const sub = useSubscription();
-  const isProfiPlus = !!sub.subscription && PROFI_PLUS_PRICES.has(sub.subscription.price_id);
+  const tier = getTier(sub);
+  const csvAllowed = canExportCsv(tier);
 
   useEffect(() => {
     supabase.from("quotes").select("*").order("created_at", { ascending: false })
@@ -146,10 +148,21 @@ export default function Quotes() {
       )}
       {items && items.length > 0 && (
         <div className="space-y-3">
-          {isProfiPlus && (
+          {csvAllowed ? (
             <Button variant="outline" onClick={exportCsv} className="w-full h-11">
               <Download className="h-4 w-4 mr-2" /> Alle als CSV exportieren ({items.length})
             </Button>
+          ) : (
+            <button
+              onClick={() => nav("/pricing")}
+              className="w-full rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-center gap-3 text-left hover:bg-primary/10 transition-base"
+            >
+              <Lock className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-xs text-muted-foreground flex-1">
+                <strong className="text-foreground">CSV-Export</strong> ist Teil von <strong className="text-foreground">Exklusiv</strong>. Exportiere alle Angebote für Excel & Buchhaltung.
+              </span>
+              <span className="text-xs font-semibold text-primary">Upgrade</span>
+            </button>
           )}
           {items.map((q) => (
             <div key={q.id} className="rounded-2xl bg-card border border-border p-4 shadow-soft">

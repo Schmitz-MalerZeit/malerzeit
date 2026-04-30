@@ -86,6 +86,9 @@ export default function Profile() {
       <div className="space-y-5">
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
           <Label className="text-sm font-medium">Firmenlogo</Label>
+          <p className="text-xs text-muted-foreground mt-1 mb-3">
+            Erscheint im PDF-Briefkopf. PDF-Download ist ab dem <strong className="text-foreground">Profi</strong>-Tarif verfügbar.
+          </p>
           <div className="flex items-center gap-4 mt-3">
             <div className="h-20 w-20 rounded-xl bg-secondary flex items-center justify-center overflow-hidden border border-border">
               {p.logo_url ? <img src={p.logo_url} alt="Logo" className="max-h-full max-w-full object-contain" />
