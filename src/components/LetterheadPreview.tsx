@@ -112,11 +112,11 @@ export function LetterheadPreview({
             className="absolute inset-x-0 top-0 flex items-center gap-3 px-4"
             style={{ backgroundColor: primary, height: "25%" }}
           >
-            <div className="h-12 w-12 rounded-md bg-white/95 flex items-center justify-center overflow-hidden shrink-0">
+            <div className="h-12 w-12 flex items-center justify-center shrink-0">
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="max-h-full max-w-full object-contain" />
               ) : (
-                <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                <ImageIcon className="h-5 w-5 text-white/70" />
               )}
             </div>
             <div className="flex-1 min-w-0 text-white">
