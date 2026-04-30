@@ -8,8 +8,6 @@ const corsHeaders = {
 interface Body {
   description: string;
   answers?: Record<string, string>;
-  hourlyRate: number;
-  rateLabel?: string;
   materialMarkup: number;
   qualityLevel: string;
   vatRate: number;
@@ -17,14 +15,18 @@ interface Body {
 }
 
 const SYSTEM = `Du bist ein erfahrener Kalkulator für Malerbetriebe in Deutschland.
-Du analysierst freie Beschreibungen geplanter Malerarbeiten und erzeugst:
-1. Strukturierte professionelle Leistungsstichpunkte (handwerklich korrekt)
-2. Eine realistische Aufwandsschätzung in Stunden und Materialkosten in Euro
-3. Bei Bedarf gezielte Rückfragen, wenn wichtige Angaben fehlen (Fläche, innen/außen, Vorarbeiten, Material inkl., Erschwernisse)
+Der Nutzer liefert in seiner Beschreibung üblicherweise drei Blöcke:
+1) Arbeiten / Leistungsumfang
+2) Eingesetztes Personal mit Stunden und Stundenlohn (z. B. "Geselle 12 Std à 55 €", "Lehrling 8 Std à 28 €")
+3) Geschätzten Materialaufwand in Euro netto
 
-Wichtig:
-- Keine Fantasiepreise. Schätze Stunden und Materialkosten konservativ-realistisch.
-- Stichpunkte handwerklich präzise (z.B. "Wandflächen Q3 spachteln", "Glattvlies einarbeiten").
+Deine Aufgabe:
+- Erzeuge professionelle Leistungsstichpunkte (handwerklich korrekt, z. B. "Wandflächen Q3 spachteln", "Glattvlies einarbeiten").
+- Berechne den Lohnanteil als Summe aller (Stunden × Stundenlohn) der genannten Personen.
+- Übernimm die Gesamtstunden (Summe aller Stunden) als estimated_hours.
+- Übernimm die Materialkosten (netto, vor Aufschlag) als estimated_material_cost.
+- Übernimm die Lohnkosten (Summe Stunden × Stundenlohn) als estimated_labor_cost.
+- Wenn Stunden oder Stundenlöhne fehlen: schätze konservativ-realistisch auf Basis branchenüblicher Werte.
 - Rückfragen NUR wenn wirklich nötig (max. 4). Wenn genug Info da ist, keine Rückfragen.
 - Antworten ausschließlich auf Deutsch.`;
 
@@ -36,14 +38,13 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    const userPrompt = `Beschreibung der Arbeiten:
+    const userPrompt = `Beschreibung des Nutzers (enthält Arbeiten, Personal/Stunden/Stundenlohn und Materialaufwand):
 ${body.description}
 
 ${body.answers && Object.keys(body.answers).length > 0
   ? `Zusatzinfos:\n${Object.entries(body.answers).map(([q, a]) => `- ${q}: ${a}`).join("\n")}`
   : ""}
 
-Stundenverrechnungssatz: ${body.hourlyRate} €/h netto${body.rateLabel ? ` (Rolle: ${body.rateLabel})` : ""}
 Materialaufschlag: ${body.materialMarkup}%
 Qualitätsniveau: ${body.qualityLevel}
 Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen erlaubt" : "Finalisierung - keine Rückfragen mehr, fertige Kalkulation"}`;
@@ -67,12 +68,13 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen erlaubt" : "Finali
               items: { type: "string" },
               description: "Professionelle Leistungsstichpunkte",
             },
-            estimated_hours: { type: "number", description: "Geschätzter Arbeitsaufwand in Stunden" },
+            estimated_hours: { type: "number", description: "Summe aller Arbeitsstunden aller Personen" },
+            estimated_labor_cost: { type: "number", description: "Lohnkosten netto in Euro (Summe Stunden × Stundenlohn der genannten Personen)" },
             estimated_material_cost: { type: "number", description: "Geschätzte Materialkosten netto in Euro (vor Aufschlag)" },
             customer_text: { type: "string", description: "Professioneller, kurzer, freundlicher Kundentext (3-5 Sätze)" },
             whatsapp_text: { type: "string", description: "Kurzer WhatsApp-tauglicher Text mit Stichpunkten und Preis" },
           },
-          required: ["needs_clarification", "line_items", "estimated_hours", "estimated_material_cost", "customer_text", "whatsapp_text"],
+          required: ["needs_clarification", "line_items", "estimated_hours", "estimated_labor_cost", "estimated_material_cost", "customer_text", "whatsapp_text"],
           additionalProperties: false,
         },
       },
@@ -106,8 +108,8 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen erlaubt" : "Finali
     if (body.mode === "finalize") parsed.needs_clarification = false;
 
     // Compute pricing server-side (deterministic)
-    const labor = Math.round(parsed.estimated_hours * body.hourlyRate);
-    const material = Math.round(parsed.estimated_material_cost * (1 + body.materialMarkup / 100));
+    const labor = Math.round(Number(parsed.estimated_labor_cost) || 0);
+    const material = Math.round((Number(parsed.estimated_material_cost) || 0) * (1 + body.materialMarkup / 100));
     const net = labor + material;
     const vat = Math.round(net * (body.vatRate / 100) * 100) / 100;
     const gross = Math.round((net + vat) * 100) / 100;
