@@ -37,7 +37,7 @@ export default function Profile() {
   const tier = getTier(subState);
   const showPdfPreview = canUseLogoInPdf(tier);
   const [p, setP] = useState<Record<string, string>>({
-    company_name: "", contact_person: "", address: "", postal_code: "", city: "",
+    company_name: "", contact_person: "", address: "", address_line2: "", postal_code: "", city: "",
     phone: "", email: "", website: "", vat_id: "",
     logo_url: "", logo_primary_color: "", logo_secondary_color: "",
   });
