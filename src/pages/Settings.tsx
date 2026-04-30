@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Star } from "lucide-react";
+import { Loader2, Plus, Trash2, Star, RefreshCw } from "lucide-react";
+
+const TEST_USER_ID = "4f497125-b2e8-46af-a6ef-477dbe7a8a0c";
 
 
 interface Rate {
