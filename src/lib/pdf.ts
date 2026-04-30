@@ -79,7 +79,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   // Date is fixed-width (~32 mm at fontSize 9). We leave 8 mm padding before it.
   const dateText = `Datum: ${d.date}`;
   const dateSlotW = 38;
-  const nameStartX = d.company.logoDataUrl ? margin + 28 : margin;
+  const nameStartX = d.company.logoDataUrl ? margin + 30 : margin;
   const nameMaxW = pageW - margin - dateSlotW - nameStartX;
 
   doc.setTextColor(255, 255, 255);
