@@ -66,7 +66,7 @@ export default function QuoteResult() {
 
   const buildPDF = async () => {
     let logoDataUrl: string | undefined;
-    if (profile?.logo_url) logoDataUrl = await urlToDataUrl(profile.logo_url);
+    if (logoAllowed && profile?.logo_url) logoDataUrl = await urlToDataUrl(profile.logo_url);
     return buildQuotePDF({
       company: {
         name: profile?.company_name,
@@ -75,8 +75,8 @@ export default function QuoteResult() {
         phone: profile?.phone,
         email: profile?.email,
         logoDataUrl,
-        primaryColor: profile?.logo_primary_color,
-        secondaryColor: profile?.logo_secondary_color,
+        primaryColor: logoAllowed ? profile?.logo_primary_color : undefined,
+        secondaryColor: logoAllowed ? profile?.logo_secondary_color : undefined,
       },
       customer: data.customer ? {
         name: data.customer.name,
