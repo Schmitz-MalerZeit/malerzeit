@@ -590,11 +590,11 @@ export default function QuoteResult() {
 
         {pdfAllowed ? (
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={() => setConfirmAction("preview")} disabled={busy} className="h-12">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>PDF ansehen</>}
+            <Button variant="outline" onClick={previewPDF} disabled={busy} className="h-12">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Eye className="h-4 w-4 mr-2" /> Vorschau</>}
             </Button>
             <Button onClick={() => setConfirmAction("download")} disabled={busy} className="h-12 gradient-primary text-primary-foreground border-0">
-              <FileDown className="h-4 w-4 mr-2" /> Download
+              <FileDown className="h-4 w-4 mr-2" /> PDF erstellen
             </Button>
           </div>
         ) : (
