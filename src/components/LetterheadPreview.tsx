@@ -112,125 +112,104 @@ export function LetterheadPreview({
       </div>
 
       <div className="rounded-xl overflow-hidden border border-border bg-white shadow-soft">
-        <div className="relative" style={{ aspectRatio: "210 / 175" }}>
-          {/* Header-Band */}
-          <div
-            className="absolute inset-x-0 top-0 flex items-center gap-3 px-4"
-            style={{ backgroundColor: primary, height: "25%" }}
-          >
-            {/* Logo-Slot: feste Bounding-Box, Bild wird per object-contain proportional skaliert (nie verzerrt, nie beschnitten) */}
-            <div className="h-[75%] w-16 flex items-center justify-start shrink-0">
-              {showLogo ? (
-                <img
-                  src={logoUrl}
-                  alt="Logo"
-                  className="max-h-full max-w-full object-contain object-left"
-                  onError={() => setLogoBroken(true)}
-                />
-              ) : logoUrl ? (
-                // Defektes Logo → weißer Kreis mit Initiale (gleiches Schema wie im PDF).
-                <div
-                  className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-xs font-bold"
-                  style={{ color: primary }}
-                  title="Logo konnte nicht geladen werden – Initial-Fallback wird gezeigt"
-                >
-                  {initial}
-                </div>
-              ) : (
-                <ImageIcon className="h-5 w-5 text-white/70" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0 text-white">
-              <div className="font-bold text-sm truncate leading-tight">
-                {companyName || "Ihr Malerbetrieb"}
+        <div className="relative px-4 pt-4 pb-3" style={{ aspectRatio: "210 / 175" }}>
+          {/* Logo oben rechts */}
+          <div className="absolute top-3 right-4 h-10 w-24 flex items-center justify-end">
+            {showLogo ? (
+              <img
+                src={logoUrl}
+                alt="Logo"
+                className="max-h-full max-w-full object-contain object-right"
+                onError={() => setLogoBroken(true)}
+              />
+            ) : logoUrl ? (
+              <div
+                className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                style={{ backgroundColor: primary }}
+                title="Logo konnte nicht geladen werden – Initial-Fallback wird gezeigt"
+              >
+                {initial}
               </div>
-              <div className="text-[10px] opacity-90 leading-tight mt-0.5">
-                Unverbindlicher Preisvorschlag
-              </div>
-            </div>
-            <div className="text-[9px] text-white/90 shrink-0">Datum: {today}</div>
+            ) : (
+              <ImageIcon className="h-5 w-5 text-neutral-300" />
+            )}
           </div>
 
-          {/* Body */}
-          <div className="absolute inset-x-0 bottom-0 px-4 pt-3" style={{ top: "25%" }}>
-            <div className="grid grid-cols-2 gap-3">
-              {/* LEFT — customer */}
-              <div>
-                <div className="text-[7px] font-bold tracking-wider" style={{ color: primary }}>
-                  ANSCHRIFT
-                </div>
-                <div className="h-px mt-0.5 mb-1.5" style={{ backgroundColor: secondary, opacity: 0.6 }} />
-                <div className="space-y-0.5">
-                  {leftRows.map((row, i) => (
-                    <div
-                      key={i}
-                      className={`text-[9px] truncate ${isDemoCustomer ? "text-neutral-400 italic" : "text-neutral-700"}`}
-                    >
-                      {row}
-                    </div>
-                  ))}
-                  {isDemoCustomer && (
-                    <div className="text-[7px] text-neutral-400 mt-1">Beispiel-Empfänger</div>
-                  )}
-                </div>
-              </div>
+          {/* Sender-Mini-Zeile + Trenner */}
+          <div className="mt-12">
+            <div className="text-[7px] text-neutral-400 truncate">
+              {[companyName, address, [postalCode, city].filter(Boolean).join(" ")]
+                .filter(Boolean).join(" · ") || "Firmenname · Straße · PLZ Ort"}
+            </div>
+            <div className="h-px w-1/2 mt-0.5" style={{ backgroundColor: secondary, opacity: 0.3 }} />
+          </div>
 
-              {/* RIGHT — sender */}
-              <div>
-                <div className="text-[7px] font-bold tracking-wider" style={{ color: primary }}>
-                  ABSENDER
-                </div>
-                <div className="h-px mt-0.5 mb-1.5" style={{ backgroundColor: secondary, opacity: 0.6 }} />
-                <div className="space-y-0.5">
-                  {rowsToRender.length === 0 && (
-                    <div className="text-[8px] text-neutral-400 italic">Firmendaten ergänzen</div>
-                  )}
-                  {rowsToRender.map((row) => (
-                    <div
-                      key={row.field}
-                      className="text-[9px] truncate flex items-center gap-1.5"
-                    >
-                      {row.label
-                        ? <span className="text-neutral-400 w-8 shrink-0">{row.label}</span>
-                        : <span className="w-8 shrink-0" aria-hidden />}
-                      <span
-                        className={`truncate flex-1 ${row.present ? "text-neutral-700" : "text-neutral-300 italic"}`}
-                      >
-                        {row.present ? row.value : "(leer)"}
-                      </span>
-                      {showFields && (
-                        <span
-                          className={`shrink-0 inline-flex items-center gap-1 rounded-sm px-1 py-px text-[7px] font-medium leading-none ${
-                            row.present
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-neutral-50  text-neutral-400 border border-neutral-200"
-                          }`}
-                          title={`Profilfeld: ${row.field}`}
-                        >
-                          {row.present
-                            ? <Check className="h-2 w-2" />
-                            : <Minus className="h-2 w-2" />}
-                          {row.field}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
+          {/* Empfänger + Datum */}
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            <div>
+              <div className="space-y-0.5">
+                {leftRows.map((row, i) => (
+                  <div
+                    key={i}
+                    className={`text-[9px] truncate ${isDemoCustomer ? "text-neutral-400 italic" : "text-neutral-700"}`}
+                  >
+                    {row}
+                  </div>
+                ))}
+                {isDemoCustomer && (
+                  <div className="text-[7px] text-neutral-400 mt-1">Beispiel-Empfänger</div>
+                )}
               </div>
             </div>
-
-            <div className="mt-3">
-              <div className="text-[10px] font-bold" style={{ color: primary }}>
-                Leistungsbeschreibung
+            <div className="text-right">
+              <div className="text-[8px] text-neutral-500">
+                Angebotsdatum: <span className="text-neutral-700">{today}</span>
               </div>
-              <div className="h-[2px] mt-1 rounded" style={{ backgroundColor: primary }} />
             </div>
+          </div>
 
-            <div className="mt-2 space-y-1">
+          {/* Titel */}
+          <div className="mt-4 text-base font-bold" style={{ color: primary }}>
+            Preisvorschlag
+          </div>
+
+          {/* Leistungs-Skelett */}
+          <div className="mt-2">
+            <div className="h-px" style={{ backgroundColor: "#e5e5e5" }} />
+            <div className="mt-2 space-y-1.5">
               <div className="h-1.5 rounded bg-neutral-200 w-11/12" />
               <div className="h-1.5 rounded bg-neutral-200 w-9/12" />
+              <div className="h-1.5 rounded bg-neutral-200 w-10/12" />
             </div>
           </div>
+
+          {/* Sender-Validierung kompakt unten (nur sichtbar in Validierungs-Modus) */}
+          {showFields && (
+            <div className="absolute bottom-2 left-4 right-4">
+              <div className="text-[7px] font-bold tracking-wider" style={{ color: primary }}>
+                ABSENDER (Validierung)
+              </div>
+              <div className="space-y-0.5 mt-1">
+                {senderSchema.map((row) => (
+                  <div key={row.field} className="text-[8px] flex items-center gap-1.5">
+                    <span
+                      className={`shrink-0 inline-flex items-center gap-1 rounded-sm px-1 py-px text-[7px] font-medium leading-none ${
+                        row.present
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-neutral-50  text-neutral-400 border border-neutral-200"
+                      }`}
+                    >
+                      {row.present ? <Check className="h-2 w-2" /> : <Minus className="h-2 w-2" />}
+                      {row.field}
+                    </span>
+                    <span className={`truncate ${row.present ? "text-neutral-700" : "text-neutral-300 italic"}`}>
+                      {row.present ? row.value : "(leer)"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
