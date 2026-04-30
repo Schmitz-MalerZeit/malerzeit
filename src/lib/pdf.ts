@@ -5,8 +5,11 @@ export interface QuotePDFData {
     name?: string;
     contact?: string;
     address?: string;
+    postalCode?: string;
+    city?: string;
     phone?: string;
     email?: string;
+    website?: string;
     logoDataUrl?: string;
     primaryColor?: string;
     secondaryColor?: string;
@@ -66,14 +69,66 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setFontSize(9);
   doc.text(`Datum: ${d.date}`, pageW - margin, 20, { align: "right" });
 
-  let y = 52;
+  let y = 50;
 
-  // Company contact
-  doc.setTextColor(80, 80, 80);
-  doc.setFontSize(9);
-  const contactLines = [d.company.contact, d.company.address, d.company.phone, d.company.email].filter(Boolean) as string[];
-  contactLines.forEach((l) => { doc.text(l, margin, y); y += 4.5; });
-  y += 6;
+  // Company contact – two-column letterhead block
+  // Left column: postal address.   Right column: phone / e-mail / web.
+  // Separated by a thin rule in the secondary colour for a clean briefing-paper look.
+  const cityLine = [d.company.postalCode, d.company.city].filter(Boolean).join(" ");
+  const left: { label?: string; value: string }[] = [
+    ...(d.company.contact ? [{ value: d.company.contact }] : []),
+    ...(d.company.address ? [{ value: d.company.address }] : []),
+    ...(cityLine ? [{ value: cityLine }] : []),
+  ];
+  const right: { label: string; value: string }[] = [
+    ...(d.company.phone   ? [{ label: "Tel.",   value: d.company.phone }]   : []),
+    ...(d.company.email   ? [{ label: "E-Mail", value: d.company.email }]   : []),
+    ...(d.company.website ? [{ label: "Web",    value: d.company.website }] : []),
+  ];
+
+  if (left.length || right.length) {
+    const colGap   = 6;
+    const colWidth = (pageW - margin * 2 - colGap) / 2;
+    const labelW   = 12;       // fixed label column → values align
+    const lineH    = 4.6;
+    const rows     = Math.max(left.length, right.length);
+
+    // Section labels (small caps style) in primary colour
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(primary[0], primary[1], primary[2]);
+    if (left.length)  doc.text("ANSCHRIFT", margin, y);
+    if (right.length) doc.text("KONTAKT",   margin + colWidth + colGap, y);
+    y += 3.5;
+
+    // Thin accent rules under each section label
+    doc.setDrawColor(secondary[0], secondary[1], secondary[2]);
+    doc.setLineWidth(0.2);
+    if (left.length)  doc.line(margin, y, margin + colWidth, y);
+    if (right.length) doc.line(margin + colWidth + colGap, y, pageW - margin, y);
+    y += 4;
+
+    // Body
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(60, 60, 60);
+
+    const startY = y;
+    // Left column
+    left.forEach((row, i) => {
+      doc.text(row.value, margin, startY + i * lineH);
+    });
+    // Right column with aligned labels
+    right.forEach((row, i) => {
+      const rx = margin + colWidth + colGap;
+      doc.setTextColor(120, 120, 120);
+      doc.text(row.label, rx, startY + i * lineH);
+      doc.setTextColor(60, 60, 60);
+      doc.text(row.value, rx + labelW, startY + i * lineH);
+    });
+
+    y = startY + rows * lineH + 6;
+  }
 
   // Customer block
   if (d.customer && (d.customer.name || d.customer.address)) {
