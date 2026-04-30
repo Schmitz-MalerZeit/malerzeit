@@ -423,9 +423,6 @@ export default function QuoteResult() {
     } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
     finally { setBusy(false); }
   };
-    } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
-    finally { setBusy(false); }
-  };
 
   const openBlob = (url: string): boolean => {
     const win = window.open(url, "_blank", "noopener,noreferrer");
