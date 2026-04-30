@@ -10,6 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
@@ -22,6 +26,8 @@ export default function QuoteResult() {
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
+  // Bestätigungs-Dialog vor PDF-Erstellung (zählt aufs Kontingent).
+  const [confirmAction, setConfirmAction] = useState<null | "preview" | "download">(null);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
@@ -561,10 +567,10 @@ export default function QuoteResult() {
 
         {pdfAllowed ? (
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={previewPDF} disabled={busy} className="h-12">
+            <Button variant="outline" onClick={() => setConfirmAction("preview")} disabled={busy} className="h-12">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>PDF ansehen</>}
             </Button>
-            <Button onClick={downloadPDF} disabled={busy} className="h-12 gradient-primary text-primary-foreground border-0">
+            <Button onClick={() => setConfirmAction("download")} disabled={busy} className="h-12 gradient-primary text-primary-foreground border-0">
               <FileDown className="h-4 w-4 mr-2" /> Download
             </Button>
           </div>
@@ -607,7 +613,7 @@ export default function QuoteResult() {
               </Button>
               <Button
                 type="button"
-                onClick={downloadPDF}
+                onClick={() => setConfirmAction("download")}
                 disabled={busy}
                 className="h-11 gradient-primary text-primary-foreground border-0"
               >
@@ -633,6 +639,31 @@ export default function QuoteResult() {
           {saved ? <><Check className="h-4 w-4 mr-2" /> Gespeichert</> : <><Save className="h-4 w-4 mr-2" /> Vorschlag speichern</>}
         </Button>
       </div>
+
+      <AlertDialog open={confirmAction !== null} onOpenChange={(o) => { if (!o) setConfirmAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Preisorientierung jetzt erstellen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bitte prüfen Sie die Inhalte oben sorgfältig. Mit dem Erstellen wird die Preisorientierung
+              auf Ihr monatliches Kontingent angerechnet. Möchten Sie fortfahren?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const action = confirmAction;
+                setConfirmAction(null);
+                if (action === "preview") previewPDF();
+                else if (action === "download") downloadPDF();
+              }}
+            >
+              Ja, jetzt erstellen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
