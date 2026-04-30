@@ -204,14 +204,29 @@ export default function Billing() {
                       </p>
                     </div>
                     {t.invoice_url && (
-                      <a
-                        href={t.invoice_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline shrink-0"
-                      >
-                        <FileText className="h-3.5 w-3.5" /> Rechnung
-                      </a>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <a
+                          href={t.invoice_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline px-2 py-1"
+                          title="Rechnung ansehen"
+                        >
+                          <FileText className="h-3.5 w-3.5" /> Ansehen
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => downloadInvoice(t)}
+                          disabled={downloadingId === t.id}
+                          className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline px-2 py-1 disabled:opacity-50"
+                          title="PDF herunterladen"
+                        >
+                          {downloadingId === t.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Download className="h-3.5 w-3.5" />}
+                          PDF
+                        </button>
+                      </div>
                     )}
                   </li>
                 );
