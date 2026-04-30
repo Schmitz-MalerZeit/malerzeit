@@ -4,8 +4,10 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles } from "lucide-react";
 import { buildQuotePDF, urlToDataUrl } from "@/lib/pdf";
+import { useSubscription } from "@/hooks/useSubscription";
+import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
