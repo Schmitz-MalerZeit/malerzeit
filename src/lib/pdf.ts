@@ -82,16 +82,26 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
 
   let y = 50;
 
-  // Company contact – two-column letterhead block
-  // Left column: postal address.   Right column: phone / e-mail / web.
+  // Classic German letterhead layout:
+  //   LEFT  → recipient (customer) address — the actual "Anschrift" block.
+  //   RIGHT → sender's company contact details (phone / e-mail / web, optional postal).
   // Separated by a thin rule in the secondary colour for a clean briefing-paper look.
-  const cityLine = [d.company.postalCode, d.company.city].filter(Boolean).join(" ");
-  const left: { label?: string; value: string }[] = [
-    ...(d.company.contact ? [{ value: d.company.contact }] : []),
-    ...(d.company.address ? [{ value: d.company.address }] : []),
-    ...(cityLine ? [{ value: cityLine }] : []),
-  ];
+  const customerCity = d.customer
+    ? [d.customer.postalCode, d.customer.city].filter(Boolean).join(" ")
+    : "";
+  const left: { value: string }[] = d.customer
+    ? [
+        ...(d.customer.name    ? [{ value: d.customer.name }]    : []),
+        ...(d.customer.address ? [{ value: d.customer.address }] : []),
+        ...(customerCity       ? [{ value: customerCity }]       : []),
+      ]
+    : [];
+
+  const companyCity = [d.company.postalCode, d.company.city].filter(Boolean).join(" ");
   const right: { label: string; value: string }[] = [
+    ...(d.company.contact ? [{ label: "z.Hd.",  value: d.company.contact }] : []),
+    ...(d.company.address ? [{ label: "Adr.",   value: d.company.address }] : []),
+    ...(companyCity       ? [{ label: "Ort",    value: companyCity }]       : []),
     ...(d.company.phone   ? [{ label: "Tel.",   value: d.company.phone }]   : []),
     ...(d.company.email   ? [{ label: "E-Mail", value: d.company.email }]   : []),
     ...(d.company.website ? [{ label: "Web",    value: d.company.website }] : []),
@@ -109,7 +119,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     doc.setFontSize(7);
     doc.setTextColor(primary[0], primary[1], primary[2]);
     if (left.length)  doc.text("ANSCHRIFT", margin, y);
-    if (right.length) doc.text("KONTAKT",   margin + colWidth + colGap, y);
+    if (right.length) doc.text("ABSENDER",  margin + colWidth + colGap, y);
     y += 3.5;
 
     // Thin accent rules under each section label
@@ -133,11 +143,13 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     };
 
     const startY = y;
-    // Left column – full column width available
+    // Left column – customer address, full column width available, slightly larger
+    doc.setFontSize(10);
     left.forEach((row, i) => {
       doc.text(fit(row.value, colWidth), margin, startY + i * lineH);
     });
-    // Right column with aligned labels – value width = colWidth − labelW
+    // Right column – sender details with aligned labels (value width = colWidth − labelW)
+    doc.setFontSize(9);
     right.forEach((row, i) => {
       const rx = margin + colWidth + colGap;
       doc.setTextColor(120, 120, 120);
@@ -146,23 +158,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
       doc.text(fit(row.value, colWidth - labelW), rx + labelW, startY + i * lineH);
     });
 
-    y = startY + rows * lineH + 6;
-  }
-
-  // Customer block
-  if (d.customer && (d.customer.name || d.customer.address)) {
-    doc.setTextColor(primary[0], primary[1], primary[2]);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("Kunde", margin, y);
-    y += 5;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(40, 40, 40);
-    const cityLine = [d.customer.postalCode, d.customer.city].filter(Boolean).join(" ");
-    const lines = [d.customer.name, d.customer.address, cityLine].filter(Boolean) as string[];
-    lines.forEach((l) => { doc.text(l, margin, y); y += 4.8; });
-    y += 6;
+    y = startY + rows * lineH + 8;
   }
 
   // Title
