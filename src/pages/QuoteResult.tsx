@@ -666,10 +666,11 @@ export default function QuoteResult() {
       <AlertDialog open={confirmAction !== null} onOpenChange={(o) => { if (!o) setConfirmAction(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Preisorientierung jetzt erstellen?</AlertDialogTitle>
+            <AlertDialogTitle>PDF jetzt erstellen?</AlertDialogTitle>
             <AlertDialogDescription>
               Bitte prüfe die Inhalte oben sorgfältig. Mit dem Erstellen wird die Preisorientierung
-              auf dein monatliches Kontingent angerechnet. Möchtest du fortfahren?
+              auf dein monatliches Kontingent angerechnet. Tipp: Über „Vorschau" kannst du das PDF
+              vorher kostenlos ansehen. Möchtest du fortfahren?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
