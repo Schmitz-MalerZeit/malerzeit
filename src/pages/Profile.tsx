@@ -130,6 +130,7 @@ export default function Profile() {
                 companyName={p.company_name}
                 contact={p.contact_person}
                 address={p.address}
+                addressLine2={p.address_line2}
                 postalCode={p.postal_code}
                 city={p.city}
                 phone={p.phone}
