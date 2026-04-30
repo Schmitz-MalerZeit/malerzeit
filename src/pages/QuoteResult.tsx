@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye } from "lucide-react";
 import { buildQuotePDF, urlToDataUrl } from "@/lib/pdf";
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
@@ -15,6 +15,13 @@ export default function QuoteResult() {
   const [profile, setProfile] = useState<any>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
+
+  // Revoke blob URL on unmount
+  useEffect(() => {
+    return () => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); };
+  }, [previewBlobUrl]);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("currentQuote");
@@ -94,15 +101,45 @@ export default function QuoteResult() {
     finally { setBusy(false); }
   };
 
+  const openBlob = (url: string): boolean => {
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win || win.closed || typeof win.closed === "undefined") {
+      setPreviewFailed(true);
+      toast.error("Vorschau konnte nicht geöffnet werden (evtl. Popup blockiert).", {
+        action: { label: "Erneut", onClick: () => retryPreview() },
+      });
+      return false;
+    }
+    setPreviewFailed(false);
+    return true;
+  };
+
+  const retryPreview = () => {
+    if (previewBlobUrl) openBlob(previewBlobUrl);
+    else previewPDF();
+  };
+
   const previewPDF = async () => {
     setBusy(true);
     try {
+      // Reuse already-built PDF if available (avoid double quota consumption)
+      if (previewBlobUrl) {
+        openBlob(previewBlobUrl);
+        return;
+      }
       const pdf = await buildPDF();
       const ok = await consumeQuota();
       if (!ok) return;
       const blob = pdf.output("blob");
-      window.open(URL.createObjectURL(blob), "_blank");
-    } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
+      const url = URL.createObjectURL(blob);
+      setPreviewBlobUrl(url);
+      openBlob(url);
+    } catch (e: any) {
+      setPreviewFailed(true);
+      toast.error(e.message || "PDF-Fehler", {
+        action: { label: "Erneut", onClick: () => retryPreview() },
+      });
+    }
     finally { setBusy(false); }
   };
 
@@ -194,6 +231,35 @@ export default function QuoteResult() {
             <FileDown className="h-4 w-4 mr-2" /> Download
           </Button>
         </div>
+
+        {previewFailed && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+            <p className="text-sm text-destructive">
+              Die PDF-Vorschau konnte nicht geöffnet werden. Eventuell hat dein Browser das neue Fenster blockiert.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={retryPreview}
+              disabled={busy}
+              className="w-full h-11 border-destructive/40 text-destructive hover:bg-destructive/10"
+            >
+              {busy
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <><RotateCw className="h-4 w-4 mr-2" /> Vorschau erneut öffnen</>}
+            </Button>
+            {previewBlobUrl && (
+              <a
+                href={previewBlobUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"
+              >
+                <Eye className="h-3.5 w-3.5" /> Direkt im neuen Tab öffnen
+              </a>
+            )}
+          </div>
+        )}
 
         <Button onClick={save} disabled={busy || saved} variant={saved ? "secondary" : "default"} className="w-full h-12">
           {saved ? <><Check className="h-4 w-4 mr-2" /> Gespeichert</> : <><Save className="h-4 w-4 mr-2" /> Vorschlag speichern</>}
