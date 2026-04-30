@@ -15,6 +15,13 @@ export default function QuoteResult() {
   const [profile, setProfile] = useState<any>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
+
+  // Revoke blob URL on unmount
+  useEffect(() => {
+    return () => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); };
+  }, [previewBlobUrl]);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("currentQuote");
