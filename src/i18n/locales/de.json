@@ -19,7 +19,7 @@
   },
   "auth": {
     "title": "Willkommen",
-    "subtitle": "Melden Sie sich an, um Preisvorschläge zu erstellen.",
+    "subtitle": "Melde dich an, um Preisvorschläge zu erstellen.",
     "tabSignIn": "Anmelden",
     "tabSignUp": "Registrieren",
     "email": "E-Mail",
@@ -31,20 +31,30 @@
     "apple": "Mit Apple fortfahren",
     "appleSoon": "Apple-Anmeldung folgt in Kürze.",
     "signupSuccess": "Konto erstellt – bitte E-Mail bestätigen.",
-    "signinSuccess": "Erfolgreich angemeldet."
+    "signinSuccess": "Erfolgreich angemeldet.",
+    "termsHint": "Mit der Anmeldung akzeptierst du unsere <1>Nutzungsbedingungen</1> und <3>Datenschutzhinweise</3>."
   },
   "home": {
-    "greeting": "Hallo",
-    "tagline": "Erstellen Sie in wenigen Minuten einen professionellen Preisvorschlag.",
-    "ctaNew": "Neuer Preisvorschlag",
-    "ctaQuotes": "Meine Vorschläge",
+    "greetingPersonal": "Guten Tag, {{name}}",
+    "greetingFallback": "Guten Tag",
+    "tagline": "Erstelle in wenigen Minuten einen professionellen Preisvorschlag.",
+    "badgeAi": "KI-gestützt",
+    "ctaNew": "Preisvorschlag erstellen",
+    "ctaNewSub": "Beschreibung eingeben – KI strukturiert & kalkuliert",
+    "ctaQuotes": "Gespeicherte Vorschläge",
+    "ctaQuotesSub": "Frühere Kalkulationen ansehen",
     "ctaProfile": "Firmenprofil",
-    "ctaSettings": "Einstellungen"
+    "ctaProfileSub": "Firmendaten & Logo",
+    "ctaSettings": "Einstellungen",
+    "ctaSettingsSub": "Stundensatz, Aufschlag, Qualität",
+    "ctaLegal": "Rechtliches",
+    "ctaLegalSub": "Impressum, Datenschutz, Haftung",
+    "loggedOut": "Du bist abgemeldet."
   },
   "settings": {
     "title": "Einstellungen",
     "ratesHeading": "Stundensätze (netto)",
-    "ratesHelp": "Markieren Sie den Standard-Satz mit dem Stern. Dieser wird verwendet, wenn Sie keinen anderen wählen.",
+    "ratesHelp": "Markiere deinen Standard-Satz mit dem Stern. Er wird verwendet, wenn du keinen anderen wählst.",
     "addRate": "Stundensatz hinzufügen",
     "ratePlaceholder": "Bezeichnung (z. B. Maler Geselle)",
     "markup": "Materialaufschlag (%)",
