@@ -70,7 +70,7 @@ export default function Pricing() {
 
         <div className="text-center">
           <h2 className="text-2xl font-bold tracking-tight mb-2">Wähle deinen Tarif</h2>
-          <p className="text-sm text-muted-foreground">Monatlich kündbar zum Monatsende. Keine versteckten Kosten.</p>
+          <p className="text-sm text-muted-foreground">Faire Kündigungsfristen. Keine versteckten Kosten.</p>
         </div>
 
         <div className="space-y-2">
@@ -144,9 +144,16 @@ export default function Pricing() {
           })}
         </div>
 
-        <p className="text-xs text-center text-muted-foreground">
-          Monatlich kündbar zum Monatsende. Zahlungsabwicklung über Paddle. Alle Preise inkl. MwSt.
-        </p>
+        <div className="rounded-2xl border border-border bg-secondary/30 p-4 text-xs text-muted-foreground space-y-1.5">
+          <p className="font-semibold text-foreground">Kündigungsfristen</p>
+          <p>
+            <strong className="text-foreground">Monatlich:</strong> Kündbar zum Ende des aktuellen Monats – das Abo endet dann zum Folgemonat.
+          </p>
+          <p>
+            <strong className="text-foreground">Jährlich:</strong> Kündbar bis spätestens <strong className="text-foreground">1 Monat vor Ablauf</strong> des Vertragsjahres. Ohne Kündigung verlängert sich der Vertrag um ein weiteres Jahr.
+          </p>
+          <p className="pt-1">Zahlungsabwicklung über Paddle. Alle Preise inkl. MwSt.</p>
+        </div>
       </div>
     </AppShell>
   );
