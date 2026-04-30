@@ -75,6 +75,22 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   contactLines.forEach((l) => { doc.text(l, margin, y); y += 4.5; });
   y += 6;
 
+  // Customer block
+  if (d.customer && (d.customer.name || d.customer.address)) {
+    doc.setTextColor(primary[0], primary[1], primary[2]);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("Kunde", margin, y);
+    y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(40, 40, 40);
+    const cityLine = [d.customer.postalCode, d.customer.city].filter(Boolean).join(" ");
+    const lines = [d.customer.name, d.customer.address, cityLine].filter(Boolean) as string[];
+    lines.forEach((l) => { doc.text(l, margin, y); y += 4.8; });
+    y += 6;
+  }
+
   // Title
   doc.setTextColor(primary[0], primary[1], primary[2]);
   doc.setFont("helvetica", "bold");
