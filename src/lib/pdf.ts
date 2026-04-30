@@ -12,6 +12,9 @@ export interface QuotePDFData {
     email?: string;
     website?: string;
     logoDataUrl?: string;
+    /** Natürliche Bildmaße – für proportionale Skalierung im PDF. */
+    logoNaturalWidth?: number;
+    logoNaturalHeight?: number;
     primaryColor?: string;
     secondaryColor?: string;
   };
