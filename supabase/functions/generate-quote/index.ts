@@ -77,7 +77,7 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
       type: "function",
       function: {
         name: "build_quote",
-        description: "Liefert strukturierten Preisvorschlag oder Rückfragen.",
+        description: "Liefert strukturierte Preisorientierung oder Rückfragen.",
         parameters: {
           type: "object",
           properties: {
