@@ -752,7 +752,7 @@ export default function QuoteResult() {
               </a>
               <button
                 type="button"
-                onClick={() => triggerBlobDownload(previewBlobUrl)}
+                onClick={() => setConfirmAction("download")}
                 className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 <FileDown className="h-4 w-4 mr-2" /> PDF laden
