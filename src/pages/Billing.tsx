@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, CreditCard, Sparkles, AlertCircle, FileText, Receipt } from "lucide-react";
+import { Loader2, ExternalLink, CreditCard, Sparkles, AlertCircle, FileText, Receipt, Download } from "lucide-react";
 
 interface Tx {
   id: string;
