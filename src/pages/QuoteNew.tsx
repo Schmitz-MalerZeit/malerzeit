@@ -78,6 +78,7 @@ export default function QuoteNew() {
       } else {
         sessionStorage.setItem("currentQuote", JSON.stringify({
           description, answers, ai: resp,
+          customer,
           rate: { label: chosen.label, value: chosen.rate },
         }));
         nav("/quote/result");
