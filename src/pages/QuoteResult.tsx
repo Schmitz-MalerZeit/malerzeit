@@ -466,8 +466,7 @@ export default function QuoteResult() {
   };
 
   const retryPreview = () => {
-    if (previewBlobUrl) openBlob(previewBlobUrl);
-    else previewPDF();
+    previewPDF();
   };
 
   const previewPDF = async () => {
