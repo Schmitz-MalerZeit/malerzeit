@@ -121,7 +121,7 @@ export default function QuoteNew() {
     customer.postal_code.trim().length >= 4 &&
     customer.city.trim().length > 1;
 
-  const headerTitle = customer.name.trim() ? customer.name.trim() : "Neuer Preisvorschlag";
+  const headerTitle = customer.name.trim() ? customer.name.trim() : "Neue Preisorientierung";
 
   if (step === "input") {
     return (
@@ -237,7 +237,7 @@ export default function QuoteNew() {
     <AppShell title={headerTitle}>
       <div className="space-y-5">
         <p className="text-sm text-muted-foreground">
-          Damit der Preisvorschlag möglichst präzise wird, beantworte bitte kurz folgende Fragen:
+          Damit die Preisorientierung möglichst präzise wird, beantworte bitte kurz folgende Fragen:
         </p>
         {questions.map((q, i) => (
           <div key={i} className="rounded-2xl bg-card border border-border p-4 shadow-soft">
@@ -251,7 +251,7 @@ export default function QuoteNew() {
         ))}
         <Button onClick={() => callAI("finalize")} disabled={loading}
           className="w-full h-14 text-base font-semibold gradient-primary text-primary-foreground border-0 shadow-soft hover:shadow-glow transition-base">
-          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Preisvorschlag erstellen <ArrowRight className="h-5 w-5 ml-2" /></>}
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Preisorientierung erstellen <ArrowRight className="h-5 w-5 ml-2" /></>}
         </Button>
         <Button variant="ghost" onClick={() => callAI("finalize")} disabled={loading} className="w-full">
           Ohne Antworten fortfahren
