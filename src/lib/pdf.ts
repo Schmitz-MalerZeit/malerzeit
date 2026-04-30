@@ -5,6 +5,7 @@ export interface QuotePDFData {
     name?: string;
     contact?: string;
     address?: string;
+    addressLine2?: string;
     postalCode?: string;
     city?: string;
     phone?: string;
