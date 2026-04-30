@@ -21,7 +21,13 @@ interface Rate {
 export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [s, setS] = useState({ material_markup: 15, quality_level: "standard", vat_rate: 19 });
+  const [s, setS] = useState({
+    material_markup: 15,
+    quality_level: "standard",
+    vat_rate: 19,
+    quote_validity_days: 14,
+    closing_text: "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
+  });
   const [rates, setRates] = useState<Rate[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
 
