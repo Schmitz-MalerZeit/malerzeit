@@ -29,6 +29,8 @@ export function VoiceInput({
 }: VoiceInputProps) {
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [otherActive, setOtherActive] = useState(false);
+  const idRef = useRef<number>(voiceLock.nextId());
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -38,6 +40,30 @@ export function VoiceInput({
     streamRef.current = null;
     recRef.current = null;
   };
+
+  // Keep "another mic is active" disabled-state in sync with the global lock.
+  useEffect(() => {
+    const myId = idRef.current;
+    const unsub = voiceLock.subscribe((active) => {
+      setOtherActive(active !== null && active !== myId);
+    });
+    // Register a remote-stop hook so the lock owner stays unique even if state desyncs.
+    const unreg = voiceLock.registerStopper(myId, () => {
+      if (recRef.current && recRef.current.state !== "inactive") {
+        try { recRef.current.stop(); } catch { /* ignore */ }
+      }
+      stopAll();
+      setRecording(false);
+      voiceLock.release(myId);
+    });
+    return () => {
+      unsub();
+      unreg();
+      voiceLock.release(myId);
+      stopAll();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const start = async () => {
     if (disabled || busy) return;
