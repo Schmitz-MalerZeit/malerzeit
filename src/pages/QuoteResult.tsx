@@ -406,7 +406,9 @@ export default function QuoteResult() {
         triggerBlobDownload(previewBlobUrl);
         setPreviewFailed(false);
         setLastFilename(filename());
-        setShareOpen(true);
+        // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
+        // den Browser-Download nicht abbricht (insb. iOS Safari).
+        setTimeout(() => setShareOpen(true), 800);
         save(true); // automatisch speichern (still, ohne Toast)
         return;
       }
@@ -420,7 +422,9 @@ export default function QuoteResult() {
       triggerBlobDownload(url);
       setPreviewFailed(false);
       setLastFilename(filename());
-      setShareOpen(true);
+      // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
+      // den Browser-Download nicht abbricht (insb. iOS Safari).
+      setTimeout(() => setShareOpen(true), 800);
       save(true); // automatisch speichern (still, ohne Toast)
     } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
     finally { setBusy(false); }
