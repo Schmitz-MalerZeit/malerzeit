@@ -84,9 +84,26 @@ export default function Quotes() {
       .then(({ data }) => setItems(data || []));
   }, []);
 
-  const exportCsv = () => {
-    if (!items || items.length === 0) { toast.info("Keine Daten zum Exportieren"); return; }
-    const csv = toCsv(items);
+  const validateForExport = (rows: any[]): { ok: boolean; incomplete: { id: string; label: string; missing: string[] }[] } => {
+    const incomplete: { id: string; label: string; missing: string[] }[] = [];
+    for (const q of rows) {
+      const missing: string[] = [];
+      if (!q.customer_address?.trim()) missing.push("Straße");
+      if (!q.customer_postal_code?.trim()) missing.push("PLZ");
+      if (!q.customer_city?.trim()) missing.push("Ort");
+      if (missing.length) {
+        incomplete.push({
+          id: q.id,
+          label: q.customer_name?.trim() || `Angebot vom ${new Date(q.created_at).toLocaleDateString("de-DE")}`,
+          missing,
+        });
+      }
+    }
+    return { ok: incomplete.length === 0, incomplete };
+  };
+
+  const doDownload = (rows: any[]) => {
+    const csv = toCsv(rows);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -95,6 +112,28 @@ export default function Quotes() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const exportCsv = () => {
+    if (!items || items.length === 0) { toast.info("Keine Daten zum Exportieren"); return; }
+    const { ok, incomplete } = validateForExport(items);
+    if (ok) { doDownload(items); return; }
+
+    // Build readable list (max 5 entries shown)
+    const preview = incomplete.slice(0, 5)
+      .map((i) => `• ${i.label} – fehlt: ${i.missing.join(", ")}`)
+      .join("\n");
+    const more = incomplete.length > 5 ? `\n…und ${incomplete.length - 5} weitere` : "";
+
+    toast.warning(`${incomplete.length} von ${items.length} Angeboten haben unvollständige Adressen`, {
+      description: preview + more,
+      duration: 10000,
+      action: {
+        label: "Trotzdem exportieren",
+        onClick: () => doDownload(items),
+      },
+    });
+  };
+
 
   return (
     <AppShell title="Gespeicherte Vorschläge">
