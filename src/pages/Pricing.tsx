@@ -51,9 +51,20 @@ export default function Pricing() {
         {sub.inTrial && (
           <div className="rounded-2xl bg-accent/10 border border-accent/30 p-4 text-sm">
             <div className="font-semibold mb-1 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-accent" /> Du bist im 14-Tage-Test
+              <Sparkles className="h-4 w-4 text-accent" /> Kostenloser Test
             </div>
-            <p className="text-muted-foreground">Noch <strong>{sub.trialDaysLeft} Tage</strong> kostenlos. Wähle danach einen Tarif, um nahtlos weiterzumachen.</p>
+            <p className="text-muted-foreground">
+              Noch <strong>{sub.trialPdfsLeft} von {sub.trialPdfsLimit} Test-PDFs</strong> übrig. Wähle danach einen Tarif, um weiter PDFs zu erstellen.
+            </p>
+          </div>
+        )}
+
+        {!sub.inTrial && !sub.subscription && (
+          <div className="rounded-2xl bg-orange-50 border border-orange-300 p-4 text-sm">
+            <div className="font-semibold mb-1 text-orange-900">Test-PDFs aufgebraucht</div>
+            <p className="text-orange-800">
+              Du hast alle {sub.trialPdfsLimit} kostenlosen PDFs genutzt. Wähle jetzt einen Tarif, um weiter PDFs zu erstellen.
+            </p>
           </div>
         )}
 

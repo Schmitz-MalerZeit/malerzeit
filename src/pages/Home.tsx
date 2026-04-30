@@ -74,10 +74,24 @@ export default function Home() {
             className="w-full mb-4 rounded-2xl border border-accent/30 bg-accent/5 p-4 text-left hover:bg-accent/10 transition-base"
           >
             <div className="text-sm font-semibold mb-0.5 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-accent" /> Kostenloser Test läuft
+              <Sparkles className="h-3.5 w-3.5 text-accent" /> Kostenloser Test
             </div>
             <div className="text-xs text-muted-foreground">
-              Noch <strong>{sub.trialDaysLeft} Tage</strong> – jetzt Tarif sichern, um nahtlos weiterzumachen →
+              Noch <strong>{sub.trialPdfsLeft} von {sub.trialPdfsLimit} Test-PDFs</strong> übrig – jetzt Tarif sichern →
+            </div>
+          </button>
+        )}
+
+        {!sub.loading && !sub.inTrial && !sub.subscription && (
+          <button
+            onClick={() => nav("/pricing")}
+            className="w-full mb-4 rounded-2xl border border-orange-300 bg-orange-50 p-4 text-left hover:bg-orange-100 transition-base"
+          >
+            <div className="text-sm font-semibold mb-0.5 text-orange-900">
+              Test-PDFs aufgebraucht
+            </div>
+            <div className="text-xs text-orange-800">
+              Du hast alle {sub.trialPdfsLimit} kostenlosen PDFs genutzt. Wähle einen Tarif, um weiter PDFs zu erstellen →
             </div>
           </button>
         )}
