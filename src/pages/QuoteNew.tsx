@@ -220,7 +220,11 @@ export default function QuoteNew() {
         {questions.map((q, i) => (
           <div key={i} className="rounded-2xl bg-card border border-border p-4 shadow-soft">
             <Label className="text-sm font-medium mb-2 block">{q}</Label>
-            <Input value={answers[q] || ""} onChange={(e) => setAnswers({ ...answers, [q]: e.target.value })} placeholder="Deine Antwort..." className="h-11" />
+            <div className="flex gap-2">
+              <Input value={answers[q] || ""} onChange={(e) => setAnswers({ ...answers, [q]: e.target.value })} placeholder="Deine Antwort..." className="h-11 flex-1" />
+              <VoiceInput size="md" label="Antwort diktieren"
+                onTranscript={(t) => setAnswers((a) => ({ ...a, [q]: appendText(a[q] || "", t) }))} />
+            </div>
           </div>
         ))}
         <Button onClick={() => callAI("finalize")} disabled={loading}
