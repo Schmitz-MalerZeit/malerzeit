@@ -798,21 +798,22 @@ export default function QuoteResult() {
               PDF ist erstellt und bereit zur Vorschau oder zum Download.
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <a
-                href={previewBlobUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPreviewOpen(true)}
+                className="h-11"
               >
                 <Eye className="h-4 w-4 mr-2" /> Vorschau öffnen
-              </a>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setConfirmAction("download")}
-                className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                disabled={busy}
+                className="h-11 gradient-primary text-primary-foreground border-0"
               >
                 <FileDown className="h-4 w-4 mr-2" /> PDF laden
-              </button>
+              </Button>
             </div>
           </div>
         )}
