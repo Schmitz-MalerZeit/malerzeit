@@ -137,7 +137,7 @@ export default function Settings() {
             <h2 className="font-semibold">Stundensätze (netto)</h2>
           </div>
           <p className="text-xs text-muted-foreground mb-4">
-            Markieren Sie den Standard-Satz mit dem Stern. Dieser wird verwendet, wenn Sie keinen anderen wählen.
+            Markiere den Standard-Satz mit dem Stern. Dieser wird verwendet, wenn du keinen anderen wählst.
           </p>
 
           <div className="space-y-2.5">
