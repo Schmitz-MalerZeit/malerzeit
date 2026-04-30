@@ -327,14 +327,87 @@ export async function urlToDataUrl(url: string): Promise<string | undefined> {
   } catch { return undefined; }
 }
 
-/** Liest die natürlichen Pixelmaße eines Bildes – für proportionale PDF-Skalierung. */
+/**
+ * Liest die natürlichen Pixelmaße eines Bildes – für proportionale PDF-Skalierung.
+ * Liefert `undefined`, wenn das Bild nicht geladen werden kann oder keine
+ * intrinsischen Maße hat (typisch bei manchen SVGs). Der PDF-Renderer fällt in
+ * dem Fall auf seine volle Bounding-Box zurück.
+ */
 export async function getImageNaturalSize(
   src: string
 ): Promise<{ width: number; height: number } | undefined> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    img.onerror = () => resolve(undefined);
-    img.src = src;
+    let done = false;
+    const finish = (v: { width: number; height: number } | undefined) => {
+      if (done) return;
+      done = true;
+      resolve(v);
+    };
+    const t = setTimeout(() => finish(undefined), 4000);
+    img.onload = () => {
+      clearTimeout(t);
+      const w = img.naturalWidth, h = img.naturalHeight;
+      finish(w > 0 && h > 0 ? { width: w, height: h } : undefined);
+    };
+    img.onerror = () => { clearTimeout(t); finish(undefined); };
+    try { img.src = src; } catch { finish(undefined); }
+  });
+}
+
+/**
+ * Bereitet ein Logo für die Einbettung in jspdf vor.
+ *
+ * jspdf kann nur PNG/JPEG/WEBP einbetten. Lädt der Nutzer ein SVG (oder ein
+ * anderes Vektor-/Exotenformat) hoch, würde `addImage` werfen und die ganze
+ * PDF-Generierung kippen. Diese Funktion fängt das ab, indem sie unsupported
+ * Formate über <img>+<canvas> in eine PNG-Data-URL rasterisiert. Schlägt das
+ * fehl (defekte Datei, CORS-Block), gibt sie `undefined` zurück – der PDF-
+ * Renderer nutzt dann sein Initial-Fallback-Schema.
+ */
+export async function prepareLogoForPdf(
+  src: string
+): Promise<{ dataUrl: string; width: number; height: number } | undefined> {
+  if (!src) return undefined;
+  const isRaster =
+    /^data:image\/(png|jpe?g|webp)/i.test(src) ||
+    /\.(png|jpe?g|webp)(\?|$)/i.test(src);
+  if (isRaster) {
+    const size = await getImageNaturalSize(src);
+    return { dataUrl: src, width: size?.width || 0, height: size?.height || 0 };
+  }
+  // SVG, GIF, AVIF, unbekannte Endung → über Canvas in PNG rastern.
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    let done = false;
+    const finish = (v: { dataUrl: string; width: number; height: number } | undefined) => {
+      if (done) return;
+      done = true;
+      resolve(v);
+    };
+    const t = setTimeout(() => finish(undefined), 4000);
+    img.onload = () => {
+      clearTimeout(t);
+      try {
+        // SVGs ohne viewBox/width liefern 0/0 – sinnvoll defaulten,
+        // damit das Logo nicht zu einem 0×0-Pixel-Bild kollabiert.
+        const w = img.naturalWidth  || 512;
+        const h = img.naturalHeight || 512;
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return finish(undefined);
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/png");
+        finish({ dataUrl, width: w, height: h });
+      } catch (e) {
+        console.warn("[pdf] logo rasterization failed", e);
+        finish(undefined);
+      }
+    };
+    img.onerror = () => { clearTimeout(t); finish(undefined); };
+    try { img.src = src; } catch { finish(undefined); }
   });
 }
