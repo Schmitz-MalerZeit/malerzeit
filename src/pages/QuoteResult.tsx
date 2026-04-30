@@ -62,10 +62,33 @@ export default function QuoteResult() {
     });
   };
 
+  const consumeQuota = async (): Promise<boolean> => {
+    const { data, error } = await supabase.rpc("consume_pdf_quota");
+    if (error) { toast.error("Limit-Prüfung fehlgeschlagen: " + error.message); return false; }
+    const res = data as { ok: boolean; error?: string; limit?: number; used?: number };
+    if (!res?.ok) {
+      if (res?.error === "limit_reached") {
+        toast.error(`Monatslimit erreicht (${res.used}/${res.limit}).`, {
+          action: { label: "Upgrade", onClick: () => nav("/pricing") },
+        });
+      } else if (res?.error === "no_active_plan") {
+        toast.error("Kein aktiver Tarif. Bitte wähle einen Plan.", {
+          action: { label: "Tarife", onClick: () => nav("/pricing") },
+        });
+      } else {
+        toast.error("PDF-Erstellung nicht erlaubt.");
+      }
+      return false;
+    }
+    return true;
+  };
+
   const downloadPDF = async () => {
     setBusy(true);
     try {
-      const pdf = await buildPDF();
+      const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
+      const ok = await consumeQuota();              // 2) atomically consume quota
+      if (!ok) return;
       pdf.save(`Preisvorschlag_${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
     finally { setBusy(false); }
@@ -75,6 +98,8 @@ export default function QuoteResult() {
     setBusy(true);
     try {
       const pdf = await buildPDF();
+      const ok = await consumeQuota();
+      if (!ok) return;
       const blob = pdf.output("blob");
       window.open(URL.createObjectURL(blob), "_blank");
     } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }

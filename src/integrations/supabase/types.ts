@@ -280,6 +280,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_pdf_quota: { Args: never; Returns: Json }
       get_pdf_limit: { Args: { price_id: string }; Returns: number }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
