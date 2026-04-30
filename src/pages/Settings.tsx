@@ -152,8 +152,9 @@ export default function Settings() {
                 <div className="relative shrink-0 w-24">
                   <Input
                     type="number" inputMode="decimal" step="1" min="0"
-                    value={r.rate}
-                    onChange={(e) => updateRate(i, { rate: Number(e.target.value) })}
+                    placeholder="0"
+                    value={r.rate === 0 ? "" : r.rate}
+                    onChange={(e) => updateRate(i, { rate: e.target.value === "" ? 0 : Number(e.target.value) })}
                     className="h-10 pr-7 text-right"
                   />
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">€</span>
