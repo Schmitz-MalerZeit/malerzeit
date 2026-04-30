@@ -96,9 +96,47 @@ export default function Legal() {
           <p>Die Übertragung erfolgt verschlüsselt (TLS). Die Speicherung erfolgt auf gesicherten Servern innerhalb der Europäischen Union. Der Zugriff auf Ihre Daten ist durch ein individuelles Berechtigungssystem geschützt.</p>
         </Section>
 
+        {/* Nutzungsbedingungen / AGB */}
+        <Section title="Nutzungsbedingungen">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground/70">Allgemeine Geschäftsbedingungen für die Nutzung der App</p>
+
+          <Sub>1. Geltungsbereich</Sub>
+          <p>Diese Nutzungsbedingungen regeln die Nutzung der App „Malerzeit" (nachfolgend „App") durch registrierte Nutzer. Mit der Registrierung erkennst du diese Bedingungen als verbindlich an.</p>
+
+          <Sub>2. Leistungsbeschreibung</Sub>
+          <p>Die App stellt dir ein Werkzeug zur Verfügung, mit dem du auf Basis deiner Eingaben (Tätigkeitsbeschreibung, Stundensätze, Aufschläge, Qualitätsniveau) automatisiert Preisvorschläge erzeugen, speichern und als PDF exportieren kannst. Die Berechnung erfolgt unter Einsatz künstlicher Intelligenz.</p>
+
+          <Sub>3. Registrierung und Konto</Sub>
+          <p>Für die Nutzung ist ein Nutzerkonto erforderlich. Du bist verpflichtet, bei der Registrierung wahrheitsgemäße Angaben zu machen und deine Zugangsdaten vertraulich zu behandeln. Eine Weitergabe des Kontos an Dritte ist nicht gestattet.</p>
+
+          <Sub>4. Pflichten des Nutzers</Sub>
+          <p>Du verpflichtest dich, die App nicht missbräuchlich zu nutzen, insbesondere keine rechtswidrigen Inhalte einzugeben und keine personenbezogenen Daten Dritter (insb. deiner Endkunden) ohne Notwendigkeit in Freitextfelder einzugeben. Die im Firmenprofil hinterlegten Daten erscheinen auf deinen erstellten PDF-Angeboten und im in der App angezeigten Impressum – die Richtigkeit liegt in deiner Verantwortung.</p>
+
+          <Sub>5. Preisvorschläge – Unverbindlichkeit</Sub>
+          <p>Die durch die App erzeugten Preisvorschläge sind <strong>unverbindliche Kalkulationshilfen</strong> und stellen kein rechtsverbindliches Angebot dar. Sie ersetzen keine individuelle fachliche Prüfung vor Ort. Für die Richtigkeit, Vollständigkeit und wirtschaftliche Tragfähigkeit der Vorschläge übernimmt der Anbieter keine Gewähr.</p>
+
+          <Sub>6. Verfügbarkeit</Sub>
+          <p>Es besteht kein Anspruch auf eine ununterbrochene Verfügbarkeit der App. Wartungsarbeiten, technische Störungen oder Anpassungen können zu vorübergehenden Einschränkungen führen.</p>
+
+          <Sub>7. Haftung</Sub>
+          <p>Der Anbieter haftet unbeschränkt für Schäden aus Verletzung des Lebens, des Körpers oder der Gesundheit sowie für Schäden, die auf vorsätzlichem oder grob fahrlässigem Verhalten beruhen. Im Übrigen ist die Haftung – soweit gesetzlich zulässig – auf den vertragstypisch vorhersehbaren Schaden begrenzt. Eine Haftung für Folgeschäden, die aus der Verwendung der erzeugten Preisvorschläge entstehen, ist ausgeschlossen.</p>
+
+          <Sub>8. Nutzungsrechte an Inhalten</Sub>
+          <p>Die von dir eingegebenen Daten und erzeugten Preisvorschläge bleiben dein Eigentum. Du räumst dem Anbieter lediglich die zur Bereitstellung des Dienstes notwendigen Nutzungsrechte ein (Speicherung, Verarbeitung, Anzeige in deinem Konto).</p>
+
+          <Sub>9. Kündigung</Sub>
+          <p>Du kannst dein Konto jederzeit ohne Angabe von Gründen löschen lassen. Mit der Löschung werden deine in der App gespeicherten Daten unwiderruflich entfernt, soweit keine gesetzlichen Aufbewahrungspflichten entgegenstehen.</p>
+
+          <Sub>10. Änderungen der Nutzungsbedingungen</Sub>
+          <p>Der Anbieter behält sich vor, diese Nutzungsbedingungen anzupassen, soweit dies aus rechtlichen, technischen oder organisatorischen Gründen erforderlich wird. Du wirst über wesentliche Änderungen rechtzeitig in geeigneter Form informiert.</p>
+
+          <Sub>11. Schlussbestimmungen</Sub>
+          <p>Es gilt deutsches Recht. Sollten einzelne Bestimmungen unwirksam sein, bleibt die Wirksamkeit der übrigen Regelungen unberührt.</p>
+        </Section>
+
         {/* Haftung */}
         <Section title="Haftungshinweis Preisvorschläge">
-          <p>Die in dieser App erzeugten Preisvorschläge dienen ausschließlich als unverbindliche Orientierung auf Basis der von Ihnen gemachten Angaben. Sie stellen kein verbindliches Angebot dar und ersetzen keine individuelle fachliche Prüfung vor Ort. Eine Haftung für die Richtigkeit, Vollständigkeit oder Wirtschaftlichkeit der berechneten Werte ist ausgeschlossen.</p>
+          <p>Die in dieser App erzeugten Preisvorschläge dienen ausschließlich als unverbindliche Orientierung auf Basis der von dir gemachten Angaben. Sie stellen kein verbindliches Angebot dar und ersetzen keine individuelle fachliche Prüfung vor Ort. Eine Haftung für die Richtigkeit, Vollständigkeit oder Wirtschaftlichkeit der berechneten Werte ist ausgeschlossen.</p>
         </Section>
       </div>
     </AppShell>
