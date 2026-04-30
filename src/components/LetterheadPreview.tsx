@@ -45,6 +45,12 @@ export function LetterheadPreview({
   const secondary = secondaryColor || DEFAULT_SECONDARY;
   const today = new Date().toLocaleDateString("de-DE");
   const [showFields, setShowFields] = useState(false);
+  // Wenn das Logo nicht ladbar ist (defektes SVG, 404, CORS-Block), fallen wir
+  // visuell auf den Initial-Fallback zurück – analog zum PDF-Renderer.
+  const [logoBroken, setLogoBroken] = useState(false);
+  useEffect(() => { setLogoBroken(false); }, [logoUrl]);
+  const showLogo = !!logoUrl && !logoBroken;
+  const initial = (companyName || "?").trim().charAt(0).toUpperCase() || "?";
 
   // LEFT: customer / recipient. Use a clearly-labelled demo if none provided.
   const hasCustomer = !!(customerName || customerAddress || customerPostalCode || customerCity);
