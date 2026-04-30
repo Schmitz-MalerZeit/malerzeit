@@ -90,13 +90,34 @@ export default function QuoteResult() {
     return true;
   };
 
+  const filename = () => `Preisvorschlag_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+  const triggerBlobDownload = (url: string) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const downloadPDF = async () => {
     setBusy(true);
     try {
+      // Reuse the preview blob if it has already been built (no extra quota cost)
+      if (previewBlobUrl) {
+        triggerBlobDownload(previewBlobUrl);
+        setPreviewFailed(false);
+        return;
+      }
       const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
       const ok = await consumeQuota();              // 2) atomically consume quota
       if (!ok) return;
-      pdf.save(`Preisvorschlag_${new Date().toISOString().slice(0, 10)}.pdf`);
+      const blob = pdf.output("blob");
+      const url = URL.createObjectURL(blob);
+      setPreviewBlobUrl(url);                       // make it reusable for preview / retry
+      triggerBlobDownload(url);
+      setPreviewFailed(false);
     } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
     finally { setBusy(false); }
   };
