@@ -161,12 +161,15 @@ export default function Pricing() {
                   {billing === "yearly" ? `Jährlich ${fmt(tier.yearly)}` : "Monatlich abgerechnet"}
                 </p>
                 <ul className="space-y-2 mb-5">
-                  {tier.features.map((f) => (
-                    <li key={f} className="flex gap-2 text-sm">
-                      <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
+                  {tier.features.map((f, i) => {
+                    const isQuotaLine = i === 0 && /KI-Angebote/i.test(f);
+                    return (
+                      <li key={f} className="flex gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                        <span className={isQuotaLine ? "font-bold text-foreground text-[15px]" : ""}>{f}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
                 <Button
                   onClick={() => buy(tier)}
