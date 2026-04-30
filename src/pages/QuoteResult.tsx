@@ -28,6 +28,9 @@ export default function QuoteResult() {
   const [previewFailed, setPreviewFailed] = useState(false);
   // Bestätigungs-Dialog vor PDF-Erstellung (zählt aufs Kontingent).
   const [confirmAction, setConfirmAction] = useState<null | "preview" | "download">(null);
+  // Dialog nach erfolgreichem PDF-Download: Versand per E-Mail / WhatsApp anbieten.
+  const [shareOpen, setShareOpen] = useState(false);
+  const [lastFilename, setLastFilename] = useState<string>("");
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
