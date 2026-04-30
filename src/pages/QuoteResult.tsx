@@ -434,14 +434,34 @@ export default function QuoteResult() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" onClick={previewPDF} disabled={busy} className="h-12">
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>PDF ansehen</>}
-          </Button>
-          <Button onClick={downloadPDF} disabled={busy} className="h-12 gradient-primary text-primary-foreground border-0">
-            <FileDown className="h-4 w-4 mr-2" /> Download
-          </Button>
-        </div>
+        {pdfAllowed ? (
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="outline" onClick={previewPDF} disabled={busy} className="h-12">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>PDF ansehen</>}
+            </Button>
+            <Button onClick={downloadPDF} disabled={busy} className="h-12 gradient-primary text-primary-foreground border-0">
+              <FileDown className="h-4 w-4 mr-2" /> Download
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Lock className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-sm mb-1">PDF-Download im Profi-Tarif</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Im Starter erhältst du den Kunden- und WhatsApp-Text zum Kopieren – perfekt für eine schnelle Antwort.
+                  Mit <strong className="text-foreground">Profi</strong> bekommst du zusätzlich ein professionelles PDF mit deinem Logo und deinen Firmenfarben.
+                </p>
+              </div>
+            </div>
+            <Button onClick={() => nav("/pricing")} className="w-full h-11 gradient-primary text-primary-foreground border-0">
+              <Sparkles className="h-4 w-4 mr-2" /> Auf Profi upgraden
+            </Button>
+          </div>
+        )}
 
         {previewFailed && (
           <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
