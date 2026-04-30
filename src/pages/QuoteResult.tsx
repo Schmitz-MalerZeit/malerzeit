@@ -469,16 +469,17 @@ export default function QuoteResult() {
     if (!guardPdfAccess()) return;
     setBusy(true);
     try {
+      const fileName = filename();
       // Reuse the preview blob if it has already been built (no extra quota cost)
-      if (previewBlobUrl) {
+      if (previewBlob && previewBlobUrl) {
         if (!pdfQuotaConsumed) {
           const ok = await consumeQuota();
           if (!ok) return;
           setPdfQuotaConsumed(true);
         }
-        triggerBlobDownload(previewBlobUrl);
+        await savePdfBlob(previewBlob, previewBlobUrl, fileName);
         setPreviewFailed(false);
-        setLastFilename(filename());
+        setLastFilename(fileName);
         // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
         // den Browser-Download nicht abbricht (insb. iOS Safari).
         setTimeout(() => setShareOpen(true), 800);
@@ -489,12 +490,12 @@ export default function QuoteResult() {
       const ok = await consumeQuota();              // 2) atomically consume quota
       if (!ok) return;
       setPdfQuotaConsumed(true);
-      const fileName = filename();
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
+      setPreviewBlob(blob);
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
       await cachePdfInSession(blob);                // persist across reloads
-      triggerBlobDownload(url, fileName);
+      await savePdfBlob(blob, url, fileName);
       setPreviewFailed(false);
       setLastFilename(fileName);
       // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
