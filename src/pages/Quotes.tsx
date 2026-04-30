@@ -43,6 +43,8 @@ function toCsv(rows: any[]): string {
       q.customer_address || "",
       q.customer_postal_code || "",
       q.customer_city || "",
+      q.customer_phone || "",
+      q.customer_email || "",
     ];
     const totalsCols = [
       q.estimated_hours ?? "",
