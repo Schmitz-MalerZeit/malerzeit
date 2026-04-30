@@ -703,7 +703,7 @@ export default function QuoteResult() {
           </div>
         )}
 
-        <Button onClick={save} disabled={busy || saved} variant={saved ? "secondary" : "default"} className="w-full h-12">
+        <Button onClick={() => save()} disabled={busy || saved} variant={saved ? "secondary" : "default"} className="w-full h-12">
           {saved ? <><Check className="h-4 w-4 mr-2" /> Gespeichert</> : <><Save className="h-4 w-4 mr-2" /> Vorschlag speichern</>}
         </Button>
       </div>
