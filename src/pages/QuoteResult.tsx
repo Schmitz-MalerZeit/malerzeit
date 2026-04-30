@@ -18,7 +18,7 @@ export default function QuoteResult() {
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
 
-  // Revoke blob URL on unmount
+  // Revoke blob URL on unmount (only the in-memory URL; the base64 cache stays in sessionStorage)
   useEffect(() => {
     return () => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); };
   }, [previewBlobUrl]);
@@ -28,6 +28,21 @@ export default function QuoteResult() {
     if (!raw) { nav("/quote/new"); return; }
     setData(JSON.parse(raw));
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => setProfile(data));
+
+    // Restore previously generated PDF from sessionStorage if available
+    const cachedB64 = sessionStorage.getItem("currentQuotePdf");
+    if (cachedB64) {
+      try {
+        const bin = atob(cachedB64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+        setPreviewBlobUrl(url);
+      } catch (e) {
+        console.warn("could not restore cached PDF", e);
+        sessionStorage.removeItem("currentQuotePdf");
+      }
+    }
   }, [nav]);
 
   if (!data) return null;
@@ -101,6 +116,25 @@ export default function QuoteResult() {
     a.remove();
   };
 
+  // Cache the freshly built PDF in sessionStorage so it survives a reload
+  // (avoids re-building and re-consuming quota).
+  const cachePdfInSession = async (blob: Blob) => {
+    try {
+      const buf = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let bin = "";
+      // Chunked to avoid call-stack overflows on large PDFs
+      const CHUNK = 0x8000;
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      }
+      sessionStorage.setItem("currentQuotePdf", btoa(bin));
+    } catch (e) {
+      // sessionStorage quota (~5MB) — caching is best-effort, no user-visible failure
+      console.warn("could not cache PDF in session", e);
+    }
+  };
+
   const downloadPDF = async () => {
     setBusy(true);
     try {
@@ -116,6 +150,7 @@ export default function QuoteResult() {
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
+      await cachePdfInSession(blob);                // persist across reloads
       triggerBlobDownload(url);
       setPreviewFailed(false);
     } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
@@ -154,6 +189,7 @@ export default function QuoteResult() {
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
       setPreviewBlobUrl(url);
+      await cachePdfInSession(blob);                // persist across reloads
       openBlob(url);
     } catch (e: any) {
       setPreviewFailed(true);
