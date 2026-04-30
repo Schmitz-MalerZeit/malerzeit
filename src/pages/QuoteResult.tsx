@@ -72,6 +72,7 @@ export default function QuoteResult() {
         name: profile?.company_name,
         contact: profile?.contact_person,
         address: profile?.address,
+        addressLine2: profile?.address_line2,
         postalCode: profile?.postal_code,
         city: profile?.city,
         phone: profile?.phone,
