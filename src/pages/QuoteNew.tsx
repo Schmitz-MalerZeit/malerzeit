@@ -162,6 +162,20 @@ export default function QuoteNew() {
                     placeholder="Musterstadt" className="h-11" />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cust_phone">Telefon <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input id="cust_phone" type="tel" value={customer.phone}
+                    onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+                    placeholder="0170 1234567" className="h-11" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cust_email">E-Mail <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input id="cust_email" type="email" value={customer.email}
+                    onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
+                    placeholder="kunde@example.de" className="h-11" />
+                </div>
+              </div>
             </div>
           </div>
 
