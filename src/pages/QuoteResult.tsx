@@ -27,6 +27,7 @@ export default function QuoteResult() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
   // Bestätigungs-Dialog vor PDF-Erstellung (zählt aufs Kontingent).
@@ -60,7 +61,9 @@ export default function QuoteResult() {
         const bin = atob(cachedB64);
         const bytes = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        setPreviewBlob(blob);
         setPreviewBlobUrl(url);
         setPdfQuotaConsumed(true);
       } catch (e) {
@@ -80,6 +83,7 @@ export default function QuoteResult() {
       URL.revokeObjectURL(previewBlobUrl);
       setPreviewBlobUrl(null);
     }
+    setPreviewBlob(null);
     setPdfQuotaConsumed(false);
   };
 
@@ -368,13 +372,62 @@ export default function QuoteResult() {
     return `Preisorientierung_${date}.pdf`;
   };
 
+  // Detects mobile browsers where the standard `<a download>` trick is unreliable
+  // (notably iOS Safari, where it silently navigates instead of saving).
+  const isMobileBrowser = (): boolean => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
+    const isAndroid = /Android/i.test(ua);
+    return isIOS || isAndroid;
+  };
+
+  // Try to share the PDF as a real file via the native Share Sheet (iOS/Android).
+  // Returns true on success, false if the API is unavailable or the user cancels.
+  const tryNativeShare = async (blob: Blob, fileName: string): Promise<boolean> => {
+    try {
+      const nav: any = navigator;
+      if (typeof nav.canShare !== "function") return false;
+      const file = new File([blob], fileName, { type: "application/pdf" });
+      if (!nav.canShare({ files: [file] })) return false;
+      await nav.share({ files: [file], title: fileName });
+      return true;
+    } catch (e: any) {
+      // AbortError = user cancelled; treat as "handled" so we don't fall back
+      if (e?.name === "AbortError") return true;
+      console.warn("native share failed", e);
+      return false;
+    }
+  };
+
   const triggerBlobDownload = (url: string, fileName = filename()) => {
     const a = document.createElement("a");
     a.href = url;
     a.download = fileName;
+    a.rel = "noopener";
+    a.target = "_self";
     document.body.appendChild(a);
     a.click();
     a.remove();
+  };
+
+  // Mobile-safe "save the PDF" flow:
+  // 1) Try native share (iOS/Android can save to Files / Drive directly)
+  // 2) Otherwise, open the PDF in a new tab so the OS preview offers "Save to Files"
+  // 3) On desktop, the standard download attribute works fine.
+  const savePdfBlob = async (blob: Blob, url: string, fileName: string): Promise<void> => {
+    if (isMobileBrowser()) {
+      const shared = await tryNativeShare(blob, fileName);
+      if (shared) return;
+      // Fallback: open in new tab. iOS Safari then shows the PDF with a share button.
+      const win = window.open(url, "_blank");
+      if (!win) {
+        // Popup blocked → last-resort same-tab navigation
+        window.location.href = url;
+      }
+      return;
+    }
+    triggerBlobDownload(url, fileName);
   };
 
   const openPendingPreviewWindow = () => {
@@ -416,16 +469,17 @@ export default function QuoteResult() {
     if (!guardPdfAccess()) return;
     setBusy(true);
     try {
+      const fileName = filename();
       // Reuse the preview blob if it has already been built (no extra quota cost)
-      if (previewBlobUrl) {
+      if (previewBlob && previewBlobUrl) {
         if (!pdfQuotaConsumed) {
           const ok = await consumeQuota();
           if (!ok) return;
           setPdfQuotaConsumed(true);
         }
-        triggerBlobDownload(previewBlobUrl);
+        await savePdfBlob(previewBlob, previewBlobUrl, fileName);
         setPreviewFailed(false);
-        setLastFilename(filename());
+        setLastFilename(fileName);
         // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
         // den Browser-Download nicht abbricht (insb. iOS Safari).
         setTimeout(() => setShareOpen(true), 800);
@@ -436,12 +490,12 @@ export default function QuoteResult() {
       const ok = await consumeQuota();              // 2) atomically consume quota
       if (!ok) return;
       setPdfQuotaConsumed(true);
-      const fileName = filename();
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
+      setPreviewBlob(blob);
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
       await cachePdfInSession(blob);                // persist across reloads
-      triggerBlobDownload(url, fileName);
+      await savePdfBlob(blob, url, fileName);
       setPreviewFailed(false);
       setLastFilename(fileName);
       // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
@@ -481,6 +535,7 @@ export default function QuoteResult() {
         const pdf = await buildPDF();
         const blob = pdf.output("blob");
         url = URL.createObjectURL(blob);
+        setPreviewBlob(blob);
         setPreviewBlobUrl(url);
       }
       // Inline-Vorschau im Dialog öffnen – kein Popup, kein neues Fenster.
@@ -743,21 +798,22 @@ export default function QuoteResult() {
               PDF ist erstellt und bereit zur Vorschau oder zum Download.
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <a
-                href={previewBlobUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPreviewOpen(true)}
+                className="h-11"
               >
                 <Eye className="h-4 w-4 mr-2" /> Vorschau öffnen
-              </a>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setConfirmAction("download")}
-                className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                disabled={busy}
+                className="h-11 gradient-primary text-primary-foreground border-0"
               >
                 <FileDown className="h-4 w-4 mr-2" /> PDF laden
-              </button>
+              </Button>
             </div>
           </div>
         )}
