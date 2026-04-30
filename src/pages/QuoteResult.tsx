@@ -102,12 +102,35 @@ export default function QuoteResult() {
   const ai = data.ai;
   const p = ai.pricing;
 
+  // Baue WhatsApp-Text deterministisch zusammen: Anrede mit Kundenname,
+  // kurzer Umfang (Leistungen), Brutto-Preis, Schlusssatz, Grußformel mit
+  // zeichnungsberechtigter Person. Wenn der Nutzer den Text manuell editiert
+  // hat, wird der editierte Text beibehalten.
+  const composeWhatsapp = (): string => {
+    const customerName = (data.customer?.name || "").trim();
+    const greeting = customerName ? `Hallo ${customerName},` : "Hallo,";
+    const intro = "vielen Dank für deine Anfrage. Hier eine unverbindliche Preisorientierung für die geplanten Arbeiten:";
+    const items = (ai.line_items || [])
+      .filter((s: string) => s && s.trim())
+      .map((s: string) => `• ${s.trim()}`)
+      .join("\n");
+    const price = `Gesamtpreis (brutto): ${fmt(p.gross_amount)}`;
+    const closing = (settings?.closing_text || "Sofern sich diese Preisorientierung in deinem Rahmen bewegt, erstellen wir dir gerne ein verbindliches schriftliches Angebot.").trim();
+    const sigName = (profile?.signatory_name || profile?.contact_person || profile?.company_name || "").trim();
+    const signature = sigName ? `Viele Grüße\n${sigName}` : "Viele Grüße";
+    return [greeting, "", intro, "", items, "", price, "", closing, "", signature]
+      .filter((l) => l !== undefined)
+      .join("\n");
+  };
+
+  const whatsappDisplay = ai.whatsapp_edited ? (ai.whatsapp_text || "") : composeWhatsapp();
+
   const copyText = async () => {
     await navigator.clipboard.writeText(ai.customer_text);
     toast.success("Kundentext kopiert");
   };
   const copyWA = async () => {
-    await navigator.clipboard.writeText(ai.whatsapp_text);
+    await navigator.clipboard.writeText(whatsappDisplay);
     toast.success("WhatsApp-Text kopiert");
   };
 
