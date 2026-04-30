@@ -99,19 +99,21 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     : [];
 
   const companyCity = [d.company.postalCode, d.company.city].filter(Boolean).join(" ");
-  // Header line of the sender block: prefer the human contact (e.g. "Anna Müller").
-  // If no contact person is set (typical for GmbHs / single-line companies), fall back
-  // to the company name so the block never starts with a bare street.
-  const senderHeader = d.company.contact || d.company.name;
+  // Sender block under the colored header band. The company name is already shown
+  // big inside the header band, so we never repeat it here. If a contact person is
+  // set we list them as the first line ("Ansprechpartner: …" style); otherwise we
+  // start straight with the postal address — relevant for GmbHs / single-line
+  // businesses where there is no individual contact.
   const right: { label: string; value: string }[] = [
-    ...(senderHeader        ? [{ label: "",      value: senderHeader }]        : []),
-    ...(d.company.address   ? [{ label: "",      value: d.company.address }]   : []),
-    ...(d.company.addressLine2 ? [{ label: "",   value: d.company.addressLine2 }] : []),
-    ...(companyCity         ? [{ label: "",      value: companyCity }]         : []),
-    ...(d.company.phone     ? [{ label: "Tel.",  value: d.company.phone }]     : []),
-    ...(d.company.email     ? [{ label: "E-Mail", value: d.company.email }]    : []),
-    ...(d.company.website   ? [{ label: "Web",   value: d.company.website }]   : []),
+    ...(d.company.contact      ? [{ label: "",      value: d.company.contact }]      : []),
+    ...(d.company.address      ? [{ label: "",      value: d.company.address }]      : []),
+    ...(d.company.addressLine2 ? [{ label: "",      value: d.company.addressLine2 }] : []),
+    ...(companyCity            ? [{ label: "",      value: companyCity }]            : []),
+    ...(d.company.phone        ? [{ label: "Tel.",  value: d.company.phone }]        : []),
+    ...(d.company.email        ? [{ label: "E-Mail", value: d.company.email }]       : []),
+    ...(d.company.website      ? [{ label: "Web",   value: d.company.website }]      : []),
   ];
+
 
   if (left.length || right.length) {
     const colGap   = 6;

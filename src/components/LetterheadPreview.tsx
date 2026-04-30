@@ -49,18 +49,19 @@ export function LetterheadPreview({
     : ["Max Mustermann", "Musterstraße 12", "12345 Musterstadt"];
   const isDemoCustomer = !hasCustomer;
 
-  // RIGHT: sender (own company). Header line = contact person, falls back to the
-  // company name (relevant for GmbHs etc. where there's no single contact person).
-  const senderHeader = contact || companyName;
+  // RIGHT: sender (own company). The company name lives in the colored header band
+  // above, so we never repeat it inside the sender block. Contact person (if any)
+  // becomes the first line; otherwise we start straight with the postal address —
+  // the natural case for GmbHs / single-line businesses without a personal contact.
   const companyCityLine = [postalCode, city].filter(Boolean).join(" ");
   const rightRows: { label: string; value: string }[] = [
-    ...(senderHeader     ? [{ label: "",      value: senderHeader }]     : []),
-    ...(address          ? [{ label: "",      value: address }]          : []),
-    ...(addressLine2     ? [{ label: "",      value: addressLine2 }]     : []),
-    ...(companyCityLine  ? [{ label: "",      value: companyCityLine }]  : []),
-    ...(phone            ? [{ label: "Tel.",  value: phone }]            : []),
-    ...(email            ? [{ label: "E-Mail", value: email }]           : []),
-    ...(website          ? [{ label: "Web",   value: website }]          : []),
+    ...(contact         ? [{ label: "",      value: contact }]         : []),
+    ...(address         ? [{ label: "",      value: address }]         : []),
+    ...(addressLine2    ? [{ label: "",      value: addressLine2 }]    : []),
+    ...(companyCityLine ? [{ label: "",      value: companyCityLine }] : []),
+    ...(phone           ? [{ label: "Tel.",  value: phone }]           : []),
+    ...(email           ? [{ label: "E-Mail", value: email }]          : []),
+    ...(website         ? [{ label: "Web",   value: website }]         : []),
   ];
 
   return (
