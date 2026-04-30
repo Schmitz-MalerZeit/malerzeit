@@ -282,6 +282,7 @@ export type Database = {
     Functions: {
       consume_pdf_quota: { Args: never; Returns: Json }
       get_pdf_limit: { Args: { price_id: string }; Returns: number }
+      get_trial_status: { Args: never; Returns: Json }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
