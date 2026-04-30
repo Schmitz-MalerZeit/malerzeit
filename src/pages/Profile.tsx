@@ -7,6 +7,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Upload, ImageIcon } from "lucide-react";
 import { extractDominantColors } from "@/lib/colorExtractor";
+import { VoiceInput } from "@/components/VoiceInput";
+
+const VOICE_FIELDS = new Set(["company_name", "contact_person", "address", "city"]);
+const appendText = (prev: string, add: string) =>
+  prev.trim().length === 0 ? add : `${prev.replace(/\s+$/, "")} ${add}`;
 
 const FIELDS: { k: string; l: string; type?: string }[] = [
   { k: "company_name", l: "Firma" },
@@ -107,7 +112,15 @@ export default function Profile() {
           {FIELDS.map(({ k, l, type }) => (
             <div key={k} className="space-y-1.5">
               <Label htmlFor={k}>{l}</Label>
-              <Input id={k} type={type || "text"} value={p[k] || ""} onChange={(e) => setP({ ...p, [k]: e.target.value })} className="h-11" />
+              <div className="flex gap-2">
+                <Input id={k} type={type || "text"} value={p[k] || ""}
+                  onChange={(e) => setP({ ...p, [k]: e.target.value })}
+                  className="h-11 flex-1" />
+                {VOICE_FIELDS.has(k) && (
+                  <VoiceInput size="md" label={`${l} diktieren`}
+                    onTranscript={(t) => setP((prev) => ({ ...prev, [k]: appendText(prev[k] || "", t) }))} />
+                )}
+              </div>
             </div>
           ))}
         </div>
