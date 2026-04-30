@@ -37,9 +37,9 @@
   "home": {
     "greetingPersonal": "Guten Tag, {{name}}",
     "greetingFallback": "Guten Tag",
-    "tagline": "Erstelle in wenigen Minuten einen professionellen Preisvorschlag.",
+    "tagline": "Erstelle in wenigen Minuten eine professionelle Preisorientierung.",
     "badgeAi": "KI-gestützt",
-    "ctaNew": "Preisvorschlag erstellen",
+    "ctaNew": "Preisorientierung erstellen",
     "ctaNewSub": "Beschreibung eingeben – KI strukturiert & kalkuliert",
     "ctaQuotes": "Gespeicherte Vorschläge",
     "ctaQuotesSub": "Frühere Kalkulationen ansehen",

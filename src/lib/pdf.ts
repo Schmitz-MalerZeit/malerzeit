@@ -166,11 +166,11 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
 
   y = recYStart + 28;
 
-  // ───────── Titel "Preisvorschlag" ─────────
+  // ───────── Titel "Unverbindliche Preisorientierung" ─────────
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
   doc.setTextColor(primary[0], primary[1], primary[2]);
-  doc.text("Preisvorschlag", margin, y);
+  doc.text("Unverbindliche Preisorientierung", margin, y);
   y += 10;
 
   // ───────── Anrede ─────────
@@ -185,7 +185,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.text(salutation, margin, y);
   y += 5;
   doc.text(
-    "vielen Dank für Ihre Anfrage. Gerne unterbreiten wir Ihnen folgenden unverbindlichen Preisvorschlag:",
+    "vielen Dank für Ihre Anfrage. Gerne geben wir Ihnen nachfolgend eine unverbindliche Preisorientierung für die geplanten Arbeiten:",
     margin, y, { maxWidth: pageW - margin * 2 }
   );
   y += 10;
@@ -253,7 +253,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setFontSize(10);
   doc.setTextColor(60, 60, 60);
   doc.text(
-    `Dieser Preisvorschlag ist ${validityDays} Tage ab Angebotsdatum gültig.`,
+    `Diese Preisorientierung ist ${validityDays} Tage ab Angebotsdatum gültig.`,
     margin, y,
   );
   y += 10;

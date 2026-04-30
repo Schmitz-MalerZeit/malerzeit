@@ -27,7 +27,7 @@ export default function Settings() {
     quality_level: "standard",
     vat_rate: 19,
     quote_validity_days: 14,
-    closing_text: "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
+    closing_text: "Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.",
   });
   const [rates, setRates] = useState<Rate[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
@@ -43,7 +43,7 @@ export default function Settings() {
         quality_level: settings.quality_level,
         vat_rate: Number(settings.vat_rate),
         quote_validity_days: Number((settings as any).quote_validity_days ?? 14),
-        closing_text: (settings as any).closing_text ?? "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
+        closing_text: (settings as any).closing_text ?? "Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.",
       });
       setRates((hr || []).map((r: any) => ({
         id: r.id, label: r.label, rate: Number(r.rate),
@@ -216,12 +216,12 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Preisvorschlag-Texte */}
+        {/* Preisorientierung-Texte */}
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft space-y-5">
           <div>
-            <h2 className="font-semibold">Preisvorschlag</h2>
+            <h2 className="font-semibold">Preisorientierung</h2>
             <p className="text-xs text-muted-foreground mt-1">
-              Diese Angaben erscheinen unten auf jedem PDF-Preisvorschlag.
+              Diese Angaben erscheinen unten auf jeder PDF-Preisorientierung.
             </p>
           </div>
 
@@ -234,7 +234,7 @@ export default function Settings() {
               className="h-11"
             />
             <p className="text-[11px] text-muted-foreground">
-              Wird als „Dieser Preisvorschlag ist X Tage ab Angebotsdatum gültig." angezeigt.
+              Wird als „Diese Preisorientierung ist X Tage ab Angebotsdatum gültig." angezeigt.
             </p>
           </div>
 
@@ -244,7 +244,7 @@ export default function Settings() {
               id="closing" rows={3}
               value={s.closing_text}
               onChange={(e) => setS({ ...s, closing_text: e.target.value })}
-              placeholder="Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage."
+              placeholder="Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot."
             />
             <p className="text-[11px] text-muted-foreground">
               Wird unter der Grußformel in kleinerer Schrift gezeigt.

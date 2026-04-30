@@ -268,26 +268,26 @@ export default function QuoteResult() {
     const date = new Date().toISOString().slice(0, 10);
 
     const customerSlug = slugify(data.customer?.name || "");
-    if (customerSlug) return `Preisvorschlag_${customerSlug}_${date}.pdf`;
+    if (customerSlug) return `Preisorientierung_${customerSlug}_${date}.pdf`;
 
     // 1) Prefer the first AI-curated line item (already concise & relevant)
     const firstLine: string | undefined = ai?.line_items?.[0];
     if (firstLine) {
       const lineSlug = slugify(topKeywords(firstLine, 5));
-      if (lineSlug) return `Preisvorschlag_${lineSlug}_${date}.pdf`;
+      if (lineSlug) return `Preisorientierung_${lineSlug}_${date}.pdf`;
     }
 
     // 2) Fallback: keywords from the "Arbeiten" block of the description
     const workBlock = extractWorkBlock(data.description || "");
     const workSlug = slugify(topKeywords(workBlock, 5));
-    if (workSlug) return `Preisvorschlag_${workSlug}_${date}.pdf`;
+    if (workSlug) return `Preisorientierung_${workSlug}_${date}.pdf`;
 
     // 3) Last resort: first ~6 words of the raw description
     const firstWords = (data.description || "").split(/\s+/).slice(0, 6).join(" ");
     const descSlug = slugify(firstWords);
-    if (descSlug) return `Preisvorschlag_${descSlug}_${date}.pdf`;
+    if (descSlug) return `Preisorientierung_${descSlug}_${date}.pdf`;
 
-    return `Preisvorschlag_${date}.pdf`;
+    return `Preisorientierung_${date}.pdf`;
   };
 
   const triggerBlobDownload = (url: string) => {
@@ -424,7 +424,7 @@ export default function QuoteResult() {
     finally { setBusy(false); }
   };
 
-  const headerTitle = data.customer?.name?.trim() || "Preisvorschlag";
+  const headerTitle = data.customer?.name?.trim() || "Preisorientierung";
 
   return (
     <AppShell title={headerTitle}>

@@ -169,8 +169,8 @@ export function LetterheadPreview({
           </div>
 
           {/* Titel */}
-          <div className="mt-4 text-base font-bold" style={{ color: primary }}>
-            Preisvorschlag
+          <div className="mt-4 text-base font-bold leading-tight" style={{ color: primary }}>
+            Unverbindliche Preisorientierung
           </div>
 
           {/* Leistungs-Skelett */}
