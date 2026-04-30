@@ -46,7 +46,14 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    const userPrompt = `Beschreibung des Nutzers (enthält Arbeiten, Personal/Stunden/Stundenlohn und Materialaufwand):
+    const ratesList = (body.hourlyRates && body.hourlyRates.length > 0)
+      ? body.hourlyRates.map(r => `- ${r.label}: ${r.rate} €/Std${r.is_default ? " (Standard)" : ""}`).join("\n")
+      : "- (keine hinterlegt – nutze branchenüblichen Standard ~55 €/Std)";
+
+    const userPrompt = `Hinterlegte Stundensätze des Betriebs (IMMER diese verwenden, niemals nachfragen):
+${ratesList}
+
+Beschreibung des Nutzers (Arbeiten, Personal mit Stunden, Materialaufwand):
 ${body.description}
 
 ${body.answers && Object.keys(body.answers).length > 0
@@ -55,7 +62,7 @@ ${body.answers && Object.keys(body.answers).length > 0
 
 Materialaufschlag: ${body.materialMarkup}%
 Qualitätsniveau: ${body.qualityLevel}
-Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen erlaubt" : "Finalisierung - keine Rückfragen mehr, fertige Kalkulation"}`;
+Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfang/Material erlaubt, NIEMALS zu Stundenlöhnen" : "Finalisierung - keine Rückfragen mehr"}`;
 
     const tools = [{
       type: "function",
