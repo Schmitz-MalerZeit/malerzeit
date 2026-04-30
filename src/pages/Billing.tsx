@@ -1,12 +1,35 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, CreditCard, Sparkles, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { Loader2, ExternalLink, CreditCard, Sparkles, AlertCircle, FileText, Receipt } from "lucide-react";
+
+interface Tx {
+  id: string;
+  status: string;
+  created_at: string;
+  billed_at: string | null;
+  amount: number;
+  currency: string;
+  invoice_url: string | null;
+  environment: "sandbox" | "live";
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  completed: "Bezahlt",
+  paid: "Bezahlt",
+  billed: "Offen",
+  ready: "Ausstehend",
+  past_due: "Überfällig",
+  canceled: "Storniert",
+};
+
+const fmtAmount = (n: number, c: string) =>
+  n.toLocaleString("de-DE", { style: "currency", currency: c || "EUR" });
+const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("de-DE");
 
 const PLAN_NAMES: Record<string, string> = {
   starter_plan: "Starter", profi_plan: "Profi", profiplus_plan: "Profi+",
