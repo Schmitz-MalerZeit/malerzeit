@@ -105,16 +105,52 @@ export default function QuoteResult() {
     return true;
   };
 
-  const slugify = (s: string, maxLen = 50): string => {
+  const slugify = (input: string, maxLen = 50): string => {
+    if (!input) return "";
+
+    // 1) Pre-map common multi-character substitutions BEFORE diacritic stripping.
+    //    German convention: ä→ae, ö→oe, ü→ue, ß→ss. Also handle Nordic/East-Euro letters
+    //    that NFD doesn't split (æ, œ, ø, ð, þ, ł).
+    const charMap: Record<string, string> = {
+      "ä": "ae", "ö": "oe", "ü": "ue", "Ä": "Ae", "Ö": "Oe", "Ü": "Ue",
+      "ß": "ss", "ẞ": "SS",
+      "æ": "ae", "Æ": "Ae", "œ": "oe", "Œ": "Oe",
+      "ø": "o",  "Ø": "O",  "ð": "d",  "Ð": "D",
+      "þ": "th", "Þ": "Th", "ł": "l",  "Ł": "L",
+      "ñ": "n",  "Ñ": "N",
+    };
+    let s = input.replace(/[äöüÄÖÜßẞæÆœŒøØðÐþÞłŁñÑ]/g, (c) => charMap[c] ?? c);
+
+    // 2) Symbol/punctuation map — replace with words rather than dropping silently
+    const symbolMap: Record<string, string> = {
+      "&": " und ", "+": " plus ", "@": " at ", "%": " prozent ",
+      "€": " eur ", "$": " usd ", "£": " gbp ",
+      "/": " ", "\\": " ", "|": " ",
+    };
+    s = s.replace(/[&+@%€$£/\\|]/g, (c) => symbolMap[c] ?? " ");
+
+    // 3) Strip remaining diacritics (NFD splits e.g. é → e + ´, then we drop the mark)
+    s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    // 4) Anything not ASCII letter/digit/space/dash/underscore becomes a space.
+    //    This is what makes non-Latin scripts (CJK, Cyrillic, Arabic, …) collapse
+    //    cleanly into separators rather than producing garbled output.
+    s = s.replace(/[^A-Za-z0-9 _-]+/g, " ");
+
+    // 5) Normalize whitespace and dashes → single underscore separator
+    s = s.replace(/[-\s_]+/g, "_").replace(/^_+|_+$/g, "");
+
     if (!s) return "";
-    return s
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip diacritics
-      .replace(/ß/gi, "ss")
-      .replace(/[^a-zA-Z0-9\s-]/g, " ")                 // drop punctuation
-      .trim()
-      .split(/\s+/).join("_")
-      .slice(0, maxLen)
-      .replace(/_+$/g, "");
+
+    // 6) Length cap on a word boundary (avoid mid-word truncation)
+    if (s.length > maxLen) {
+      const cut = s.slice(0, maxLen);
+      const lastSep = cut.lastIndexOf("_");
+      s = lastSep > maxLen * 0.5 ? cut.slice(0, lastSep) : cut;
+      s = s.replace(/_+$/g, "");
+    }
+
+    return s;
   };
 
   // German + numeric/unit stop words that don't help identify a project
