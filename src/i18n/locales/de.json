@@ -1,0 +1,63 @@
+{
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "loading": "Lädt …",
+    "logout": "Abmelden",
+    "language": "Sprache"
+  },
+  "nav": {
+    "home": "Start",
+    "newQuote": "Neuer Vorschlag",
+    "quotes": "Vorschläge",
+    "profile": "Profil",
+    "settings": "Einstellungen",
+    "legal": "Rechtliches"
+  },
+  "auth": {
+    "title": "Willkommen",
+    "subtitle": "Melden Sie sich an, um Preisvorschläge zu erstellen.",
+    "tabSignIn": "Anmelden",
+    "tabSignUp": "Registrieren",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "signIn": "Anmelden",
+    "signUp": "Konto erstellen",
+    "continueWith": "oder",
+    "google": "Mit Google fortfahren",
+    "apple": "Mit Apple fortfahren",
+    "appleSoon": "Apple-Anmeldung folgt in Kürze.",
+    "signupSuccess": "Konto erstellt – bitte E-Mail bestätigen.",
+    "signinSuccess": "Erfolgreich angemeldet."
+  },
+  "home": {
+    "greeting": "Hallo",
+    "tagline": "Erstellen Sie in wenigen Minuten einen professionellen Preisvorschlag.",
+    "ctaNew": "Neuer Preisvorschlag",
+    "ctaQuotes": "Meine Vorschläge",
+    "ctaProfile": "Firmenprofil",
+    "ctaSettings": "Einstellungen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "ratesHeading": "Stundensätze (netto)",
+    "ratesHelp": "Markieren Sie den Standard-Satz mit dem Stern. Dieser wird verwendet, wenn Sie keinen anderen wählen.",
+    "addRate": "Stundensatz hinzufügen",
+    "ratePlaceholder": "Bezeichnung (z. B. Maler Geselle)",
+    "markup": "Materialaufschlag (%)",
+    "vat": "Mehrwertsteuersatz (%)",
+    "quality": "Qualitätsniveau",
+    "qualityStandard": "Standard",
+    "qualityHigh": "Hochwertig",
+    "qualityPremium": "Premium",
+    "saved": "Einstellungen gespeichert",
+    "atLeastOneRate": "Mindestens ein Stundensatz erforderlich"
+  },
+  "language": {
+    "de": "Deutsch",
+    "en": "English"
+  }
+}

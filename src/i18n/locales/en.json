@@ -1,0 +1,63 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading …",
+    "logout": "Sign out",
+    "language": "Language"
+  },
+  "nav": {
+    "home": "Home",
+    "newQuote": "New quote",
+    "quotes": "Quotes",
+    "profile": "Profile",
+    "settings": "Settings",
+    "legal": "Legal"
+  },
+  "auth": {
+    "title": "Welcome",
+    "subtitle": "Sign in to create price quotes.",
+    "tabSignIn": "Sign in",
+    "tabSignUp": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "continueWith": "or",
+    "google": "Continue with Google",
+    "apple": "Continue with Apple",
+    "appleSoon": "Apple sign-in coming soon.",
+    "signupSuccess": "Account created – please confirm your email.",
+    "signinSuccess": "Signed in successfully."
+  },
+  "home": {
+    "greeting": "Hello",
+    "tagline": "Create a professional price quote in just a few minutes.",
+    "ctaNew": "New price quote",
+    "ctaQuotes": "My quotes",
+    "ctaProfile": "Company profile",
+    "ctaSettings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "ratesHeading": "Hourly rates (net)",
+    "ratesHelp": "Mark the default rate with the star. It is used whenever you don't pick another one.",
+    "addRate": "Add hourly rate",
+    "ratePlaceholder": "Label (e.g. Journeyman painter)",
+    "markup": "Material markup (%)",
+    "vat": "VAT rate (%)",
+    "quality": "Quality level",
+    "qualityStandard": "Standard",
+    "qualityHigh": "High quality",
+    "qualityPremium": "Premium",
+    "saved": "Settings saved",
+    "atLeastOneRate": "At least one hourly rate is required"
+  },
+  "language": {
+    "de": "Deutsch",
+    "en": "English"
+  }
+}
