@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles } from "lucide-react";
-import { buildQuotePDF, urlToDataUrl } from "@/lib/pdf";
+import { buildQuotePDF, urlToDataUrl, getImageNaturalSize } from "@/lib/pdf";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 
@@ -66,7 +66,11 @@ export default function QuoteResult() {
 
   const buildPDF = async () => {
     let logoDataUrl: string | undefined;
-    if (logoAllowed && profile?.logo_url) logoDataUrl = await urlToDataUrl(profile.logo_url);
+    let logoSize: { width: number; height: number } | undefined;
+    if (logoAllowed && profile?.logo_url) {
+      logoDataUrl = await urlToDataUrl(profile.logo_url);
+      if (logoDataUrl) logoSize = await getImageNaturalSize(logoDataUrl);
+    }
     return buildQuotePDF({
       company: {
         name: profile?.company_name,
@@ -79,6 +83,8 @@ export default function QuoteResult() {
         email: profile?.email,
         website: profile?.website,
         logoDataUrl,
+        logoNaturalWidth: logoSize?.width,
+        logoNaturalHeight: logoSize?.height,
         primaryColor: logoAllowed ? profile?.logo_primary_color : undefined,
         secondaryColor: logoAllowed ? profile?.logo_secondary_color : undefined,
       },
