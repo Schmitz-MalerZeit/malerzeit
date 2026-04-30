@@ -32,6 +32,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const subState = useSubscription();
+  const tier = getTier(subState);
+  const showPdfPreview = canUseLogoInPdf(tier);
   const [p, setP] = useState<Record<string, string>>({
     company_name: "", contact_person: "", address: "", postal_code: "", city: "",
     phone: "", email: "", website: "", vat_id: "",
