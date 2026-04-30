@@ -44,7 +44,7 @@ Je präziser deine Angaben, desto genauer die Kalkulation.`;
 export default function QuoteNew() {
   const nav = useNavigate();
   const [description, setDescription] = useState("");
-  const [customer, setCustomer] = useState({ name: "", address: "", postal_code: "", city: "" });
+  const [customer, setCustomer] = useState({ name: "", address: "", postal_code: "", city: "", phone: "", email: "" });
   const [step, setStep] = useState<"input" | "questions" | "loading">("input");
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
