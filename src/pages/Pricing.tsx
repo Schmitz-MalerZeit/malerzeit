@@ -151,6 +151,7 @@ export default function Pricing() {
                   <h3 className="font-bold text-lg">{tier.name}</h3>
                   {tier.highlight && <span className="text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">Empfohlen</span>}
                 </div>
+                <p className="text-xs text-muted-foreground mb-3">{tier.tagline}</p>
                 <div className="flex items-baseline gap-1 mb-1">
                   <span className="text-3xl font-bold">{fmt(price)}</span>
                   <span className="text-sm text-muted-foreground">/Monat</span>
