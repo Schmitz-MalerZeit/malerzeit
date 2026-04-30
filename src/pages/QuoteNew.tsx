@@ -140,21 +140,63 @@ export default function QuoteNew() {
     return true;
   };
 
+  // Direct fetch with longer client-side patience than supabase-js default.
+  // The AI call can take 20-40s; iOS Safari otherwise drops the connection.
+  const invokeGenerateQuote = async (mode: "analyze" | "finalize"): Promise<AIResp> => {
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess?.session?.access_token;
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-quote`;
+    const payload = {
+      description, answers, mode,
+      materialMarkup: settings.material_markup,
+      qualityLevel: settings.quality_level,
+      vatRate: settings.vat_rate,
+      hourlyRates,
+    };
+
+    const attempt = async (): Promise<AIResp> => {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 75_000); // 75s hard cap
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(payload),
+          signal: ctrl.signal,
+          keepalive: false,
+        });
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "");
+          throw new Error(`HTTP ${res.status}: ${txt || res.statusText}`);
+        }
+        return (await res.json()) as AIResp;
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+
+    // One automatic retry for transient mobile network drops ("Load failed", AbortError, TypeError).
+    try {
+      return await attempt();
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      const transient = /load failed|network|fetch|aborted|failed to fetch|timeout/i.test(msg)
+        || e?.name === "AbortError" || e?.name === "TypeError";
+      if (!transient) throw e;
+      await new Promise((r) => setTimeout(r, 600));
+      return await attempt();
+    }
+  };
+
   const callAI = async (mode: "analyze" | "finalize") => {
     if (mode === "analyze" && !preflightLimit()) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-quote", {
-        body: {
-          description, answers, mode,
-          materialMarkup: settings.material_markup,
-          qualityLevel: settings.quality_level,
-          vatRate: settings.vat_rate,
-          hourlyRates,
-        },
-      });
-      if (error) throw error;
-      const resp = data as AIResp;
+      const resp = await invokeGenerateQuote(mode);
 
       if (resp.needs_clarification && resp.clarifying_questions?.length && mode === "analyze") {
         setQuestions(resp.clarifying_questions);
@@ -167,7 +209,12 @@ export default function QuoteNew() {
         nav("/quote/result");
       }
     } catch (err: any) {
-      toast.error(err.message || "Fehler bei der KI-Analyse");
+      const msg = String(err?.message || "");
+      if (/load failed|failed to fetch|aborted|network/i.test(msg)) {
+        toast.error("Verbindung zur KI unterbrochen. Bitte Internet prüfen und erneut versuchen.");
+      } else {
+        toast.error(msg || "Fehler bei der KI-Analyse");
+      }
     } finally { setLoading(false); }
   };
 
