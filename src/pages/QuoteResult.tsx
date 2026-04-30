@@ -439,18 +439,18 @@ export default function QuoteResult() {
     if (!guardPdfAccess()) return;
     setBusy(true);
     try {
-      // Reuse already-built PDF if available (avoid double quota consumption)
-      if (previewBlobUrl) {
-        openBlob(previewBlobUrl);
-        return;
+      // Vorschau ist KOSTENLOS (kein Quota-Verbrauch). Erst der Download
+      // zählt aufs Kontingent. So kann ein blockiertes Popup niemals
+      // Kontingent verbrennen.
+      let url = previewBlobUrl;
+      if (!url) {
+        const pdf = await buildPDF();
+        const blob = pdf.output("blob");
+        url = URL.createObjectURL(blob);
+        setPreviewBlobUrl(url);
+        // Bewusst NICHT in sessionStorage cachen – die Vorschau ist nur
+        // temporär. Erst beim tatsächlichen Download wird gecached.
       }
-      const pdf = await buildPDF();
-      const ok = await consumeQuota();
-      if (!ok) return;
-      const blob = pdf.output("blob");
-      const url = URL.createObjectURL(blob);
-      setPreviewBlobUrl(url);
-      await cachePdfInSession(blob);                // persist across reloads
       openBlob(url);
     } catch (e: any) {
       setPreviewFailed(true);
