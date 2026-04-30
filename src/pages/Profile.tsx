@@ -128,9 +128,12 @@ export default function Profile() {
               <LetterheadPreview
                 companyName={p.company_name}
                 contact={p.contact_person}
-                address={[p.address, [p.postal_code, p.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")}
+                address={p.address}
+                postalCode={p.postal_code}
+                city={p.city}
                 phone={p.phone}
                 email={p.email}
+                website={p.website}
                 logoUrl={p.logo_url}
                 primaryColor={p.logo_primary_color}
                 secondaryColor={p.logo_secondary_color}
