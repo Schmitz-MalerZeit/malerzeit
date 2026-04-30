@@ -125,7 +125,9 @@ export function LetterheadPreview({
                 )}
                 {rightRows.map((row, i) => (
                   <div key={i} className="text-[9px] text-neutral-700 truncate flex gap-1.5">
-                    <span className="text-neutral-400 w-8 shrink-0">{row.label}</span>
+                    {row.label
+                      ? <span className="text-neutral-400 w-8 shrink-0">{row.label}</span>
+                      : <span className="w-8 shrink-0" aria-hidden />}
                     <span className="truncate">{row.value}</span>
                   </div>
                 ))}
