@@ -5,6 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface HourlyRate { label: string; rate: number; is_default?: boolean }
 interface Body {
   description: string;
   answers?: Record<string, string>;
@@ -12,22 +13,29 @@ interface Body {
   qualityLevel: string;
   vatRate: number;
   mode: "analyze" | "finalize";
+  hourlyRates?: HourlyRate[];
 }
 
 const SYSTEM = `Du bist ein erfahrener Kalkulator für Malerbetriebe in Deutschland.
-Der Nutzer liefert in seiner Beschreibung üblicherweise drei Blöcke:
+Der Nutzer liefert in seiner Beschreibung üblicherweise:
 1) Arbeiten / Leistungsumfang
-2) Eingesetztes Personal mit Stunden und Stundenlohn (z. B. "Geselle 12 Std à 55 €", "Lehrling 8 Std à 28 €")
+2) Eingesetztes Personal mit Stunden (z. B. "Maler-Geselle 12 Std", "Azubi 2. Lehrjahr 6 Std")
 3) Geschätzten Materialaufwand in Euro netto
+
+WICHTIG – Stundenlöhne:
+- Die hinterlegten Stundensätze des Nutzers werden dir im Prompt mitgegeben (Liste mit Bezeichnung + €/Std).
+- Ordne jeder genannten Person automatisch den passenden hinterlegten Stundensatz zu (z. B. "Geselle" → "Maler Geselle"-Satz; "Azubi 2. LJ" → passender Lehrlings-Satz; sonst der als Standard markierte Satz).
+- Frage NIEMALS nach Stundenlöhnen / Stundensätzen – diese sind IMMER aus den hinterlegten Sätzen zu nehmen.
+- Wenn keine passende Bezeichnung existiert: nutze den Standard-Satz.
 
 Deine Aufgabe:
 - Erzeuge professionelle Leistungsstichpunkte (handwerklich korrekt, z. B. "Wandflächen Q3 spachteln", "Glattvlies einarbeiten").
-- Berechne den Lohnanteil als Summe aller (Stunden × Stundenlohn) der genannten Personen.
+- Berechne den Lohnanteil als Summe aller (Stunden × zugeordneter Stundenlohn).
 - Übernimm die Gesamtstunden (Summe aller Stunden) als estimated_hours.
 - Übernimm die Materialkosten (netto, vor Aufschlag) als estimated_material_cost.
 - Übernimm die Lohnkosten (Summe Stunden × Stundenlohn) als estimated_labor_cost.
-- Wenn Stunden oder Stundenlöhne fehlen: schätze konservativ-realistisch auf Basis branchenüblicher Werte.
-- Rückfragen NUR wenn wirklich nötig (max. 4). Wenn genug Info da ist, keine Rückfragen.
+- Wenn Stunden fehlen: schätze konservativ-realistisch.
+- Rückfragen NUR zu Arbeitsumfang/Material – NIEMALS zu Stundenlöhnen. Max. 4 Rückfragen, nur wenn wirklich nötig.
 - Antworten ausschließlich auf Deutsch.`;
 
 serve(async (req) => {
