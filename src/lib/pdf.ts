@@ -52,11 +52,10 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setFillColor(primary[0], primary[1], primary[2]);
   doc.rect(0, 0, pageW, 38, "F");
 
-  // Logo: weiße Karte hinter dem Logo, damit Transparenz erhalten bleibt
-  // und das Original-Logo (Farben/Form) nicht vom farbigen Header-Band überdeckt wird.
+  // Logo: 1:1 wie hochgeladen – kein weißer Hintergrund, Transparenz bleibt erhalten.
+  // Das Logo wird direkt auf das Header-Band gesetzt, damit es wirkt wie in der Originaldatei.
   if (d.company.logoDataUrl) {
     try {
-      // Format aus Data-URL bzw. URL-Endung ableiten – sonst rendert jsPDF falsch.
       const src = d.company.logoDataUrl;
       let fmt: "PNG" | "JPEG" | "WEBP" = "PNG";
       const m = /^data:image\/(png|jpe?g|webp)/i.exec(src);
@@ -66,12 +65,8 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
       } else if (/\.(jpe?g)(\?|$)/i.test(src)) fmt = "JPEG";
       else if (/\.webp(\?|$)/i.test(src))      fmt = "WEBP";
 
-      // Weiße Logo-Karte (entspricht der Preview) – mit kleinem Padding,
-      // damit das Logo "wie hochgeladen" sichtbar bleibt, auch bei Transparenz.
-      const cardX = margin, cardY = 7, cardW = 26, cardH = 24, pad = 1.5;
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(cardX, cardY, cardW, cardH, 1.5, 1.5, "F");
-      doc.addImage(src, fmt, cardX + pad, cardY + pad, cardW - 2 * pad, cardH - 2 * pad, undefined, "FAST");
+      // Logo direkt platzieren – ohne Karte/Hintergrund.
+      doc.addImage(src, fmt, margin, 8, 24, 22, undefined, "FAST");
     } catch {/* ignore */}
   }
 
