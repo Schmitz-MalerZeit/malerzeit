@@ -741,10 +741,10 @@ export default function QuoteResult() {
       </AlertDialog>
 
       <AlertDialog open={shareOpen} onOpenChange={setShareOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="text-center">
           <AlertDialogHeader>
-            <AlertDialogTitle>PDF an deinen Kunden senden?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-center">PDF an deinen Kunden senden?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
               Das PDF wurde heruntergeladen. Du kannst es jetzt direkt an{" "}
               {data.customer?.name ? <strong>{data.customer.name}</strong> : "deinen Kunden"} senden.
               Das PDF musst du nach dem Öffnen aus deinem Download-Ordner anhängen.
@@ -755,29 +755,33 @@ export default function QuoteResult() {
               type="button"
               onClick={sendViaEmail}
               disabled={!customerEmail}
-              className="h-12 w-full justify-start"
+              className="min-h-12 h-auto w-full justify-center whitespace-normal text-center py-2 px-3 leading-snug"
               variant="outline"
             >
-              <Mail className="h-4 w-4 mr-2" />
-              {customerEmail ? `Per E-Mail an ${customerEmail}` : "Per E-Mail senden (keine E-Mail-Adresse hinterlegt)"}
+              <Mail className="h-4 w-4 mr-2 shrink-0" />
+              <span className="break-words">
+                {customerEmail ? `Per E-Mail an ${customerEmail}` : "Per E-Mail senden (keine E-Mail-Adresse hinterlegt)"}
+              </span>
             </Button>
             <Button
               type="button"
               onClick={sendViaWhatsapp}
               disabled={!waPhone}
-              className="h-12 w-full justify-start"
+              className="min-h-12 h-auto w-full justify-center whitespace-normal text-center py-2 px-3 leading-snug"
               variant="outline"
             >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              {waPhone
-                ? `Per WhatsApp an ${customerPhone}`
-                : customerPhone
-                  ? "WhatsApp – Telefonnummer ungültig"
-                  : "Per WhatsApp senden (keine Handynummer hinterlegt)"}
+              <MessageCircle className="h-4 w-4 mr-2 shrink-0" />
+              <span className="break-words">
+                {waPhone
+                  ? `Per WhatsApp an ${customerPhone}`
+                  : customerPhone
+                    ? "WhatsApp – Telefonnummer ungültig"
+                    : "Per WhatsApp senden (keine Handynummer hinterlegt)"}
+              </span>
             </Button>
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Schließen</AlertDialogCancel>
+          <AlertDialogFooter className="sm:justify-center">
+            <AlertDialogCancel className="w-full sm:w-auto">Schließen</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
