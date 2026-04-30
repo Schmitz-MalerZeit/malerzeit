@@ -11,27 +11,68 @@ const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency"
 const PROFI_PLUS_PRICES = new Set(["profiplus_monthly", "profiplus_yearly"]);
 
 function toCsv(rows: any[]): string {
-  const head = ["Datum","Kunde","Beschreibung","Positionen","Stunden","Material (€)","Netto (€)","MwSt (€)","Brutto (€)"];
+  const head = [
+    "Angebot-ID","Datum","Kunde","Straße","PLZ","Ort",
+    "Position-Nr","Position","Beschreibung (Angebot)",
+    "Stunden gesamt","Material netto (€)","Netto gesamt (€)","MwSt (€)","Brutto gesamt (€)","MwSt-Satz (%)",
+  ];
   const esc = (v: any) => {
     const s = v == null ? "" : String(v);
     return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
+  const positionText = (item: any): string => {
+    if (item == null) return "";
+    if (typeof item === "string") return item;
+    if (typeof item === "object") {
+      // Try common shapes; fall back to JSON for unknown structures
+      const parts = [item.title, item.name, item.description, item.text].filter(Boolean);
+      if (parts.length) return parts.join(" – ");
+      return JSON.stringify(item);
+    }
+    return String(item);
+  };
+
   const lines = [head.join(";")];
   for (const q of rows) {
-    lines.push([
-      new Date(q.created_at).toLocaleDateString("de-DE"),
+    const date = new Date(q.created_at).toLocaleDateString("de-DE");
+    const desc = (q.description || "").replace(/\s+/g, " ").trim();
+    const baseCols = [
+      q.id,
+      date,
       q.customer_name || "",
-      (q.description || "").replace(/\s+/g, " ").slice(0, 200),
-      Array.isArray(q.line_items) ? q.line_items.length : 0,
+      q.customer_address || "",
+      q.customer_postal_code || "",
+      q.customer_city || "",
+    ];
+    const totalsCols = [
       q.estimated_hours ?? "",
-      q.material_cost ?? "",
+      q.estimated_material ?? "",
       q.net_amount ?? "",
       q.vat_amount ?? "",
       q.gross_amount ?? "",
-    ].map(esc).join(";"));
+      q.vat_rate ?? "",
+    ];
+    const items = Array.isArray(q.line_items) ? q.line_items : [];
+
+    if (items.length === 0) {
+      lines.push([...baseCols, "", "", desc, ...totalsCols].map(esc).join(";"));
+      continue;
+    }
+    items.forEach((item: any, idx: number) => {
+      // Totals only on first row of each quote to avoid summing duplicates in Excel
+      const t = idx === 0 ? totalsCols : ["", "", "", "", "", ""];
+      lines.push([
+        ...baseCols,
+        idx + 1,
+        positionText(item),
+        idx === 0 ? desc : "",
+        ...t,
+      ].map(esc).join(";"));
+    });
   }
   return "\uFEFF" + lines.join("\n"); // BOM für Excel
 }
+
 
 export default function Quotes() {
   const [items, setItems] = useState<any[] | null>(null);
