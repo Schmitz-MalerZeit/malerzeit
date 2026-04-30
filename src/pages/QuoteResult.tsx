@@ -83,6 +83,7 @@ export default function QuoteResult() {
       URL.revokeObjectURL(previewBlobUrl);
       setPreviewBlobUrl(null);
     }
+    setPreviewBlob(null);
     setPdfQuotaConsumed(false);
   };
 
