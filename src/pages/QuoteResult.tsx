@@ -116,6 +116,25 @@ export default function QuoteResult() {
     a.remove();
   };
 
+  // Cache the freshly built PDF in sessionStorage so it survives a reload
+  // (avoids re-building and re-consuming quota).
+  const cachePdfInSession = async (blob: Blob) => {
+    try {
+      const buf = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let bin = "";
+      // Chunked to avoid call-stack overflows on large PDFs
+      const CHUNK = 0x8000;
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      }
+      sessionStorage.setItem("currentQuotePdf", btoa(bin));
+    } catch (e) {
+      // sessionStorage quota (~5MB) — caching is best-effort, no user-visible failure
+      console.warn("could not cache PDF in session", e);
+    }
+  };
+
   const downloadPDF = async () => {
     setBusy(true);
     try {
@@ -131,6 +150,7 @@ export default function QuoteResult() {
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
+      await cachePdfInSession(blob);                // persist across reloads
       triggerBlobDownload(url);
       setPreviewFailed(false);
     } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
