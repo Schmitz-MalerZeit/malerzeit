@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, CreditCard, Sparkles, AlertCircle, FileText, Receipt } from "lucide-react";
+import { Loader2, ExternalLink, CreditCard, Sparkles, AlertCircle, FileText, Receipt, Download } from "lucide-react";
 
 interface Tx {
   id: string;
@@ -42,6 +42,31 @@ export default function Billing() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [txs, setTxs] = useState<Tx[] | null>(null);
   const [txLoading, setTxLoading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const downloadInvoice = async (t: Tx) => {
+    if (!t.invoice_url) return;
+    setDownloadingId(t.id);
+    try {
+      const res = await fetch(t.invoice_url);
+      if (!res.ok) throw new Error(String(res.status));
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Rechnung_${(t.billed_at ?? t.created_at).slice(0, 10)}_${t.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      // CORS or network — fall back to opening in a new tab
+      console.warn("invoice download fallback", e);
+      window.open(t.invoice_url, "_blank", "noopener,noreferrer");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   useEffect(() => {
     if (params.get("checkout") === "success") {
@@ -204,14 +229,29 @@ export default function Billing() {
                       </p>
                     </div>
                     {t.invoice_url && (
-                      <a
-                        href={t.invoice_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline shrink-0"
-                      >
-                        <FileText className="h-3.5 w-3.5" /> Rechnung
-                      </a>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <a
+                          href={t.invoice_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline px-2 py-1"
+                          title="Rechnung ansehen"
+                        >
+                          <FileText className="h-3.5 w-3.5" /> Ansehen
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => downloadInvoice(t)}
+                          disabled={downloadingId === t.id}
+                          className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline px-2 py-1 disabled:opacity-50"
+                          title="PDF herunterladen"
+                        >
+                          {downloadingId === t.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Download className="h-3.5 w-3.5" />}
+                          PDF
+                        </button>
+                      </div>
                     )}
                   </li>
                 );
