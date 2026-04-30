@@ -67,6 +67,11 @@ export function VoiceInput({
 
   const start = async () => {
     if (disabled || busy) return;
+    // Try to acquire global mic lock — only one VoiceInput can record/transcribe at a time.
+    if (!voiceLock.acquire(idRef.current)) {
+      toast.info("Bitte erst die laufende Spracheingabe beenden.");
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -82,7 +87,11 @@ export function VoiceInput({
       rec.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
         stopAll();
-        if (blob.size < 800) { toast.info("Aufnahme zu kurz"); return; }
+        if (blob.size < 800) {
+          toast.info("Aufnahme zu kurz");
+          voiceLock.release(idRef.current);
+          return;
+        }
         setBusy(true);
         try {
           const base64 = await blobToBase64(blob);
@@ -95,7 +104,12 @@ export function VoiceInput({
           onTranscript(text);
         } catch (e: any) {
           toast.error(e?.message || "Transkription fehlgeschlagen");
-        } finally { setBusy(false); }
+        } finally {
+          setBusy(false);
+          // Release lock only after transcription finishes — keeps other mics disabled
+          // during the whole "recording + transcription" lifecycle.
+          voiceLock.release(idRef.current);
+        }
       };
       rec.start();
       setRecording(true);
@@ -106,6 +120,7 @@ export function VoiceInput({
           : "Mikrofon nicht verfügbar"
       );
       stopAll();
+      voiceLock.release(idRef.current);
     }
   };
 
@@ -119,12 +134,15 @@ export function VoiceInput({
   const sizes = size === "md" ? "h-10 w-10" : "h-8 w-8";
   const icon = size === "md" ? "h-4 w-4" : "h-3.5 w-3.5";
 
+  // Disabled when: explicitly disabled, while transcribing this instance, or while ANOTHER mic owns the lock.
+  const isDisabled = disabled || busy || (otherActive && !recording);
+
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled || busy}
-      title={recording ? "Aufnahme stoppen" : label}
+      disabled={isDisabled}
+      title={recording ? "Aufnahme stoppen" : (otherActive ? "Eine andere Spracheingabe läuft gerade" : label)}
       aria-label={recording ? "Aufnahme stoppen" : label}
       data-mode={mode}
       className={cn(
@@ -134,6 +152,8 @@ export function VoiceInput({
           ? "bg-destructive/10 border-destructive text-destructive animate-pulse"
           : busy
           ? "bg-secondary border-border text-muted-foreground"
+          : isDisabled
+          ? "bg-muted border-border text-muted-foreground/60 cursor-not-allowed"
           : "bg-card border-border text-muted-foreground hover:text-primary hover:border-primary/40",
         className
       )}
