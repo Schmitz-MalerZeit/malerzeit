@@ -339,6 +339,7 @@ export default function QuoteResult() {
   };
 
   const previewPDF = async () => {
+    if (!guardPdfAccess()) return;
     setBusy(true);
     try {
       // Reuse already-built PDF if available (avoid double quota consumption)
