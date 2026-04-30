@@ -258,17 +258,29 @@ export default function QuoteResult() {
             <p className="text-sm text-destructive">
               Die PDF-Vorschau konnte nicht geöffnet werden. Eventuell hat dein Browser das neue Fenster blockiert.
             </p>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={retryPreview}
-              disabled={busy}
-              className="w-full h-11 border-destructive/40 text-destructive hover:bg-destructive/10"
-            >
-              {busy
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <><RotateCw className="h-4 w-4 mr-2" /> Vorschau erneut öffnen</>}
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={retryPreview}
+                disabled={busy}
+                className="h-11 border-destructive/40 text-destructive hover:bg-destructive/10"
+              >
+                {busy
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <><RotateCw className="h-4 w-4 mr-2" /> Erneut öffnen</>}
+              </Button>
+              <Button
+                type="button"
+                onClick={downloadPDF}
+                disabled={busy}
+                className="h-11 gradient-primary text-primary-foreground border-0"
+              >
+                {busy
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <><FileDown className="h-4 w-4 mr-2" /> Stattdessen herunterladen</>}
+              </Button>
+            </div>
             {previewBlobUrl && (
               <a
                 href={previewBlobUrl}
