@@ -18,7 +18,7 @@ export default function QuoteResult() {
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
 
-  // Revoke blob URL on unmount
+  // Revoke blob URL on unmount (only the in-memory URL; the base64 cache stays in sessionStorage)
   useEffect(() => {
     return () => { if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl); };
   }, [previewBlobUrl]);
@@ -28,6 +28,21 @@ export default function QuoteResult() {
     if (!raw) { nav("/quote/new"); return; }
     setData(JSON.parse(raw));
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => setProfile(data));
+
+    // Restore previously generated PDF from sessionStorage if available
+    const cachedB64 = sessionStorage.getItem("currentQuotePdf");
+    if (cachedB64) {
+      try {
+        const bin = atob(cachedB64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+        setPreviewBlobUrl(url);
+      } catch (e) {
+        console.warn("could not restore cached PDF", e);
+        sessionStorage.removeItem("currentQuotePdf");
+      }
+    }
   }, [nav]);
 
   if (!data) return null;
