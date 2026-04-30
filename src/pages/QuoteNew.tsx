@@ -44,7 +44,7 @@ Je präziser deine Angaben, desto genauer die Kalkulation.`;
 export default function QuoteNew() {
   const nav = useNavigate();
   const [description, setDescription] = useState("");
-  const [customer, setCustomer] = useState({ name: "", address: "", postal_code: "", city: "" });
+  const [customer, setCustomer] = useState({ name: "", address: "", postal_code: "", city: "", phone: "", email: "" });
   const [step, setStep] = useState<"input" | "questions" | "loading">("input");
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -160,6 +160,20 @@ export default function QuoteNew() {
                   <Input id="cust_city" value={customer.city}
                     onChange={(e) => setCustomer({ ...customer, city: e.target.value })}
                     placeholder="Musterstadt" className="h-11" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cust_phone">Telefon <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input id="cust_phone" type="tel" value={customer.phone}
+                    onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+                    placeholder="0170 1234567" className="h-11" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cust_email">E-Mail <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Input id="cust_email" type="email" value={customer.email}
+                    onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
+                    placeholder="kunde@example.de" className="h-11" />
                 </div>
               </div>
             </div>

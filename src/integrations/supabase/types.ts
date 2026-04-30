@@ -136,7 +136,9 @@ export type Database = {
           created_at: string
           customer_address: string | null
           customer_city: string | null
+          customer_email: string | null
           customer_name: string | null
+          customer_phone: string | null
           customer_postal_code: string | null
           customer_text: string | null
           description: string | null
@@ -157,7 +159,9 @@ export type Database = {
           created_at?: string
           customer_address?: string | null
           customer_city?: string | null
+          customer_email?: string | null
           customer_name?: string | null
+          customer_phone?: string | null
           customer_postal_code?: string | null
           customer_text?: string | null
           description?: string | null
@@ -178,7 +182,9 @@ export type Database = {
           created_at?: string
           customer_address?: string | null
           customer_city?: string | null
+          customer_email?: string | null
           customer_name?: string | null
+          customer_phone?: string | null
           customer_postal_code?: string | null
           customer_text?: string | null
           description?: string | null
