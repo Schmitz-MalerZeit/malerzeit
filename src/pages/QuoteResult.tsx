@@ -405,6 +405,8 @@ export default function QuoteResult() {
       if (previewBlobUrl) {
         triggerBlobDownload(previewBlobUrl);
         setPreviewFailed(false);
+        setLastFilename(filename());
+        setShareOpen(true);
         return;
       }
       const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
@@ -416,6 +418,11 @@ export default function QuoteResult() {
       await cachePdfInSession(blob);                // persist across reloads
       triggerBlobDownload(url);
       setPreviewFailed(false);
+      setLastFilename(filename());
+      setShareOpen(true);
+    } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
+    finally { setBusy(false); }
+  };
     } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
     finally { setBusy(false); }
   };
