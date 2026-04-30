@@ -101,15 +101,45 @@ export default function QuoteResult() {
     finally { setBusy(false); }
   };
 
+  const openBlob = (url: string): boolean => {
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win || win.closed || typeof win.closed === "undefined") {
+      setPreviewFailed(true);
+      toast.error("Vorschau konnte nicht geöffnet werden (evtl. Popup blockiert).", {
+        action: { label: "Erneut", onClick: () => retryPreview() },
+      });
+      return false;
+    }
+    setPreviewFailed(false);
+    return true;
+  };
+
+  const retryPreview = () => {
+    if (previewBlobUrl) openBlob(previewBlobUrl);
+    else previewPDF();
+  };
+
   const previewPDF = async () => {
     setBusy(true);
     try {
+      // Reuse already-built PDF if available (avoid double quota consumption)
+      if (previewBlobUrl) {
+        openBlob(previewBlobUrl);
+        return;
+      }
       const pdf = await buildPDF();
       const ok = await consumeQuota();
       if (!ok) return;
       const blob = pdf.output("blob");
-      window.open(URL.createObjectURL(blob), "_blank");
-    } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
+      const url = URL.createObjectURL(blob);
+      setPreviewBlobUrl(url);
+      openBlob(url);
+    } catch (e: any) {
+      setPreviewFailed(true);
+      toast.error(e.message || "PDF-Fehler", {
+        action: { label: "Erneut", onClick: () => retryPreview() },
+      });
+    }
     finally { setBusy(false); }
   };
 
