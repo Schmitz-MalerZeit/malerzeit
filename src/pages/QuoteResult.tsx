@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2, X, Mail, MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
@@ -28,6 +28,9 @@ export default function QuoteResult() {
   const [previewFailed, setPreviewFailed] = useState(false);
   // Bestätigungs-Dialog vor PDF-Erstellung (zählt aufs Kontingent).
   const [confirmAction, setConfirmAction] = useState<null | "preview" | "download">(null);
+  // Dialog nach erfolgreichem PDF-Download: Versand per E-Mail / WhatsApp anbieten.
+  const [shareOpen, setShareOpen] = useState(false);
+  const [lastFilename, setLastFilename] = useState<string>("");
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
@@ -402,6 +405,8 @@ export default function QuoteResult() {
       if (previewBlobUrl) {
         triggerBlobDownload(previewBlobUrl);
         setPreviewFailed(false);
+        setLastFilename(filename());
+        setShareOpen(true);
         return;
       }
       const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
@@ -413,6 +418,8 @@ export default function QuoteResult() {
       await cachePdfInSession(blob);                // persist across reloads
       triggerBlobDownload(url);
       setPreviewFailed(false);
+      setLastFilename(filename());
+      setShareOpen(true);
     } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
     finally { setBusy(false); }
   };
@@ -493,6 +500,38 @@ export default function QuoteResult() {
   };
 
   const headerTitle = data.customer?.name?.trim() || "Preisorientierung";
+
+  // Telefonnummer für WhatsApp normalisieren: nur Ziffern, führende 0 → 49.
+  const normalizePhoneForWa = (raw: string): string | null => {
+    if (!raw) return null;
+    let digits = raw.replace(/[^\d+]/g, "");
+    if (digits.startsWith("+")) digits = digits.slice(1);
+    else if (digits.startsWith("00")) digits = digits.slice(2);
+    else if (digits.startsWith("0")) digits = "49" + digits.slice(1);
+    return /^\d{8,15}$/.test(digits) ? digits : null;
+  };
+
+  const customerEmail = (data.customer?.email || "").trim();
+  const customerPhone = (data.customer?.phone || "").trim();
+  const waPhone = normalizePhoneForWa(customerPhone);
+
+  const sendViaEmail = () => {
+    const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
+    const body = (ai.customer_text || "") + (lastFilename ? `\n\n(PDF im Anhang: ${lastFilename} – bitte aus deinem Download-Ordner anhängen.)` : "");
+    const to = encodeURIComponent(customerEmail);
+    const params = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:${to}?${params}`;
+    setShareOpen(false);
+  };
+
+  const sendViaWhatsapp = () => {
+    if (!waPhone) return;
+    const text = whatsappDisplay + (lastFilename ? `\n\n📎 PDF im Anhang: ${lastFilename}\n(Bitte das PDF aus deinem Download-Ordner an diesen Chat anhängen.)` : "");
+    const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    setShareOpen(false);
+  };
+
 
   return (
     <AppShell title={headerTitle}>
@@ -685,6 +724,48 @@ export default function QuoteResult() {
             >
               Ja, jetzt erstellen
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={shareOpen} onOpenChange={setShareOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>PDF an deinen Kunden senden?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Das PDF wurde heruntergeladen. Du kannst es jetzt direkt an{" "}
+              {data.customer?.name ? <strong>{data.customer.name}</strong> : "deinen Kunden"} senden.
+              Das PDF musst du nach dem Öffnen aus deinem Download-Ordner anhängen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-2 pt-2">
+            <Button
+              type="button"
+              onClick={sendViaEmail}
+              disabled={!customerEmail}
+              className="h-12 w-full justify-start"
+              variant="outline"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              {customerEmail ? `Per E-Mail an ${customerEmail}` : "Per E-Mail senden (keine E-Mail-Adresse hinterlegt)"}
+            </Button>
+            <Button
+              type="button"
+              onClick={sendViaWhatsapp}
+              disabled={!waPhone}
+              className="h-12 w-full justify-start"
+              variant="outline"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              {waPhone
+                ? `Per WhatsApp an ${customerPhone}`
+                : customerPhone
+                  ? "WhatsApp – Telefonnummer ungültig"
+                  : "Per WhatsApp senden (keine Handynummer hinterlegt)"}
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Schließen</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
