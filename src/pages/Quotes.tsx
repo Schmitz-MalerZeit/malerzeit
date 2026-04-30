@@ -75,9 +75,11 @@ function toCsv(rows: any[]): string {
 
 
 export default function Quotes() {
+  const nav = useNavigate();
   const [items, setItems] = useState<any[] | null>(null);
   const sub = useSubscription();
-  const isProfiPlus = !!sub.subscription && PROFI_PLUS_PRICES.has(sub.subscription.price_id);
+  const tier = getTier(sub);
+  const csvAllowed = canExportCsv(tier);
 
   useEffect(() => {
     supabase.from("quotes").select("*").order("created_at", { ascending: false })
