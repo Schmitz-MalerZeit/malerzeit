@@ -59,33 +59,71 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   // damit das Original-Seitenverhältnis erhalten bleibt – nie verzerrt, nie beschnitten.
   // Die Box sitzt links im Header-Band; der Text rechts davon startet immer
   // an derselben Position, unabhängig von Hoch-/Quer-/Quadrat-Logo.
+  //
+  // Robustheit: jspdf unterstützt nur PNG/JPEG/WEBP nativ. SVGs, defekte Data-URLs,
+  // unbekannte Formate oder fehlende natural sizes dürfen die PDF-Generierung NIE
+  // brechen – stattdessen greift ein gestaffelter Fallback:
+  //   1. Format unbekannt/SVG → Versuch, das Bild über Canvas zu PNG zu rasterisieren
+  //      (passiert vorab in QuoteResult, hier nur defensiv erkannt).
+  //   2. addImage wirft → Initial-Fallback (Kreis mit Firmen-Initiale) wird gezeichnet.
+  //   3. Keine natural sizes → komplette Bounding-Box wird genutzt.
   const logoBox = { x: margin, y: 6, w: 30, h: 26 }; // max. Logo-Größe in mm
-  let logoRenderedW = 0;
+  let logoRendered = false;
   if (d.company.logoDataUrl) {
-    try {
-      const src = d.company.logoDataUrl;
-      let imgFmt: "PNG" | "JPEG" | "WEBP" = "PNG";
-      const m = /^data:image\/(png|jpe?g|webp)/i.exec(src);
-      if (m) {
-        const ext = m[1].toLowerCase();
-        imgFmt = ext === "webp" ? "WEBP" : ext.startsWith("jp") ? "JPEG" : "PNG";
-      } else if (/\.(jpe?g)(\?|$)/i.test(src)) imgFmt = "JPEG";
-      else if (/\.webp(\?|$)/i.test(src))      imgFmt = "WEBP";
+    const src = d.company.logoDataUrl;
+    // Format-Detection: explizite Whitelist, sonst PNG-Default versuchen.
+    let imgFmt: "PNG" | "JPEG" | "WEBP" = "PNG";
+    let unsupported = false;
+    const m = /^data:image\/([a-z0-9.+-]+)/i.exec(src);
+    if (m) {
+      const ext = m[1].toLowerCase();
+      if (ext === "webp") imgFmt = "WEBP";
+      else if (ext.startsWith("jp")) imgFmt = "JPEG";
+      else if (ext === "png") imgFmt = "PNG";
+      else unsupported = true; // svg+xml, gif, avif, …
+    } else if (/\.(jpe?g)(\?|$)/i.test(src)) imgFmt = "JPEG";
+    else if (/\.webp(\?|$)/i.test(src))      imgFmt = "WEBP";
+    else if (/\.svg(\?|$)/i.test(src))       unsupported = true;
 
-      const natW = d.company.logoNaturalWidth  || 0;
-      const natH = d.company.logoNaturalHeight || 0;
-      let w = logoBox.w, h = logoBox.h;
-      if (natW > 0 && natH > 0) {
-        const scale = Math.min(logoBox.w / natW, logoBox.h / natH);
-        w = natW * scale;
-        h = natH * scale;
+    if (!unsupported) {
+      try {
+        const natW = d.company.logoNaturalWidth  || 0;
+        const natH = d.company.logoNaturalHeight || 0;
+        let w = logoBox.w, h = logoBox.h;
+        if (natW > 0 && natH > 0) {
+          const scale = Math.min(logoBox.w / natW, logoBox.h / natH);
+          w = natW * scale;
+          h = natH * scale;
+        }
+        const x = logoBox.x;
+        const y = logoBox.y + (logoBox.h - h) / 2;
+        doc.addImage(src, imgFmt, x, y, w, h, undefined, "FAST");
+        logoRendered = true;
+      } catch (err) {
+        // jspdf konnte das Bild nicht parsen (defekte Data-URL, unpassendes Format).
+        // Wir loggen leise und fallen unten auf die Initial-Variante zurück.
+        console.warn("[pdf] logo render failed, using initial fallback", err);
       }
-      // Vertikal mittig in der Box ausrichten, links bündig.
-      const x = logoBox.x;
-      const y = logoBox.y + (logoBox.h - h) / 2;
-      doc.addImage(src, imgFmt, x, y, w, h, undefined, "FAST");
-      logoRenderedW = w;
-    } catch {/* ignore */}
+    } else {
+      console.warn("[pdf] unsupported logo format, using initial fallback");
+    }
+  }
+
+  // Fallback-Renderschema: weißer Kreis mit der ersten Firmen-Initiale.
+  // Wird gezeichnet, wenn (a) gar kein Logo vorhanden ist UND wir trotzdem optisches
+  // Gleichgewicht im Header brauchen — nein, hier nur wenn ein Logo da war, aber
+  // nicht eingebettet werden konnte (sonst sähe es wie ein "fehlendes" Asset aus).
+  if (d.company.logoDataUrl && !logoRendered) {
+    const initial = (d.company.name || "?").trim().charAt(0).toUpperCase() || "?";
+    const cx = logoBox.x + logoBox.h / 2;
+    const cy = logoBox.y + logoBox.h / 2;
+    const r  = logoBox.h / 2 - 1;
+    doc.setFillColor(255, 255, 255);
+    doc.circle(cx, cy, r, "F");
+    doc.setTextColor(primary[0], primary[1], primary[2]);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text(initial, cx, cy + 2.2, { align: "center" });
   }
 
   // Reserve a safe slot on the right for the date so a long company name never overlaps it.
