@@ -581,9 +581,9 @@ export default function QuoteResult() {
               </button>
             </div>
             <Textarea
-              value={ai.whatsapp_text}
+              value={whatsappDisplay}
               onChange={(e) => updateWhatsappText(e.target.value)}
-              className="min-h-[120px] text-sm leading-relaxed resize-y"
+              className="min-h-[160px] text-sm leading-relaxed resize-y"
             />
           </div>
         </div>
