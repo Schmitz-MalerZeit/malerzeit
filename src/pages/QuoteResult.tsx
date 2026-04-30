@@ -98,6 +98,10 @@ export default function QuoteResult() {
         vat_rate: p.vat_rate,
         estimated_hours: ai.estimated_hours,
         estimated_material: ai.estimated_material_cost,
+        customer_name: data.customer?.name || null,
+        customer_address: data.customer?.address || null,
+        customer_postal_code: data.customer?.postal_code || null,
+        customer_city: data.customer?.city || null,
       });
       if (error) throw error;
       setSaved(true);
