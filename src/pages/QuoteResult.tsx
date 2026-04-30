@@ -15,6 +15,7 @@ export default function QuoteResult() {
   const nav = useNavigate();
   const [data, setData] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [settings, setSettings] = useState<any>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
