@@ -71,18 +71,47 @@ export default function Profile() {
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Nicht angemeldet");
-      const ext = file.name.split(".").pop() || "png";
+
+      // Defensive Validierung BEFORE Upload, damit defekte Dateien gar nicht erst
+      // im Storage landen und später die PDF-Pipeline torpedieren.
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Nur Bilddateien werden unterstützt (PNG, JPG, WEBP, SVG).");
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("Logo ist zu groß (max. 5 MB).");
+      }
+
+      // Endung sicher ableiten – fallback auf "png" für Mime-Types ohne klare Extension.
+      const rawExt = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
+      const ext = /^(png|jpe?g|webp|svg|gif|avif)$/.test(rawExt) ? rawExt : "png";
       const path = `${u.user.id}/logo.${ext}`;
       const { error } = await supabase.storage.from("company-logos").upload(path, file, { upsert: true, contentType: file.type });
       if (error) throw error;
       const { data: pub } = supabase.storage.from("company-logos").getPublicUrl(path);
       const url = `${pub.publicUrl}?t=${Date.now()}`;
-      const colors = await extractDominantColors(url);
+
+      // Color-Extraction kann bei SVG/CORS-Problemen scheitern – wir behandeln
+      // das als nicht-fatalen Fehler und behalten dann die bisherigen Farben bei.
+      let colors = { primary: p.logo_primary_color || "", secondary: p.logo_secondary_color || "" };
+      try {
+        const extracted = await extractDominantColors(url);
+        if (extracted?.primary) colors = extracted;
+      } catch (colorErr) {
+        console.warn("color extraction failed, keeping previous colors", colorErr);
+      }
+
       const next = { ...p, logo_url: url, logo_primary_color: colors.primary, logo_secondary_color: colors.secondary };
       setP(next);
       await supabase.from("profiles").update(next as any).eq("id", u.user.id);
-      toast.success("Logo hochgeladen – PDF passt sich an");
-    } catch (e: any) { toast.error(e.message); }
+      const isVector = ext === "svg";
+      toast.success(
+        isVector
+          ? "Logo hochgeladen – SVGs werden automatisch fürs PDF rasterisiert."
+          : "Logo hochgeladen – PDF passt sich an"
+      );
+    } catch (e: any) {
+      toast.error(e.message || "Logo-Upload fehlgeschlagen");
+    }
     finally { setUploading(false); }
   };
 
