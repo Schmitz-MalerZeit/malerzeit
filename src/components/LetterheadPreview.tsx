@@ -13,6 +13,7 @@ interface Props {
   companyName?: string;
   contact?: string;
   address?: string;
+  addressLine2?: string;
   postalCode?: string;
   city?: string;
   phone?: string;
@@ -32,7 +33,7 @@ const DEFAULT_PRIMARY = "#1a3a6c";
 const DEFAULT_SECONDARY = "#4a4a4a";
 
 export function LetterheadPreview({
-  companyName, contact, address, postalCode, city, phone, email, website,
+  companyName, contact, address, addressLine2, postalCode, city, phone, email, website,
   logoUrl, primaryColor, secondaryColor,
   customerName, customerAddress, customerPostalCode, customerCity,
 }: Props) {
@@ -48,15 +49,18 @@ export function LetterheadPreview({
     : ["Max Mustermann", "Musterstraße 12", "12345 Musterstadt"];
   const isDemoCustomer = !hasCustomer;
 
-  // RIGHT: sender (own company)
+  // RIGHT: sender (own company). Header line = contact person, falls back to the
+  // company name (relevant for GmbHs etc. where there's no single contact person).
+  const senderHeader = contact || companyName;
   const companyCityLine = [postalCode, city].filter(Boolean).join(" ");
   const rightRows: { label: string; value: string }[] = [
-    ...(contact         ? [{ label: "z.Hd.",  value: contact }]         : []),
-    ...(address         ? [{ label: "Adr.",   value: address }]         : []),
-    ...(companyCityLine ? [{ label: "Ort",    value: companyCityLine }] : []),
-    ...(phone           ? [{ label: "Tel.",   value: phone }]           : []),
-    ...(email           ? [{ label: "E-Mail", value: email }]           : []),
-    ...(website         ? [{ label: "Web",    value: website }]         : []),
+    ...(senderHeader     ? [{ label: "",      value: senderHeader }]     : []),
+    ...(address          ? [{ label: "",      value: address }]          : []),
+    ...(addressLine2     ? [{ label: "",      value: addressLine2 }]     : []),
+    ...(companyCityLine  ? [{ label: "",      value: companyCityLine }]  : []),
+    ...(phone            ? [{ label: "Tel.",  value: phone }]            : []),
+    ...(email            ? [{ label: "E-Mail", value: email }]           : []),
+    ...(website          ? [{ label: "Web",   value: website }]          : []),
   ];
 
   return (
@@ -121,7 +125,9 @@ export function LetterheadPreview({
                 )}
                 {rightRows.map((row, i) => (
                   <div key={i} className="text-[9px] text-neutral-700 truncate flex gap-1.5">
-                    <span className="text-neutral-400 w-8 shrink-0">{row.label}</span>
+                    {row.label
+                      ? <span className="text-neutral-400 w-8 shrink-0">{row.label}</span>
+                      : <span className="w-8 shrink-0" aria-hidden />}
                     <span className="truncate">{row.value}</span>
                   </div>
                 ))}

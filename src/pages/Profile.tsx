@@ -18,8 +18,9 @@ const appendText = (prev: string, add: string) =>
 
 const FIELDS: { k: string; l: string; type?: string }[] = [
   { k: "company_name", l: "Firma" },
-  { k: "contact_person", l: "Inhaber / Ansprechpartner" },
+  { k: "contact_person", l: "Inhaber / Ansprechpartner (optional)" },
   { k: "address", l: "Straße & Hausnummer" },
+  { k: "address_line2", l: "Adresszusatz (z. B. Gebäude B, c/o, 2. OG)" },
   { k: "postal_code", l: "Postleitzahl" },
   { k: "city", l: "Ort" },
   { k: "phone", l: "Telefon", type: "tel" },
@@ -36,7 +37,7 @@ export default function Profile() {
   const tier = getTier(subState);
   const showPdfPreview = canUseLogoInPdf(tier);
   const [p, setP] = useState<Record<string, string>>({
-    company_name: "", contact_person: "", address: "", postal_code: "", city: "",
+    company_name: "", contact_person: "", address: "", address_line2: "", postal_code: "", city: "",
     phone: "", email: "", website: "", vat_id: "",
     logo_url: "", logo_primary_color: "", logo_secondary_color: "",
   });
@@ -129,6 +130,7 @@ export default function Profile() {
                 companyName={p.company_name}
                 contact={p.contact_person}
                 address={p.address}
+                addressLine2={p.address_line2}
                 postalCode={p.postal_code}
                 city={p.city}
                 phone={p.phone}
