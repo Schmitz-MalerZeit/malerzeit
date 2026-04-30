@@ -110,8 +110,10 @@ export default function QuoteResult() {
     finally { setBusy(false); }
   };
 
+  const headerTitle = data.customer?.name?.trim() || "Preisvorschlag";
+
   return (
-    <AppShell title="Preisvorschlag">
+    <AppShell title={headerTitle}>
       <div className="space-y-5">
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
           <h2 className="font-semibold mb-3 text-lg">Leistungen</h2>

@@ -8,8 +8,6 @@ const corsHeaders = {
 interface Body {
   description: string;
   answers?: Record<string, string>;
-  hourlyRate: number;
-  rateLabel?: string;
   materialMarkup: number;
   qualityLevel: string;
   vatRate: number;
@@ -17,14 +15,18 @@ interface Body {
 }
 
 const SYSTEM = `Du bist ein erfahrener Kalkulator für Malerbetriebe in Deutschland.
-Du analysierst freie Beschreibungen geplanter Malerarbeiten und erzeugst:
-1. Strukturierte professionelle Leistungsstichpunkte (handwerklich korrekt)
-2. Eine realistische Aufwandsschätzung in Stunden und Materialkosten in Euro
-3. Bei Bedarf gezielte Rückfragen, wenn wichtige Angaben fehlen (Fläche, innen/außen, Vorarbeiten, Material inkl., Erschwernisse)
+Der Nutzer liefert in seiner Beschreibung üblicherweise drei Blöcke:
+1) Arbeiten / Leistungsumfang
+2) Eingesetztes Personal mit Stunden und Stundenlohn (z. B. "Geselle 12 Std à 55 €", "Lehrling 8 Std à 28 €")
+3) Geschätzten Materialaufwand in Euro netto
 
-Wichtig:
-- Keine Fantasiepreise. Schätze Stunden und Materialkosten konservativ-realistisch.
-- Stichpunkte handwerklich präzise (z.B. "Wandflächen Q3 spachteln", "Glattvlies einarbeiten").
+Deine Aufgabe:
+- Erzeuge professionelle Leistungsstichpunkte (handwerklich korrekt, z. B. "Wandflächen Q3 spachteln", "Glattvlies einarbeiten").
+- Berechne den Lohnanteil als Summe aller (Stunden × Stundenlohn) der genannten Personen.
+- Übernimm die Gesamtstunden (Summe aller Stunden) als estimated_hours.
+- Übernimm die Materialkosten (netto, vor Aufschlag) als estimated_material_cost.
+- Übernimm die Lohnkosten (Summe Stunden × Stundenlohn) als estimated_labor_cost.
+- Wenn Stunden oder Stundenlöhne fehlen: schätze konservativ-realistisch auf Basis branchenüblicher Werte.
 - Rückfragen NUR wenn wirklich nötig (max. 4). Wenn genug Info da ist, keine Rückfragen.
 - Antworten ausschließlich auf Deutsch.`;
 
@@ -36,14 +38,13 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    const userPrompt = `Beschreibung der Arbeiten:
+    const userPrompt = `Beschreibung des Nutzers (enthält Arbeiten, Personal/Stunden/Stundenlohn und Materialaufwand):
 ${body.description}
 
 ${body.answers && Object.keys(body.answers).length > 0
   ? `Zusatzinfos:\n${Object.entries(body.answers).map(([q, a]) => `- ${q}: ${a}`).join("\n")}`
   : ""}
 
-Stundenverrechnungssatz: ${body.hourlyRate} €/h netto${body.rateLabel ? ` (Rolle: ${body.rateLabel})` : ""}
 Materialaufschlag: ${body.materialMarkup}%
 Qualitätsniveau: ${body.qualityLevel}
 Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen erlaubt" : "Finalisierung - keine Rückfragen mehr, fertige Kalkulation"}`;
