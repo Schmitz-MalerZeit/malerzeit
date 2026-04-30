@@ -55,6 +55,43 @@ export default function QuoteResult() {
     }
   }, [nav]);
 
+  // Persist edits back to sessionStorage and invalidate any cached PDF so the
+  // next preview/download uses the new texts.
+  const persistEdits = (next: any) => {
+    setData(next);
+    sessionStorage.setItem("currentQuote", JSON.stringify(next));
+    sessionStorage.removeItem("currentQuotePdf");
+    if (previewBlobUrl) {
+      URL.revokeObjectURL(previewBlobUrl);
+      setPreviewBlobUrl(null);
+    }
+  };
+
+  const updateLineItem = (index: number, value: string) => {
+    if (!data) return;
+    const items = [...data.ai.line_items];
+    items[index] = value;
+    persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
+  };
+  const removeLineItem = (index: number) => {
+    if (!data) return;
+    const items = data.ai.line_items.filter((_: string, i: number) => i !== index);
+    persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
+  };
+  const addLineItem = () => {
+    if (!data) return;
+    const items = [...data.ai.line_items, ""];
+    persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
+  };
+  const updateCustomerText = (value: string) => {
+    if (!data) return;
+    persistEdits({ ...data, ai: { ...data.ai, customer_text: value } });
+  };
+  const updateWhatsappText = (value: string) => {
+    if (!data) return;
+    persistEdits({ ...data, ai: { ...data.ai, whatsapp_text: value } });
+  };
+
   if (!data) return null;
   const ai = data.ai;
   const p = ai.pricing;
