@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { FileText, FolderOpen, Settings as SettingsIcon, Scale, User as UserIcon, LogOut, Sparkles } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -23,36 +26,52 @@ const Tile = ({ icon: Icon, title, subtitle, onClick, primary }: any) => (
 
 export default function Home() {
   const nav = useNavigate();
+  const { t } = useTranslation();
+  const [firstName, setFirstName] = useState<string>("");
+
+  useEffect(() => {
+    supabase.from("profiles").select("contact_person").maybeSingle().then(({ data }) => {
+      const full = (data?.contact_person || "").trim();
+      if (full) setFirstName(full.split(/\s+/)[0]);
+    });
+  }, []);
+
   const logout = async () => {
     await supabase.auth.signOut();
-    toast.success("Abgemeldet");
+    toast.success(t("home.loggedOut"));
     nav("/auth");
   };
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Logo size="sm" />
-          <button onClick={logout} aria-label="Abmelden" className="p-2 rounded-full hover:bg-secondary transition-base">
-            <LogOut className="h-5 w-5 text-muted-foreground" />
-          </button>
+        <div className="max-w-2xl mx-auto px-4 h-20 flex items-center justify-between gap-2">
+          <Logo size="md" />
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher variant="compact" />
+            <button onClick={logout} aria-label={t("common.logout")} className="p-2 rounded-full hover:bg-secondary transition-base">
+              <LogOut className="h-5 w-5 text-muted-foreground" />
+            </button>
+          </div>
         </div>
       </header>
       <main className="max-w-2xl mx-auto px-4 py-8 safe-bottom">
         <div className="mb-8">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/15 text-accent-foreground text-xs font-semibold mb-3">
-            <Sparkles className="h-3.5 w-3.5" /> KI-gestützt
+            <Sparkles className="h-3.5 w-3.5" /> {t("home.badgeAi")}
           </div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Guten Tag.</h1>
-          <p className="text-muted-foreground">Erstellen Sie in wenigen Minuten einen professionellen Preisvorschlag.</p>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">
+            {firstName ? t("home.greetingPersonal", { name: firstName }) : t("home.greetingFallback")}
+          </h1>
+          <p className="text-muted-foreground">{t("home.tagline")}</p>
         </div>
 
         <div className="space-y-3">
-          <Tile primary icon={FileText} title="Preisvorschlag erstellen" subtitle="Beschreibung eingeben – KI strukturiert & kalkuliert" onClick={() => nav("/quote/new")} />
-          <Tile icon={FolderOpen} title="Gespeicherte Vorschläge" subtitle="Frühere Kalkulationen ansehen" onClick={() => nav("/quotes")} />
-          <Tile icon={UserIcon} title="Firmenprofil" subtitle="Firmendaten & Logo" onClick={() => nav("/profile")} />
-          <Tile icon={SettingsIcon} title="Einstellungen" subtitle="Stundensatz, Aufschlag, Qualität" onClick={() => nav("/settings")} />
-          <Tile icon={Scale} title="Rechtliches" subtitle="Impressum, Datenschutz, Haftung" onClick={() => nav("/legal")} />
+          <Tile primary icon={FileText} title={t("home.ctaNew")} subtitle={t("home.ctaNewSub")} onClick={() => nav("/quote/new")} />
+          <Tile icon={FolderOpen} title={t("home.ctaQuotes")} subtitle={t("home.ctaQuotesSub")} onClick={() => nav("/quotes")} />
+          <Tile icon={UserIcon} title={t("home.ctaProfile")} subtitle={t("home.ctaProfileSub")} onClick={() => nav("/profile")} />
+          <Tile icon={SettingsIcon} title={t("home.ctaSettings")} subtitle={t("home.ctaSettingsSub")} onClick={() => nav("/settings")} />
+          <Tile icon={Scale} title={t("home.ctaLegal")} subtitle={t("home.ctaLegalSub")} onClick={() => nav("/legal")} />
         </div>
       </main>
     </div>

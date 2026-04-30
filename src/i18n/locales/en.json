@@ -31,20 +31,30 @@
     "apple": "Continue with Apple",
     "appleSoon": "Apple sign-in coming soon.",
     "signupSuccess": "Account created – please confirm your email.",
-    "signinSuccess": "Signed in successfully."
+    "signinSuccess": "Signed in successfully.",
+    "termsHint": "By signing in you accept our <1>Terms</1> and <3>Privacy Policy</3>."
   },
   "home": {
-    "greeting": "Hello",
+    "greetingPersonal": "Hello, {{name}}",
+    "greetingFallback": "Hello",
     "tagline": "Create a professional price quote in just a few minutes.",
-    "ctaNew": "New price quote",
-    "ctaQuotes": "My quotes",
+    "badgeAi": "AI-powered",
+    "ctaNew": "Create price quote",
+    "ctaNewSub": "Describe the job – AI structures & calculates it",
+    "ctaQuotes": "Saved quotes",
+    "ctaQuotesSub": "Browse previous calculations",
     "ctaProfile": "Company profile",
-    "ctaSettings": "Settings"
+    "ctaProfileSub": "Company data & logo",
+    "ctaSettings": "Settings",
+    "ctaSettingsSub": "Hourly rate, markup, quality",
+    "ctaLegal": "Legal",
+    "ctaLegalSub": "Imprint, privacy, disclaimer",
+    "loggedOut": "You're signed out."
   },
   "settings": {
     "title": "Settings",
     "ratesHeading": "Hourly rates (net)",
-    "ratesHelp": "Mark the default rate with the star. It is used whenever you don't pick another one.",
+    "ratesHelp": "Mark your default rate with the star. It is used whenever you don't pick another one.",
     "addRate": "Add hourly rate",
     "ratePlaceholder": "Label (e.g. Journeyman painter)",
     "markup": "Material markup (%)",
