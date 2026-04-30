@@ -469,15 +469,42 @@ export default function QuoteResult() {
     <AppShell title={headerTitle}>
       <div className="space-y-5">
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
-          <h2 className="font-semibold mb-3 text-lg">Leistungen</h2>
-          <ul className="space-y-2.5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-lg">Leistungen</h2>
+            <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+              <Pencil className="h-3 w-3" /> bearbeitbar
+            </span>
+          </div>
+          <ul className="space-y-2">
             {ai.line_items.map((item: string, i: number) => (
-              <li key={i} className="flex gap-3 text-sm">
-                <span className="text-primary font-bold mt-0.5">•</span>
-                <span className="flex-1">{item}</span>
+              <li key={i} className="flex gap-2 items-start">
+                <span className="text-primary font-bold mt-2.5">•</span>
+                <Textarea
+                  value={item}
+                  onChange={(e) => updateLineItem(i, e.target.value)}
+                  rows={1}
+                  className="flex-1 min-h-[40px] text-sm resize-y"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeLineItem(i)}
+                  className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Position entfernen"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </li>
             ))}
           </ul>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addLineItem}
+            className="mt-3 h-9"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> Position hinzufügen
+          </Button>
         </div>
 
         <div className="rounded-xl bg-secondary/50 border border-border p-4 text-xs text-muted-foreground leading-relaxed">
@@ -496,21 +523,39 @@ export default function QuoteResult() {
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft space-y-4">
           <div>
             <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-sm">Kundentext</h3>
+              <h3 className="font-semibold text-sm inline-flex items-center gap-1.5">
+                Kundentext
+                <span className="text-xs text-muted-foreground font-normal inline-flex items-center gap-1">
+                  <Pencil className="h-3 w-3" /> bearbeitbar
+                </span>
+              </h3>
               <button onClick={copyText} className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline">
                 <Copy className="h-3.5 w-3.5" /> Kopieren
               </button>
             </div>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{ai.customer_text}</p>
+            <Textarea
+              value={ai.customer_text}
+              onChange={(e) => updateCustomerText(e.target.value)}
+              className="min-h-[120px] text-sm leading-relaxed resize-y"
+            />
           </div>
           <div className="border-t border-border pt-4">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-sm">WhatsApp-Text</h3>
+              <h3 className="font-semibold text-sm inline-flex items-center gap-1.5">
+                WhatsApp-Text
+                <span className="text-xs text-muted-foreground font-normal inline-flex items-center gap-1">
+                  <Pencil className="h-3 w-3" /> bearbeitbar
+                </span>
+              </h3>
               <button onClick={copyWA} className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline">
                 <Copy className="h-3.5 w-3.5" /> Kopieren
               </button>
             </div>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{ai.whatsapp_text}</p>
+            <Textarea
+              value={ai.whatsapp_text}
+              onChange={(e) => updateWhatsappText(e.target.value)}
+              className="min-h-[120px] text-sm leading-relaxed resize-y"
+            />
           </div>
         </div>
 
