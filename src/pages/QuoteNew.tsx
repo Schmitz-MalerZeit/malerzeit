@@ -195,12 +195,24 @@ export default function QuoteNew() {
               <div className="space-y-1.5">
                 <Label htmlFor="cust_name">Kundenname</Label>
                 <div className="flex gap-2">
-                  <Input id="cust_name" value={customer.name}
-                    onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                    placeholder="z. B. Familie Müller" className="h-11 flex-1" />
+                  <div className="flex-1">
+                    <CustomerAutocomplete
+                      id="cust_name"
+                      value={customer.name}
+                      onChange={(v) => setCustomer((c) => ({ ...c, name: v }))}
+                      onSelectSuggestion={handleSelectCustomer}
+                      suggestions={pastCustomers}
+                      placeholder="z. B. Familie Müller"
+                    />
+                  </div>
                   <VoiceInput size="md" label="Kundenname diktieren"
                     onTranscript={(t) => setCustomer((c) => ({ ...c, name: appendText(c.name, t) }))} />
                 </div>
+                {pastCustomers.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Tipp: Tippe los – bisherige Kunden werden vorgeschlagen.
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cust_addr">Straße & Hausnummer</Label>
@@ -215,10 +227,19 @@ export default function QuoteNew() {
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5 col-span-1">
                   <Label htmlFor="cust_plz">PLZ</Label>
-                  <Input id="cust_plz" value={customer.postal_code}
-                    onChange={(e) => setCustomer({ ...customer, postal_code: e.target.value })}
+                  <Input id="cust_plz" value={customer.postal_code} inputMode="numeric" maxLength={5}
+                    onChange={(e) => handlePlzChange(e.target.value)}
                     placeholder="12345" className="h-11" />
                 </div>
+                <div className="space-y-1.5 col-span-2">
+                  <Label htmlFor="cust_city">
+                    Ort {plzLookupBusy && <span className="text-xs text-muted-foreground font-normal">(suche…)</span>}
+                  </Label>
+                  <Input id="cust_city" value={customer.city}
+                    onChange={(e) => setCustomer({ ...customer, city: e.target.value })}
+                    placeholder="Musterstadt" className="h-11" />
+                </div>
+              </div>
                 <div className="space-y-1.5 col-span-2">
                   <Label htmlFor="cust_city">Ort</Label>
                   <Input id="cust_city" value={customer.city}
