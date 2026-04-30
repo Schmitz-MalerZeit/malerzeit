@@ -535,6 +535,7 @@ export default function QuoteResult() {
         const pdf = await buildPDF();
         const blob = pdf.output("blob");
         url = URL.createObjectURL(blob);
+        setPreviewBlob(blob);
         setPreviewBlobUrl(url);
       }
       // Inline-Vorschau im Dialog öffnen – kein Popup, kein neues Fenster.
