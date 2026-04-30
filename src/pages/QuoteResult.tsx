@@ -368,13 +368,62 @@ export default function QuoteResult() {
     return `Preisorientierung_${date}.pdf`;
   };
 
+  // Detects mobile browsers where the standard `<a download>` trick is unreliable
+  // (notably iOS Safari, where it silently navigates instead of saving).
+  const isMobileBrowser = (): boolean => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
+    const isAndroid = /Android/i.test(ua);
+    return isIOS || isAndroid;
+  };
+
+  // Try to share the PDF as a real file via the native Share Sheet (iOS/Android).
+  // Returns true on success, false if the API is unavailable or the user cancels.
+  const tryNativeShare = async (blob: Blob, fileName: string): Promise<boolean> => {
+    try {
+      const nav: any = navigator;
+      if (typeof nav.canShare !== "function") return false;
+      const file = new File([blob], fileName, { type: "application/pdf" });
+      if (!nav.canShare({ files: [file] })) return false;
+      await nav.share({ files: [file], title: fileName });
+      return true;
+    } catch (e: any) {
+      // AbortError = user cancelled; treat as "handled" so we don't fall back
+      if (e?.name === "AbortError") return true;
+      console.warn("native share failed", e);
+      return false;
+    }
+  };
+
   const triggerBlobDownload = (url: string, fileName = filename()) => {
     const a = document.createElement("a");
     a.href = url;
     a.download = fileName;
+    a.rel = "noopener";
+    a.target = "_self";
     document.body.appendChild(a);
     a.click();
     a.remove();
+  };
+
+  // Mobile-safe "save the PDF" flow:
+  // 1) Try native share (iOS/Android can save to Files / Drive directly)
+  // 2) Otherwise, open the PDF in a new tab so the OS preview offers "Save to Files"
+  // 3) On desktop, the standard download attribute works fine.
+  const savePdfBlob = async (blob: Blob, url: string, fileName: string): Promise<void> => {
+    if (isMobileBrowser()) {
+      const shared = await tryNativeShare(blob, fileName);
+      if (shared) return;
+      // Fallback: open in new tab. iOS Safari then shows the PDF with a share button.
+      const win = window.open(url, "_blank");
+      if (!win) {
+        // Popup blocked → last-resort same-tab navigation
+        window.location.href = url;
+      }
+      return;
+    }
+    triggerBlobDownload(url, fileName);
   };
 
   const openPendingPreviewWindow = () => {
