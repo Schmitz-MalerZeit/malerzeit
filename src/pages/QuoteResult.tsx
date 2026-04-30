@@ -472,36 +472,34 @@ export default function QuoteResult() {
 
   const previewPDF = async () => {
     if (!guardPdfAccess()) return;
-    const previewWindow = openPendingPreviewWindow();
     setBusy(true);
     try {
       // Vorschau ist KOSTENLOS (kein Quota-Verbrauch). Erst der Download
-      // zählt aufs Kontingent. So kann ein blockiertes Popup niemals
-      // Kontingent verbrennen.
+      // zählt aufs Kontingent.
       let url = previewBlobUrl;
       if (!url) {
         const pdf = await buildPDF();
         const blob = pdf.output("blob");
         url = URL.createObjectURL(blob);
         setPreviewBlobUrl(url);
-        // Bewusst NICHT in sessionStorage cachen – die Vorschau ist nur
-        // temporär. Erst beim tatsächlichen Download wird gecached.
       }
-      if (previewWindow) {
-        previewWindow.location.href = url;
-        setPreviewFailed(false);
-      } else {
-        setPreviewFailed(true);
-        toast.error("Vorschau wurde vom Browser blockiert. Nutze den direkten Link unten.");
-      }
+      // Inline-Vorschau im Dialog öffnen – kein Popup, kein neues Fenster.
+      setPreviewOpen(true);
+      setPreviewFailed(false);
     } catch (e: any) {
-      if (previewWindow) previewWindow.close();
       setPreviewFailed(true);
       toast.error(e.message || "PDF-Fehler", {
         action: { label: "Erneut", onClick: () => retryPreview() },
       });
     }
     finally { setBusy(false); }
+  };
+
+  // Vom Vorschau-Dialog aus direkt herunterladen (verbraucht Quota).
+  const downloadFromPreview = async () => {
+    setPreviewOpen(false);
+    // Kurz warten, damit der Dialog sauber schließt, bevor der Download startet.
+    setTimeout(() => downloadPDF(), 150);
   };
 
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
