@@ -154,14 +154,22 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     left.forEach((row, i) => {
       doc.text(fit(row.value, colWidth), margin, startY + i * lineH);
     });
-    // Right column – sender details with aligned labels (value width = colWidth − labelW)
+    // Right column – sender details. Rows with a label (Tel./E-Mail/Web) get the
+    // aligned label column; address-style rows (empty label) span the full width and
+    // render in the regular text colour for a clean letter-head look.
     doc.setFontSize(9);
     right.forEach((row, i) => {
       const rx = margin + colWidth + colGap;
-      doc.setTextColor(120, 120, 120);
-      doc.text(row.label, rx, startY + i * lineH);
-      doc.setTextColor(60, 60, 60);
-      doc.text(fit(row.value, colWidth - labelW), rx + labelW, startY + i * lineH);
+      const yRow = startY + i * lineH;
+      if (row.label) {
+        doc.setTextColor(120, 120, 120);
+        doc.text(row.label, rx, yRow);
+        doc.setTextColor(60, 60, 60);
+        doc.text(fit(row.value, colWidth - labelW), rx + labelW, yRow);
+      } else {
+        doc.setTextColor(60, 60, 60);
+        doc.text(fit(row.value, colWidth), rx, yRow);
+      }
     });
 
     y = startY + rows * lineH + 8;
