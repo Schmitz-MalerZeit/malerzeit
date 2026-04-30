@@ -1,0 +1,27 @@
+{
+  "name": "MalerZeit AI",
+  "short_name": "MalerZeit",
+  "description": "KI-gestützte Preisvorschläge für Malerbetriebe – beschreiben, kalkulieren, professionelles PDF erstellen.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#1a3a6c",
+  "lang": "de",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
