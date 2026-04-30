@@ -77,6 +77,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          address_line2: string | null
           city: string | null
           company_name: string | null
           contact_person: string | null
@@ -95,6 +96,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          address_line2?: string | null
           city?: string | null
           company_name?: string | null
           contact_person?: string | null
@@ -113,6 +115,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          address_line2?: string | null
           city?: string | null
           company_name?: string | null
           contact_person?: string | null
