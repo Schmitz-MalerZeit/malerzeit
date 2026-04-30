@@ -276,6 +276,29 @@ export default function Settings() {
         <Button onClick={save} disabled={saving} className="w-full h-12 gradient-primary text-primary-foreground border-0 font-semibold">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
         </Button>
+
+        {currentUserId === TEST_USER_ID && (
+          <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 space-y-3">
+            <div>
+              <h2 className="font-semibold text-sm">🛠️ Test-Werkzeuge</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Nur für dich sichtbar. Setzt dein PDF-Kontingent zurück, damit du
+                die App ungestört testen kannst.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={resetQuota}
+              disabled={resetting}
+              className="w-full h-11"
+            >
+              {resetting
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <><RefreshCw className="h-4 w-4 mr-2" /> PDF-Kontingent zurücksetzen</>}
+            </Button>
+          </div>
+        )}
       </div>
     </AppShell>
   );
