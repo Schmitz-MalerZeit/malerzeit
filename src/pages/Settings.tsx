@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Star } from "lucide-react";
-import { VoiceInput } from "@/components/VoiceInput";
+
 
 interface Rate {
   id?: string;
