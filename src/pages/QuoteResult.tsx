@@ -27,6 +27,7 @@ export default function QuoteResult() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
   // Bestätigungs-Dialog vor PDF-Erstellung (zählt aufs Kontingent).
