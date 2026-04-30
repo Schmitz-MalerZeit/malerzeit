@@ -55,29 +55,44 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setFillColor(primary[0], primary[1], primary[2]);
   doc.rect(0, 0, pageW, 38, "F");
 
-  // Logo: 1:1 wie hochgeladen – kein weißer Hintergrund, Transparenz bleibt erhalten.
-  // Das Logo wird direkt auf das Header-Band gesetzt, damit es wirkt wie in der Originaldatei.
+  // Logo: proportional skalieren ("contain") in eine feste Bounding-Box,
+  // damit das Original-Seitenverhältnis erhalten bleibt – nie verzerrt, nie beschnitten.
+  // Die Box sitzt links im Header-Band; der Text rechts davon startet immer
+  // an derselben Position, unabhängig von Hoch-/Quer-/Quadrat-Logo.
+  const logoBox = { x: margin, y: 6, w: 30, h: 26 }; // max. Logo-Größe in mm
+  let logoRenderedW = 0;
   if (d.company.logoDataUrl) {
     try {
       const src = d.company.logoDataUrl;
-      let fmt: "PNG" | "JPEG" | "WEBP" = "PNG";
+      let imgFmt: "PNG" | "JPEG" | "WEBP" = "PNG";
       const m = /^data:image\/(png|jpe?g|webp)/i.exec(src);
       if (m) {
         const ext = m[1].toLowerCase();
-        fmt = ext === "webp" ? "WEBP" : ext.startsWith("jp") ? "JPEG" : "PNG";
-      } else if (/\.(jpe?g)(\?|$)/i.test(src)) fmt = "JPEG";
-      else if (/\.webp(\?|$)/i.test(src))      fmt = "WEBP";
+        imgFmt = ext === "webp" ? "WEBP" : ext.startsWith("jp") ? "JPEG" : "PNG";
+      } else if (/\.(jpe?g)(\?|$)/i.test(src)) imgFmt = "JPEG";
+      else if (/\.webp(\?|$)/i.test(src))      imgFmt = "WEBP";
 
-      // Logo direkt platzieren – ohne Karte/Hintergrund.
-      doc.addImage(src, fmt, margin, 8, 24, 22, undefined, "FAST");
+      const natW = d.company.logoNaturalWidth  || 0;
+      const natH = d.company.logoNaturalHeight || 0;
+      let w = logoBox.w, h = logoBox.h;
+      if (natW > 0 && natH > 0) {
+        const scale = Math.min(logoBox.w / natW, logoBox.h / natH);
+        w = natW * scale;
+        h = natH * scale;
+      }
+      // Vertikal mittig in der Box ausrichten, links bündig.
+      const x = logoBox.x;
+      const y = logoBox.y + (logoBox.h - h) / 2;
+      doc.addImage(src, imgFmt, x, y, w, h, undefined, "FAST");
+      logoRenderedW = w;
     } catch {/* ignore */}
   }
 
   // Reserve a safe slot on the right for the date so a long company name never overlaps it.
-  // Date is fixed-width (~32 mm at fontSize 9). We leave 8 mm padding before it.
+  // Text-Startpunkt richtet sich nach max. Logo-Breite + Padding (konstant, nicht je Logo).
   const dateText = `Datum: ${d.date}`;
   const dateSlotW = 38;
-  const nameStartX = d.company.logoDataUrl ? margin + 28 : margin;
+  const nameStartX = d.company.logoDataUrl ? logoBox.x + logoBox.w + 4 : margin;
   const nameMaxW = pageW - margin - dateSlotW - nameStartX;
 
   doc.setTextColor(255, 255, 255);
