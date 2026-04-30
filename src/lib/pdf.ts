@@ -5,8 +5,11 @@ export interface QuotePDFData {
     name?: string;
     contact?: string;
     address?: string;
+    postalCode?: string;
+    city?: string;
     phone?: string;
     email?: string;
+    website?: string;
     logoDataUrl?: string;
     primaryColor?: string;
     secondaryColor?: string;
