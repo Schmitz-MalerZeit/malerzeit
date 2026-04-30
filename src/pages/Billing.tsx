@@ -254,18 +254,28 @@ export default function Billing() {
                         >
                           <FileText className="h-3.5 w-3.5" /> Ansehen
                         </a>
-                        <button
-                          type="button"
-                          onClick={() => downloadInvoice(t)}
-                          disabled={downloadingId === t.id}
-                          className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline px-2 py-1 disabled:opacity-50"
-                          title="PDF herunterladen"
-                        >
-                          {downloadingId === t.id
-                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            : <Download className="h-3.5 w-3.5" />}
-                          PDF
-                        </button>
+                        {(() => {
+                          const isLoading = downloadingId === t.id;
+                          const hasFailed = failedIds.has(t.id);
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => downloadInvoice(t)}
+                              disabled={isLoading}
+                              className={`text-xs font-medium inline-flex items-center gap-1 hover:underline px-2 py-1 disabled:opacity-50 ${
+                                hasFailed ? "text-destructive" : "text-primary"
+                              }`}
+                              title={hasFailed ? "Erneut versuchen" : "PDF herunterladen"}
+                            >
+                              {isLoading
+                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                : hasFailed
+                                  ? <RotateCw className="h-3.5 w-3.5" />
+                                  : <Download className="h-3.5 w-3.5" />}
+                              {hasFailed ? "Erneut" : "PDF"}
+                            </button>
+                          );
+                        })()}
                       </div>
                     )}
                   </li>
