@@ -645,8 +645,8 @@ export default function QuoteResult() {
           <AlertDialogHeader>
             <AlertDialogTitle>Preisorientierung jetzt erstellen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Bitte prüfen Sie die Inhalte oben sorgfältig. Mit dem Erstellen wird die Preisorientierung
-              auf Ihr monatliches Kontingent angerechnet. Möchten Sie fortfahren?
+              Bitte prüfe die Inhalte oben sorgfältig. Mit dem Erstellen wird die Preisorientierung
+              auf dein monatliches Kontingent angerechnet. Möchtest du fortfahren?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
