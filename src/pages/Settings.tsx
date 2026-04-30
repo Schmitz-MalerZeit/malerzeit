@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, Star } from "lucide-react";
+import { Loader2, Plus, Trash2, Star, RefreshCw } from "lucide-react";
+
+const TEST_USER_ID = "4f497125-b2e8-46af-a6ef-477dbe7a8a0c";
 
 
 interface Rate {
@@ -31,9 +33,13 @@ export default function Settings() {
   });
   const [rates, setRates] = useState<Rate[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      setCurrentUserId(userData.user?.id ?? null);
       const [{ data: settings }, { data: hr }] = await Promise.all([
         supabase.from("user_settings").select("*").maybeSingle(),
         supabase.from("hourly_rates").select("*").order("sort_order", { ascending: true }),
@@ -52,6 +58,23 @@ export default function Settings() {
       setLoading(false);
     })();
   }, []);
+
+  // Test-Reset: nur für den Entwickler-Account sichtbar. Ruft die geschützte
+  // RPC `reset_my_pdf_quota` auf, die serverseitig gegen die User-ID prüft.
+  const resetQuota = async () => {
+    setResetting(true);
+    try {
+      const { data, error } = await supabase.rpc("reset_my_pdf_quota" as any);
+      if (error) throw error;
+      const res = data as { ok: boolean; error?: string };
+      if (!res?.ok) throw new Error(res?.error || "Reset fehlgeschlagen");
+      toast.success("PDF-Kontingent zurückgesetzt");
+    } catch (e: any) {
+      toast.error(e.message || "Reset fehlgeschlagen");
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const addRate = () => {
     setRates([...rates, {
@@ -253,6 +276,29 @@ export default function Settings() {
         <Button onClick={save} disabled={saving} className="w-full h-12 gradient-primary text-primary-foreground border-0 font-semibold">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
         </Button>
+
+        {currentUserId === TEST_USER_ID && (
+          <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 space-y-3">
+            <div>
+              <h2 className="font-semibold text-sm">🛠️ Test-Werkzeuge</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Nur für dich sichtbar. Setzt dein PDF-Kontingent zurück, damit du
+                die App ungestört testen kannst.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={resetQuota}
+              disabled={resetting}
+              className="w-full h-11"
+            >
+              {resetting
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <><RefreshCw className="h-4 w-4 mr-2" /> PDF-Kontingent zurücksetzen</>}
+            </Button>
+          </div>
+        )}
       </div>
     </AppShell>
   );

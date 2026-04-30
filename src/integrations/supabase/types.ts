@@ -305,6 +305,7 @@ export type Database = {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
       }
+      reset_my_pdf_quota: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never
