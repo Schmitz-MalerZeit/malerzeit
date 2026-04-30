@@ -19,11 +19,11 @@ type Tier = {
 
 const TIERS: Tier[] = [
   { id: "starter", name: "Starter", monthly: 14.9, yearly: 149, pdfs: 15,
-    features: ["Bis zu 15 KI-Angebote / Monat", "Alle Stundensätze", "PDF-Export & WhatsApp-Text", "E-Mail-Support"] },
+    features: ["Bis zu 15 KI-Angebote / Monat", "Alle Stundensätze", "PDF-Export & WhatsApp-Text", "Spracheingabe (Diktat)", "E-Mail-Support"] },
   { id: "profi", name: "Profi", monthly: 24.9, yearly: 249, pdfs: 50, highlight: true,
-    features: ["Bis zu 50 KI-Angebote / Monat", "Alles aus Starter", "Eigenes Logo & Farben", "Prioritäts-Support"] },
+    features: ["Bis zu 50 KI-Angebote / Monat", "Alles aus Starter", "Eigenes Logo & Farben im PDF", "E-Mail-Support"] },
   { id: "profiplus", name: "Profi+", monthly: 49.9, yearly: 499, pdfs: 200,
-    features: ["Bis zu 200 KI-Angebote / Monat", "Alles aus Profi", "Erweiterte Statistiken", "Persönlicher Support"] },
+    features: ["Bis zu 200 KI-Angebote / Monat", "Alles aus Profi", "CSV-Export aller Angebote", "E-Mail-Support"] },
 ];
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });

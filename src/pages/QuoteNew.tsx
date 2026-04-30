@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Sparkles, ArrowRight, Mic } from "lucide-react";
+import { Loader2, Sparkles, ArrowRight } from "lucide-react";
+import { VoiceInput } from "@/components/VoiceInput";
+
+const appendText = (prev: string, add: string) =>
+  prev.trim().length === 0 ? add : `${prev.replace(/\s+$/, "")}\n${add}`;
 
 interface AIResp {
   needs_clarification: boolean;
@@ -126,15 +130,23 @@ export default function QuoteNew() {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="cust_name">Kundenname</Label>
-                <Input id="cust_name" value={customer.name}
-                  onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                  placeholder="z. B. Familie Müller" className="h-11" />
+                <div className="flex gap-2">
+                  <Input id="cust_name" value={customer.name}
+                    onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+                    placeholder="z. B. Familie Müller" className="h-11 flex-1" />
+                  <VoiceInput size="md" label="Kundenname diktieren"
+                    onTranscript={(t) => setCustomer((c) => ({ ...c, name: appendText(c.name, t) }))} />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cust_addr">Straße & Hausnummer</Label>
-                <Input id="cust_addr" value={customer.address}
-                  onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
-                  placeholder="Musterstraße 12" className="h-11" />
+                <div className="flex gap-2">
+                  <Input id="cust_addr" value={customer.address}
+                    onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
+                    placeholder="Musterstraße 12" className="h-11 flex-1" />
+                  <VoiceInput size="md" label="Adresse diktieren"
+                    onTranscript={(t) => setCustomer((c) => ({ ...c, address: appendText(c.address, t) }))} />
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5 col-span-1">
@@ -172,9 +184,11 @@ export default function QuoteNew() {
               maxLength={4000}
             />
             <div className="flex justify-between items-center mt-2">
-              <button type="button" disabled className="text-xs text-muted-foreground inline-flex items-center gap-1 opacity-60">
-                <Mic className="h-3.5 w-3.5" /> Spracheingabe (bald)
-              </button>
+              <div className="flex items-center gap-2">
+                <VoiceInput size="sm" label="Beschreibung diktieren"
+                  onTranscript={(t) => setDescription((d) => appendText(d, t))} />
+                <span className="text-xs text-muted-foreground">Diktieren – Text wird angehängt</span>
+              </div>
               <span className="text-xs text-muted-foreground">{description.length}/4000</span>
             </div>
           </div>
@@ -206,7 +220,11 @@ export default function QuoteNew() {
         {questions.map((q, i) => (
           <div key={i} className="rounded-2xl bg-card border border-border p-4 shadow-soft">
             <Label className="text-sm font-medium mb-2 block">{q}</Label>
-            <Input value={answers[q] || ""} onChange={(e) => setAnswers({ ...answers, [q]: e.target.value })} placeholder="Deine Antwort..." className="h-11" />
+            <div className="flex gap-2">
+              <Input value={answers[q] || ""} onChange={(e) => setAnswers({ ...answers, [q]: e.target.value })} placeholder="Deine Antwort..." className="h-11 flex-1" />
+              <VoiceInput size="md" label="Antwort diktieren"
+                onTranscript={(t) => setAnswers((a) => ({ ...a, [q]: appendText(a[q] || "", t) }))} />
+            </div>
           </div>
         ))}
         <Button onClick={() => callAI("finalize")} disabled={loading}
