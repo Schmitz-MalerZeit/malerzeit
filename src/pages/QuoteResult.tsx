@@ -407,6 +407,7 @@ export default function QuoteResult() {
         setPreviewFailed(false);
         setLastFilename(filename());
         setShareOpen(true);
+        save(true); // automatisch speichern (still, ohne Toast)
         return;
       }
       const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
@@ -420,6 +421,7 @@ export default function QuoteResult() {
       setPreviewFailed(false);
       setLastFilename(filename());
       setShareOpen(true);
+      save(true); // automatisch speichern (still, ohne Toast)
     } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
     finally { setBusy(false); }
   };
