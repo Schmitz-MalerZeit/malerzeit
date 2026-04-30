@@ -101,6 +101,11 @@ export default function Home() {
           const pct = Math.min(100, Math.round((sub.pdfUsed / sub.pdfLimit) * 100));
           const low = left <= Math.max(3, Math.ceil(sub.pdfLimit * 0.1));
           const empty = left === 0;
+          const now = new Date();
+          const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0);
+          const daysLeft = Math.max(1, Math.ceil((resetDate.getTime() - now.getTime()) / 86_400_000));
+          const fmtDate = resetDate.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+          const fmtWeekday = resetDate.toLocaleDateString("de-DE", { weekday: "long" });
           return (
             <button
               onClick={() => nav("/billing")}
@@ -130,9 +135,25 @@ export default function Home() {
                 />
               </div>
               <div className={`text-xs ${empty ? "text-orange-800" : "text-muted-foreground"}`}>
-                {empty
-                  ? "Kontingent aufgebraucht – Tarif anpassen →"
-                  : `${sub.pdfUsed} von ${sub.pdfLimit} genutzt · Reset am Monatsanfang`}
+                {empty ? "Kontingent aufgebraucht." : `${sub.pdfUsed} von ${sub.pdfLimit} genutzt.`}
+              </div>
+              <div className={`mt-2 pt-2 border-t text-xs flex items-start justify-between gap-3 ${
+                empty ? "border-orange-200 text-orange-900" : "border-border/60 text-muted-foreground"
+              }`}>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium">
+                    {empty ? "Nächste Generierung verfügbar:" : "Reset am:"}
+                  </div>
+                  <div className="tabular-nums">
+                    {fmtWeekday}, {fmtDate} · 00:00 Uhr
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="font-bold tabular-nums text-sm">
+                    {daysLeft === 1 ? "morgen" : `in ${daysLeft} Tagen`}
+                  </div>
+                  {empty && <div className="text-[10px]">oder Tarif anpassen →</div>}
+                </div>
               </div>
             </button>
           );
