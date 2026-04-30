@@ -9,7 +9,7 @@
 //   ein (grün = befüllt, grau = leer). So ist sofort sichtbar, warum z. B. der
 //   Ansprechpartner-Block (nicht) erscheint, ohne dass man raten muss.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageIcon, Check, Minus } from "lucide-react";
 
 interface Props {
@@ -45,6 +45,12 @@ export function LetterheadPreview({
   const secondary = secondaryColor || DEFAULT_SECONDARY;
   const today = new Date().toLocaleDateString("de-DE");
   const [showFields, setShowFields] = useState(false);
+  // Wenn das Logo nicht ladbar ist (defektes SVG, 404, CORS-Block), fallen wir
+  // visuell auf den Initial-Fallback zurück – analog zum PDF-Renderer.
+  const [logoBroken, setLogoBroken] = useState(false);
+  useEffect(() => { setLogoBroken(false); }, [logoUrl]);
+  const showLogo = !!logoUrl && !logoBroken;
+  const initial = (companyName || "?").trim().charAt(0).toUpperCase() || "?";
 
   // LEFT: customer / recipient. Use a clearly-labelled demo if none provided.
   const hasCustomer = !!(customerName || customerAddress || customerPostalCode || customerCity);
@@ -114,12 +120,22 @@ export function LetterheadPreview({
           >
             {/* Logo-Slot: feste Bounding-Box, Bild wird per object-contain proportional skaliert (nie verzerrt, nie beschnitten) */}
             <div className="h-[75%] w-16 flex items-center justify-start shrink-0">
-              {logoUrl ? (
+              {showLogo ? (
                 <img
                   src={logoUrl}
                   alt="Logo"
                   className="max-h-full max-w-full object-contain object-left"
+                  onError={() => setLogoBroken(true)}
                 />
+              ) : logoUrl ? (
+                // Defektes Logo → weißer Kreis mit Initiale (gleiches Schema wie im PDF).
+                <div
+                  className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-xs font-bold"
+                  style={{ color: primary }}
+                  title="Logo konnte nicht geladen werden – Initial-Fallback wird gezeigt"
+                >
+                  {initial}
+                </div>
               ) : (
                 <ImageIcon className="h-5 w-5 text-white/70" />
               )}
