@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, CreditCard, Sparkles, AlertCircle, FileText, Receipt, Download } from "lucide-react";
+import { Loader2, ExternalLink, CreditCard, Sparkles, AlertCircle, FileText, Receipt, Download, RotateCw } from "lucide-react";
 
 interface Tx {
   id: string;
@@ -43,10 +43,18 @@ export default function Billing() {
   const [txs, setTxs] = useState<Tx[] | null>(null);
   const [txLoading, setTxLoading] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
 
   const downloadInvoice = async (t: Tx) => {
     if (!t.invoice_url) return;
     setDownloadingId(t.id);
+    // Clear previous failure marker for this row
+    setFailedIds((prev) => {
+      if (!prev.has(t.id)) return prev;
+      const next = new Set(prev);
+      next.delete(t.id);
+      return next;
+    });
     try {
       const res = await fetch(t.invoice_url);
       if (!res.ok) throw new Error(String(res.status));
@@ -60,9 +68,16 @@ export default function Billing() {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
-      // CORS or network — fall back to opening in a new tab
-      console.warn("invoice download fallback", e);
-      window.open(t.invoice_url, "_blank", "noopener,noreferrer");
+      // CORS or network — mark as failed and offer retry
+      console.warn("invoice download failed", e);
+      setFailedIds((prev) => {
+        const next = new Set(prev);
+        next.add(t.id);
+        return next;
+      });
+      toast.error("Download fehlgeschlagen. Erneut versuchen oder im neuen Tab öffnen.", {
+        action: { label: "Im Tab öffnen", onClick: () => window.open(t.invoice_url!, "_blank", "noopener,noreferrer") },
+      });
     } finally {
       setDownloadingId(null);
     }
@@ -239,18 +254,28 @@ export default function Billing() {
                         >
                           <FileText className="h-3.5 w-3.5" /> Ansehen
                         </a>
-                        <button
-                          type="button"
-                          onClick={() => downloadInvoice(t)}
-                          disabled={downloadingId === t.id}
-                          className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline px-2 py-1 disabled:opacity-50"
-                          title="PDF herunterladen"
-                        >
-                          {downloadingId === t.id
-                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            : <Download className="h-3.5 w-3.5" />}
-                          PDF
-                        </button>
+                        {(() => {
+                          const isLoading = downloadingId === t.id;
+                          const hasFailed = failedIds.has(t.id);
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => downloadInvoice(t)}
+                              disabled={isLoading}
+                              className={`text-xs font-medium inline-flex items-center gap-1 hover:underline px-2 py-1 disabled:opacity-50 ${
+                                hasFailed ? "text-destructive" : "text-primary"
+                              }`}
+                              title={hasFailed ? "Erneut versuchen" : "PDF herunterladen"}
+                            >
+                              {isLoading
+                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                : hasFailed
+                                  ? <RotateCw className="h-3.5 w-3.5" />
+                                  : <Download className="h-3.5 w-3.5" />}
+                              {hasFailed ? "Erneut" : "PDF"}
+                            </button>
+                          );
+                        })()}
                       </div>
                     )}
                   </li>
