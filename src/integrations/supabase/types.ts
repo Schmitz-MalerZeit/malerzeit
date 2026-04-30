@@ -47,6 +47,33 @@ export type Database = {
         }
         Relationships: []
       }
+      pdf_usage: {
+        Row: {
+          count: number
+          created_at: string | null
+          id: string
+          period_start: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string | null
+          id?: string
+          period_start: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          count?: number
+          created_at?: string | null
+          id?: string
+          period_start?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -61,6 +88,7 @@ export type Database = {
           logo_url: string | null
           phone: string | null
           postal_code: string | null
+          trial_ends_at: string | null
           updated_at: string
           vat_id: string | null
           website: string | null
@@ -78,6 +106,7 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           vat_id?: string | null
           website?: string | null
@@ -95,6 +124,7 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           vat_id?: string | null
           website?: string | null
@@ -167,6 +197,54 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          environment: string
+          id: string
+          paddle_customer_id: string
+          paddle_subscription_id: string
+          price_id: string
+          product_id: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          paddle_customer_id: string
+          paddle_subscription_id: string
+          price_id: string
+          product_id: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          paddle_customer_id?: string
+          paddle_subscription_id?: string
+          price_id?: string
+          product_id?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           created_at: string
@@ -202,7 +280,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_pdf_limit: { Args: { price_id: string }; Returns: number }
+      has_active_subscription: {
+        Args: { check_env?: string; user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
