@@ -120,12 +120,22 @@ export function LetterheadPreview({
           >
             {/* Logo-Slot: feste Bounding-Box, Bild wird per object-contain proportional skaliert (nie verzerrt, nie beschnitten) */}
             <div className="h-[75%] w-16 flex items-center justify-start shrink-0">
-              {logoUrl ? (
+              {showLogo ? (
                 <img
                   src={logoUrl}
                   alt="Logo"
                   className="max-h-full max-w-full object-contain object-left"
+                  onError={() => setLogoBroken(true)}
                 />
+              ) : logoUrl ? (
+                // Defektes Logo → weißer Kreis mit Initiale (gleiches Schema wie im PDF).
+                <div
+                  className="h-8 w-8 rounded-full bg-white flex items-center justify-center text-xs font-bold"
+                  style={{ color: primary }}
+                  title="Logo konnte nicht geladen werden – Initial-Fallback wird gezeigt"
+                >
+                  {initial}
+                </div>
               ) : (
                 <ImageIcon className="h-5 w-5 text-white/70" />
               )}
