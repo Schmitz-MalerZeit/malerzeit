@@ -93,6 +93,7 @@ export default function QuoteNew() {
         sessionStorage.setItem("currentQuote", JSON.stringify({
           description, answers, ai: resp, customer,
         }));
+        sessionStorage.removeItem("currentQuotePdf"); // invalidate old cached PDF
         nav("/quote/result");
       }
     } catch (err: any) {
