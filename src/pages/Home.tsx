@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FileText, FolderOpen, Settings as SettingsIcon, Scale, User as UserIcon, LogOut, Sparkles } from "lucide-react";
+import { FileText, FolderOpen, Settings as SettingsIcon, Scale, User as UserIcon, LogOut, Sparkles, CreditCard } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
 const Tile = ({ icon: Icon, title, subtitle, onClick, primary }: any) => (
@@ -27,6 +28,7 @@ const Tile = ({ icon: Icon, title, subtitle, onClick, primary }: any) => (
 export default function Home() {
   const nav = useNavigate();
   const { t } = useTranslation();
+  const sub = useSubscription();
   const [firstName, setFirstName] = useState<string>("");
 
   useEffect(() => {
@@ -66,9 +68,24 @@ export default function Home() {
           <p className="text-muted-foreground">{t("home.tagline")}</p>
         </div>
 
+        {!sub.loading && sub.inTrial && !sub.subscription && (
+          <button
+            onClick={() => nav("/pricing")}
+            className="w-full mb-4 rounded-2xl border border-accent/30 bg-accent/5 p-4 text-left hover:bg-accent/10 transition-base"
+          >
+            <div className="text-sm font-semibold mb-0.5 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-accent" /> Kostenloser Test läuft
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Noch <strong>{sub.trialDaysLeft} Tage</strong> – jetzt Tarif sichern, um nahtlos weiterzumachen →
+            </div>
+          </button>
+        )}
+
         <div className="space-y-3">
           <Tile primary icon={FileText} title={t("home.ctaNew")} subtitle={t("home.ctaNewSub")} onClick={() => nav("/quote/new")} />
           <Tile icon={FolderOpen} title={t("home.ctaQuotes")} subtitle={t("home.ctaQuotesSub")} onClick={() => nav("/quotes")} />
+          <Tile icon={CreditCard} title="Abo & Rechnungen" subtitle="Tarif verwalten, Nutzung & Zahlungsdaten" onClick={() => nav("/billing")} />
           <Tile icon={UserIcon} title={t("home.ctaProfile")} subtitle={t("home.ctaProfileSub")} onClick={() => nav("/profile")} />
           <Tile icon={SettingsIcon} title={t("home.ctaSettings")} subtitle={t("home.ctaSettingsSub")} onClick={() => nav("/settings")} />
           <Tile icon={Scale} title={t("home.ctaLegal")} subtitle={t("home.ctaLegalSub")} onClick={() => nav("/legal")} />
