@@ -12,7 +12,7 @@ const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency"
 
 function toCsv(rows: any[]): string {
   const head = [
-    "Angebot-ID","Datum","Kunde","Straße","PLZ","Ort",
+    "Angebot-ID","Datum","Kunde","Straße","PLZ","Ort","Telefon","E-Mail",
     "Position-Nr","Position","Beschreibung (Angebot)",
     "Stunden gesamt","Material netto (€)","Netto gesamt (€)","MwSt (€)","Brutto gesamt (€)","MwSt-Satz (%)",
   ];
