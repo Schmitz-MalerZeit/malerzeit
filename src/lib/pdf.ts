@@ -288,3 +288,15 @@ export async function urlToDataUrl(url: string): Promise<string | undefined> {
     });
   } catch { return undefined; }
 }
+
+/** Liest die natürlichen Pixelmaße eines Bildes – für proportionale PDF-Skalierung. */
+export async function getImageNaturalSize(
+  src: string
+): Promise<{ width: number; height: number } | undefined> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve(undefined);
+    img.src = src;
+  });
+}
