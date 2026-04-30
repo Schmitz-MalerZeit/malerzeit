@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { VoiceInput } from "@/components/VoiceInput";
+import { CustomerAutocomplete, type CustomerSuggestion } from "@/components/CustomerAutocomplete";
+import { lookupCityForPostalCode } from "@/lib/postalLookup";
 
 const appendText = (prev: string, add: string) =>
   prev.trim().length === 0 ? add : `${prev.replace(/\s+$/, "")}\n${add}`;
@@ -51,13 +53,20 @@ export default function QuoteNew() {
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState({ material_markup: 15, quality_level: "standard", vat_rate: 19 });
   const [hourlyRates, setHourlyRates] = useState<{ label: string; rate: number; is_default: boolean }[]>([]);
+  const [pastCustomers, setPastCustomers] = useState<CustomerSuggestion[]>([]);
+  const [plzLookupBusy, setPlzLookupBusy] = useState(false);
   const subState = useSubscription();
 
   useEffect(() => {
     (async () => {
-      const [{ data: s }, { data: hr }] = await Promise.all([
+      const [{ data: s }, { data: hr }, { data: q }] = await Promise.all([
         supabase.from("user_settings").select("*").maybeSingle(),
         supabase.from("hourly_rates").select("label, rate, is_default, sort_order").order("sort_order", { ascending: true }),
+        supabase.from("quotes")
+          .select("customer_name, customer_address, customer_postal_code, customer_city, customer_phone, customer_email, created_at")
+          .not("customer_name", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(200),
       ]);
       if (s) setSettings({
         material_markup: Number(s.material_markup),
@@ -67,8 +76,55 @@ export default function QuoteNew() {
       setHourlyRates((hr || []).map((r: any) => ({
         label: r.label, rate: Number(r.rate), is_default: !!r.is_default,
       })));
+      // Deduplicate past customers by name+address (most-recent kept)
+      const seen = new Set<string>();
+      const list: CustomerSuggestion[] = [];
+      for (const row of (q || []) as any[]) {
+        const name = (row.customer_name || "").trim();
+        if (!name) continue;
+        const key = `${name}|${row.customer_address || ""}|${row.customer_postal_code || ""}`.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        list.push({
+          name,
+          address: row.customer_address || "",
+          postal_code: row.customer_postal_code || "",
+          city: row.customer_city || "",
+          phone: row.customer_phone || "",
+          email: row.customer_email || "",
+        });
+      }
+      setPastCustomers(list);
     })();
   }, []);
+
+  // PLZ → Ort: own history first, then API fallback. Only fills city if it's empty.
+  const handlePlzChange = async (val: string) => {
+    setCustomer((c) => ({ ...c, postal_code: val }));
+    if (!/^\d{5}$/.test(val.trim())) return;
+    // Don't overwrite a manually entered city
+    if (customer.city.trim().length > 0) return;
+    setPlzLookupBusy(true);
+    const city = await lookupCityForPostalCode(
+      val,
+      pastCustomers.map((c) => ({ postal_code: c.postal_code, city: c.city }))
+    );
+    setPlzLookupBusy(false);
+    if (city) {
+      setCustomer((c) => (c.city.trim().length === 0 ? { ...c, city } : c));
+    }
+  };
+
+  const handleSelectCustomer = (s: CustomerSuggestion) => {
+    setCustomer({
+      name: s.name,
+      address: s.address || "",
+      postal_code: s.postal_code || "",
+      city: s.city || "",
+      phone: s.phone || "",
+      email: s.email || "",
+    });
+  };
 
   // Soft pre-check only (UX). Actual increment happens server-side after PDF success.
   // Note: trial users (no paid plan) are allowed to generate the preview even when
