@@ -160,6 +160,66 @@ export default function Billing() {
           </div>
         )}
 
+        {/* Rechnungen / Zahlungen */}
+        <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
+          <div className="flex items-center gap-2 mb-3">
+            <Receipt className="h-4 w-4 text-primary" />
+            <h2 className="font-semibold">Rechnungen & Zahlungen</h2>
+          </div>
+
+          {txLoading && (
+            <div className="flex justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {!txLoading && txs && txs.length === 0 && (
+            <p className="text-sm text-muted-foreground py-2">
+              Noch keine Zahlungen vorhanden.
+            </p>
+          )}
+
+          {!txLoading && txs && txs.length > 0 && (
+            <ul className="divide-y divide-border -mx-1">
+              {txs.map((t) => {
+                const isPaid = t.status === "completed" || t.status === "paid";
+                const isFailed = t.status === "past_due" || t.status === "canceled";
+                return (
+                  <li key={t.id} className="flex items-center gap-3 py-3 px-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">
+                          {fmtAmount(t.amount, t.currency)}
+                        </span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          isPaid ? "bg-primary/10 text-primary" :
+                          isFailed ? "bg-destructive/10 text-destructive" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          {STATUS_LABEL[t.status] ?? t.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {fmtDate(t.billed_at ?? t.created_at)}
+                      </p>
+                    </div>
+                    {t.invoice_url && (
+                      <a
+                        href={t.invoice_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline shrink-0"
+                      >
+                        <FileText className="h-3.5 w-3.5" /> Rechnung
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
         <p className="text-xs text-center text-muted-foreground">
           Rechnungen & Zahlungsdaten werden über Paddle verwaltet.
         </p>
