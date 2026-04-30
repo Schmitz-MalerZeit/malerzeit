@@ -40,6 +40,8 @@ export default function Billing() {
   const nav = useNavigate();
   const sub = useSubscription();
   const [portalLoading, setPortalLoading] = useState(false);
+  const [txs, setTxs] = useState<Tx[] | null>(null);
+  const [txLoading, setTxLoading] = useState(false);
 
   useEffect(() => {
     if (params.get("checkout") === "success") {
@@ -48,6 +50,23 @@ export default function Billing() {
       setTimeout(() => clearInterval(t), 12000);
     }
   }, [params]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setTxLoading(true);
+      const { data, error } = await supabase.functions.invoke("list-transactions");
+      if (cancelled) return;
+      if (error) {
+        console.error(error);
+        setTxs([]);
+      } else {
+        setTxs((data?.transactions ?? []) as Tx[]);
+      }
+      setTxLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [sub.subscription?.id]);
 
   const openPortal = async () => {
     setPortalLoading(true);
