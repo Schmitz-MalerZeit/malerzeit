@@ -613,7 +613,7 @@ export default function QuoteResult() {
               </Button>
               <Button
                 type="button"
-                onClick={downloadPDF}
+                onClick={() => setConfirmAction("download")}
                 disabled={busy}
                 className="h-11 gradient-primary text-primary-foreground border-0"
               >
@@ -639,6 +639,31 @@ export default function QuoteResult() {
           {saved ? <><Check className="h-4 w-4 mr-2" /> Gespeichert</> : <><Save className="h-4 w-4 mr-2" /> Vorschlag speichern</>}
         </Button>
       </div>
+
+      <AlertDialog open={confirmAction !== null} onOpenChange={(o) => { if (!o) setConfirmAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Preisorientierung jetzt erstellen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bitte prüfen Sie die Inhalte oben sorgfältig. Mit dem Erstellen wird die Preisorientierung
+              auf Ihr monatliches Kontingent angerechnet. Möchten Sie fortfahren?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const action = confirmAction;
+                setConfirmAction(null);
+                if (action === "preview") previewPDF();
+                else if (action === "download") downloadPDF();
+              }}
+            >
+              Ja, jetzt erstellen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
