@@ -94,6 +94,7 @@ export default function QuoteNew() {
           materialMarkup: settings.material_markup,
           qualityLevel: settings.quality_level,
           vatRate: settings.vat_rate,
+          hourlyRates,
         },
       });
       if (error) throw error;
