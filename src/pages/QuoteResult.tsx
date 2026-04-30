@@ -289,7 +289,16 @@ export default function QuoteResult() {
     }
   };
 
+  const guardPdfAccess = (): boolean => {
+    if (pdfAllowed) return true;
+    toast.error("PDF-Download ist ab dem Profi-Tarif verfügbar.", {
+      action: { label: "Tarife ansehen", onClick: () => nav("/pricing") },
+    });
+    return false;
+  };
+
   const downloadPDF = async () => {
+    if (!guardPdfAccess()) return;
     setBusy(true);
     try {
       // Reuse the preview blob if it has already been built (no extra quota cost)
