@@ -9,7 +9,7 @@
 //   ein (grün = befüllt, grau = leer). So ist sofort sichtbar, warum z. B. der
 //   Ansprechpartner-Block (nicht) erscheint, ohne dass man raten muss.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageIcon, Check, Minus } from "lucide-react";
 
 interface Props {
