@@ -96,6 +96,48 @@ export default function Home() {
           </button>
         )}
 
+        {!sub.loading && sub.subscription && sub.pdfLimit > 0 && (() => {
+          const left = Math.max(0, sub.pdfLimit - sub.pdfUsed);
+          const pct = Math.min(100, Math.round((sub.pdfUsed / sub.pdfLimit) * 100));
+          const low = left <= Math.max(3, Math.ceil(sub.pdfLimit * 0.1));
+          const empty = left === 0;
+          return (
+            <button
+              onClick={() => nav("/billing")}
+              className={`w-full mb-4 rounded-2xl border p-4 text-left transition-base ${
+                empty
+                  ? "border-orange-300 bg-orange-50 hover:bg-orange-100"
+                  : low
+                  ? "border-accent/40 bg-accent/5 hover:bg-accent/10"
+                  : "border-border bg-card hover:bg-secondary/50"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-semibold flex items-center gap-1.5">
+                  <Sparkles className={`h-3.5 w-3.5 ${empty ? "text-orange-700" : "text-accent"}`} />
+                  KI-Angebote diesen Monat
+                </div>
+                <div className={`text-sm font-bold tabular-nums ${empty ? "text-orange-900" : "text-foreground"}`}>
+                  {left} / {sub.pdfLimit}
+                </div>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden mb-1.5">
+                <div
+                  className={`h-full rounded-full transition-base ${
+                    empty ? "bg-orange-500" : low ? "bg-accent" : "bg-primary"
+                  }`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className={`text-xs ${empty ? "text-orange-800" : "text-muted-foreground"}`}>
+                {empty
+                  ? "Kontingent aufgebraucht – Tarif anpassen →"
+                  : `${sub.pdfUsed} von ${sub.pdfLimit} genutzt · Reset am Monatsanfang`}
+              </div>
+            </button>
+          );
+        })()}
+
         <div className="space-y-3">
           <Tile primary icon={FileText} title={t("home.ctaNew")} subtitle={t("home.ctaNewSub")} onClick={() => nav("/quote/new")} />
           <Tile icon={FolderOpen} title={t("home.ctaQuotes")} subtitle={t("home.ctaQuotesSub")} onClick={() => nav("/quotes")} />
