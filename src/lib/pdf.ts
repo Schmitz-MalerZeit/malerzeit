@@ -11,6 +11,12 @@ export interface QuotePDFData {
     primaryColor?: string;
     secondaryColor?: string;
   };
+  customer?: {
+    name?: string;
+    address?: string;
+    postalCode?: string;
+    city?: string;
+  };
   date: string;
   lineItems: string[];
   net: number;
