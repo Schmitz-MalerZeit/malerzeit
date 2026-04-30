@@ -95,7 +95,7 @@ export default function QuoteResult() {
   };
   const updateWhatsappText = (value: string) => {
     if (!data) return;
-    persistEdits({ ...data, ai: { ...data.ai, whatsapp_text: value } });
+    persistEdits({ ...data, ai: { ...data.ai, whatsapp_text: value, whatsapp_edited: true } });
   };
 
   if (!data) return null;
