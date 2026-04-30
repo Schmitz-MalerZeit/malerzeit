@@ -61,7 +61,9 @@ export default function QuoteResult() {
         const bin = atob(cachedB64);
         const bytes = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        setPreviewBlob(blob);
         setPreviewBlobUrl(url);
         setPdfQuotaConsumed(true);
       } catch (e) {
