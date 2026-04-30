@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
+import { PdfPreviewRenderer } from "@/components/PdfPreviewRenderer";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -839,32 +840,27 @@ export default function QuoteResult() {
       </AlertDialog>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
-            <DialogTitle>PDF-Vorschau</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-4xl w-[95vw] h-[90vh] max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-border text-center">
+            <DialogTitle className="text-center">PDF-Vorschau</DialogTitle>
+            <DialogDescription className="text-center leading-relaxed">
               So wird dein PDF aussehen. Mit „PDF erstellen" wird es heruntergeladen und auf dein Kontingent angerechnet.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 bg-muted">
-            {previewBlobUrl && (
-              <iframe
-                src={previewBlobUrl}
-                title="PDF-Vorschau"
-                className="w-full h-full border-0"
-              />
-            )}
+          <div className="flex-1 min-h-0">
+            <PdfPreviewRenderer url={previewBlobUrl} />
           </div>
-          <div className="grid grid-cols-2 gap-2 p-4 border-t border-border">
-            <Button variant="outline" onClick={() => setPreviewOpen(false)} className="h-11">
+          <div className="grid grid-cols-2 gap-2 p-4 border-t border-border bg-card">
+            <Button variant="outline" onClick={() => setPreviewOpen(false)} className="h-11 min-w-0">
               Schließen
             </Button>
             <Button
               onClick={downloadFromPreview}
               disabled={busy}
-              className="h-11 gradient-primary text-primary-foreground border-0"
+              className="h-11 min-w-0 gradient-primary text-primary-foreground border-0"
             >
-              <FileDown className="h-4 w-4 mr-2" /> PDF erstellen & laden
+              <FileDown className="h-4 w-4 mr-2 shrink-0" />
+              <span className="truncate">PDF erstellen & laden</span>
             </Button>
           </div>
         </DialogContent>
