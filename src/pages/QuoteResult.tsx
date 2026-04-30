@@ -123,11 +123,35 @@ export default function QuoteResult() {
 
     // 2) Symbol/punctuation map — replace with words rather than dropping silently
     const symbolMap: Record<string, string> = {
-      "&": " und ", "+": " plus ", "@": " at ", "%": " prozent ",
-      "€": " eur ", "$": " usd ", "£": " gbp ",
+      // logical / textual connectors
+      "&": " und ", "+": " plus ", "=": " gleich ",
+      "@": " at ", "#": " nr ",
+      "%": " prozent ", "‰": " promille ",
+      // currencies (incl. fullwidth and CJK variants)
+      "€": " eur ", "$": " usd ", "£": " gbp ", "¥": " jpy ",
+      "₽": " rub ", "₹": " inr ", "₩": " krw ", "¢": " cent ",
+      "＄": " usd ", "￡": " gbp ", "￥": " jpy ", "￠": " cent ",
+      // arrows / connectors → "zu"
+      "→": " zu ", "⇒": " zu ", "➔": " zu ", "➜": " zu ", "➝": " zu ",
+      "←": " zu ", "⇐": " zu ",
+      "↔": " bis ", "⇔": " bis ",
+      // dashes (en/em/figure/horizontal-bar/minus)
+      "–": " ", "—": " ", "―": " ", "‒": " ", "−": " ",
+      // path-like separators
       "/": " ", "\\": " ", "|": " ",
+      // typographic quotes/apostrophes (drop, don't word-replace)
+      "“": " ", "”": " ", "„": " ", "‟": " ",
+      "‘": " ", "’": " ", "‚": " ", "‛": " ",
+      "«": " ", "»": " ", "‹": " ", "›": " ",
+      // bullets / middots / ellipsis
+      "•": " ", "·": " ", "●": " ", "◦": " ", "…": " ",
     };
-    s = s.replace(/[&+@%€$£/\\|]/g, (c) => symbolMap[c] ?? " ");
+    // Build the regex from the map keys so we never drift out of sync.
+    const symbolPattern = new RegExp(
+      "[" + Object.keys(symbolMap).map((c) => c.replace(/[\\\]\-^]/g, "\\$&")).join("") + "]",
+      "g",
+    );
+    s = s.replace(symbolPattern, (c) => symbolMap[c] ?? " ");
 
     // 3) Strip remaining diacritics (NFD splits e.g. é → e + ´, then we drop the mark)
     s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
