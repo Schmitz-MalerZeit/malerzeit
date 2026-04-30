@@ -189,6 +189,7 @@ export default function QuoteResult() {
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
       setPreviewBlobUrl(url);
+      await cachePdfInSession(blob);                // persist across reloads
       openBlob(url);
     } catch (e: any) {
       setPreviewFailed(true);
