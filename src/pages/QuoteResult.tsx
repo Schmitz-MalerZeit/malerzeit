@@ -837,6 +837,38 @@ export default function QuoteResult() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
+            <DialogTitle>PDF-Vorschau</DialogTitle>
+            <DialogDescription>
+              So wird dein PDF aussehen. Mit „PDF erstellen" wird es heruntergeladen und auf dein Kontingent angerechnet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 bg-muted">
+            {previewBlobUrl && (
+              <iframe
+                src={previewBlobUrl}
+                title="PDF-Vorschau"
+                className="w-full h-full border-0"
+              />
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 p-4 border-t border-border">
+            <Button variant="outline" onClick={() => setPreviewOpen(false)} className="h-11">
+              Schließen
+            </Button>
+            <Button
+              onClick={downloadFromPreview}
+              disabled={busy}
+              className="h-11 gradient-primary text-primary-foreground border-0"
+            >
+              <FileDown className="h-4 w-4 mr-2" /> PDF erstellen & laden
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
