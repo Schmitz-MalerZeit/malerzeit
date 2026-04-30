@@ -240,13 +240,6 @@ export default function QuoteNew() {
                     placeholder="Musterstadt" className="h-11" />
                 </div>
               </div>
-                <div className="space-y-1.5 col-span-2">
-                  <Label htmlFor="cust_city">Ort</Label>
-                  <Input id="cust_city" value={customer.city}
-                    onChange={(e) => setCustomer({ ...customer, city: e.target.value })}
-                    placeholder="Musterstadt" className="h-11" />
-                </div>
-              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="cust_phone">Telefon <span className="text-muted-foreground font-normal">(optional)</span></Label>
