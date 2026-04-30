@@ -59,20 +59,37 @@ export default function Pricing() {
 
         <div className="text-center">
           <h2 className="text-2xl font-bold tracking-tight mb-2">Wähle deinen Tarif</h2>
-          <p className="text-sm text-muted-foreground">Jederzeit kündbar. Keine versteckten Kosten.</p>
+          <p className="text-sm text-muted-foreground">Monatlich kündbar zum Monatsende. Keine versteckten Kosten.</p>
         </div>
 
-        <div className="flex justify-center">
-          <div className="inline-flex p-1 bg-secondary rounded-xl">
-            <button onClick={() => setBilling("monthly")}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-base ${billing === "monthly" ? "bg-card shadow-soft" : "text-muted-foreground"}`}>
-              Monatlich
-            </button>
-            <button onClick={() => setBilling("yearly")}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-base ${billing === "yearly" ? "bg-card shadow-soft" : "text-muted-foreground"}`}>
-              Jährlich <span className="text-xs text-primary font-bold ml-1">-17%</span>
-            </button>
+        <div className="space-y-2">
+          <p className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Zahlungsweise wählen
+          </p>
+          <div className="flex justify-center">
+            <div className="relative inline-flex p-1 bg-secondary rounded-xl">
+              <button onClick={() => setBilling("monthly")}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-base ${billing === "monthly" ? "bg-card shadow-soft" : "text-muted-foreground"}`}>
+                Monatlich
+              </button>
+              <button onClick={() => setBilling("yearly")}
+                className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-base ${billing === "yearly" ? "bg-card shadow-soft" : "text-muted-foreground"}`}>
+                Jährlich
+                <span className="absolute -top-2 -right-2 text-[10px] font-bold uppercase tracking-wider text-primary-foreground bg-primary px-1.5 py-0.5 rounded-full shadow-soft">
+                  -17%
+                </span>
+              </button>
+            </div>
           </div>
+          {billing === "yearly" ? (
+            <p className="text-center text-xs text-primary font-semibold">
+              ✓ Beste Wahl – du sparst 17% im Vergleich zur monatlichen Zahlung
+            </p>
+          ) : (
+            <p className="text-center text-xs text-muted-foreground">
+              Tipp: Bei jährlicher Zahlung sparst du <span className="text-primary font-semibold">17%</span>
+            </p>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -117,7 +134,7 @@ export default function Pricing() {
         </div>
 
         <p className="text-xs text-center text-muted-foreground">
-          Zahlungsabwicklung über Paddle. Alle Preise inkl. MwSt.
+          Monatlich kündbar zum Monatsende. Zahlungsabwicklung über Paddle. Alle Preise inkl. MwSt.
         </p>
       </div>
     </AppShell>
