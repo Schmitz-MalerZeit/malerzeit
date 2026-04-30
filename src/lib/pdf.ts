@@ -124,18 +124,26 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     doc.setFontSize(9);
     doc.setTextColor(60, 60, 60);
 
+    // Truncate to a max width with an ellipsis – cells stay single-line, never overflow.
+    const fit = (text: string, maxW: number): string => {
+      if (doc.getTextWidth(text) <= maxW) return text;
+      let s = text;
+      while (s.length > 1 && doc.getTextWidth(s + "…") > maxW) s = s.slice(0, -1);
+      return s + "…";
+    };
+
     const startY = y;
-    // Left column
+    // Left column – full column width available
     left.forEach((row, i) => {
-      doc.text(row.value, margin, startY + i * lineH);
+      doc.text(fit(row.value, colWidth), margin, startY + i * lineH);
     });
-    // Right column with aligned labels
+    // Right column with aligned labels – value width = colWidth − labelW
     right.forEach((row, i) => {
       const rx = margin + colWidth + colGap;
       doc.setTextColor(120, 120, 120);
       doc.text(row.label, rx, startY + i * lineH);
       doc.setTextColor(60, 60, 60);
-      doc.text(row.value, rx + labelW, startY + i * lineH);
+      doc.text(fit(row.value, colWidth - labelW), rx + labelW, startY + i * lineH);
     });
 
     y = startY + rows * lineH + 6;
