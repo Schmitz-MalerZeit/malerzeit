@@ -68,8 +68,22 @@ export default function QuoteResult() {
     let logoDataUrl: string | undefined;
     let logoSize: { width: number; height: number } | undefined;
     if (logoAllowed && profile?.logo_url) {
-      logoDataUrl = await urlToDataUrl(profile.logo_url);
-      if (logoDataUrl) logoSize = await getImageNaturalSize(logoDataUrl);
+      // urlToDataUrl: Storage-URL → Data-URL (für jspdf einbettbar).
+      // prepareLogoForPdf: konvertiert SVG/unsupported → PNG via Canvas und liest
+      // die natürlichen Maße aus. Bei Fehlern bleibt logoDataUrl undefined und
+      // der PDF-Renderer übernimmt das Initial-Fallback automatisch.
+      const raw = await urlToDataUrl(profile.logo_url);
+      if (raw) {
+        const prepared = await prepareLogoForPdf(raw);
+        if (prepared) {
+          logoDataUrl = prepared.dataUrl;
+          logoSize = { width: prepared.width, height: prepared.height };
+        } else {
+          // Bewusst die Roh-Data-URL übergeben – wenn sie ein Format hat, das
+          // jspdf doch akzeptiert, klappt's; sonst greift der Initial-Fallback.
+          logoDataUrl = raw;
+        }
+      }
     }
     return buildQuotePDF({
       company: {
