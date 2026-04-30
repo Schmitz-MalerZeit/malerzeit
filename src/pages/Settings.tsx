@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Star } from "lucide-react";
 import { VoiceInput } from "@/components/VoiceInput";
@@ -21,7 +22,13 @@ interface Rate {
 export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [s, setS] = useState({ material_markup: 15, quality_level: "standard", vat_rate: 19 });
+  const [s, setS] = useState({
+    material_markup: 15,
+    quality_level: "standard",
+    vat_rate: 19,
+    quote_validity_days: 14,
+    closing_text: "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
+  });
   const [rates, setRates] = useState<Rate[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
 
@@ -35,6 +42,8 @@ export default function Settings() {
         material_markup: Number(settings.material_markup),
         quality_level: settings.quality_level,
         vat_rate: Number(settings.vat_rate),
+        quote_validity_days: Number((settings as any).quote_validity_days ?? 14),
+        closing_text: (settings as any).closing_text ?? "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
       });
       setRates((hr || []).map((r: any) => ({
         id: r.id, label: r.label, rate: Number(r.rate),
@@ -204,6 +213,42 @@ export default function Settings() {
                 <SelectItem value="premium">Premium</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </div>
+
+        {/* Preisvorschlag-Texte */}
+        <div className="rounded-2xl bg-card border border-border p-5 shadow-soft space-y-5">
+          <div>
+            <h2 className="font-semibold">Preisvorschlag</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Diese Angaben erscheinen unten auf jedem PDF-Preisvorschlag.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="validity">Gültigkeit des Preises (Tage)</Label>
+            <Input
+              id="validity" type="number" step="1" min="1" max="365"
+              value={s.quote_validity_days}
+              onChange={(e) => setS({ ...s, quote_validity_days: Number(e.target.value) || 14 })}
+              className="h-11"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Wird als „Dieser Preisvorschlag ist X Tage ab Angebotsdatum gültig." angezeigt.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="closing">Abschlusssatz</Label>
+            <Textarea
+              id="closing" rows={3}
+              value={s.closing_text}
+              onChange={(e) => setS({ ...s, closing_text: e.target.value })}
+              placeholder="Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage."
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Wird unter der Grußformel in kleinerer Schrift gezeigt.
+            </p>
           </div>
         </div>
 

@@ -256,28 +256,34 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          closing_text: string
           created_at: string
           hourly_rate: number
           material_markup: number
           quality_level: string
+          quote_validity_days: number
           updated_at: string
           user_id: string
           vat_rate: number
         }
         Insert: {
+          closing_text?: string
           created_at?: string
           hourly_rate?: number
           material_markup?: number
           quality_level?: string
+          quote_validity_days?: number
           updated_at?: string
           user_id: string
           vat_rate?: number
         }
         Update: {
+          closing_text?: string
           created_at?: string
           hourly_rate?: number
           material_markup?: number
           quality_level?: string
+          quote_validity_days?: number
           updated_at?: string
           user_id?: string
           vat_rate?: number

@@ -15,6 +15,7 @@ export default function QuoteResult() {
   const nav = useNavigate();
   const [data, setData] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [settings, setSettings] = useState<any>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export default function QuoteResult() {
     if (!raw) { nav("/quote/new"); return; }
     setData(JSON.parse(raw));
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => setProfile(data));
+    supabase.from("user_settings").select("*").maybeSingle().then(({ data }) => setSettings(data));
 
     // Restore previously generated PDF from sessionStorage if available
     const cachedB64 = sessionStorage.getItem("currentQuotePdf");
@@ -111,6 +113,9 @@ export default function QuoteResult() {
       date: new Date().toLocaleDateString("de-DE"),
       lineItems: ai.line_items,
       net: p.net_amount, vat: p.vat_amount, gross: p.gross_amount, vatRate: p.vat_rate,
+      validityDays: settings?.quote_validity_days ?? 14,
+      closingText: settings?.closing_text ?? "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
+      signatureName: profile?.contact_person || profile?.company_name,
     });
   };
 
