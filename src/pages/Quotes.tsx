@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { FolderOpen, Loader2, Download } from "lucide-react";
+import { FolderOpen, Loader2, Download, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
+import { canExportCsv, getTier } from "@/lib/planFeatures";
 import { toast } from "sonner";
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
-
-const PROFI_PLUS_PRICES = new Set(["profiplus_monthly", "profiplus_yearly"]);
 
 function toCsv(rows: any[]): string {
   const head = [
