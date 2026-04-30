@@ -14,6 +14,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
@@ -32,6 +33,8 @@ export default function QuoteResult() {
   // Dialog nach erfolgreichem PDF-Download: Versand per E-Mail / WhatsApp anbieten.
   const [shareOpen, setShareOpen] = useState(false);
   const [lastFilename, setLastFilename] = useState<string>("");
+  // Inline-PDF-Vorschau (Dialog mit iframe) – funktioniert ohne Popup-Blocker.
+  const [previewOpen, setPreviewOpen] = useState(false);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
@@ -463,42 +466,39 @@ export default function QuoteResult() {
   };
 
   const retryPreview = () => {
-    if (previewBlobUrl) openBlob(previewBlobUrl);
-    else previewPDF();
+    previewPDF();
   };
 
   const previewPDF = async () => {
     if (!guardPdfAccess()) return;
-    const previewWindow = openPendingPreviewWindow();
     setBusy(true);
     try {
       // Vorschau ist KOSTENLOS (kein Quota-Verbrauch). Erst der Download
-      // zählt aufs Kontingent. So kann ein blockiertes Popup niemals
-      // Kontingent verbrennen.
+      // zählt aufs Kontingent.
       let url = previewBlobUrl;
       if (!url) {
         const pdf = await buildPDF();
         const blob = pdf.output("blob");
         url = URL.createObjectURL(blob);
         setPreviewBlobUrl(url);
-        // Bewusst NICHT in sessionStorage cachen – die Vorschau ist nur
-        // temporär. Erst beim tatsächlichen Download wird gecached.
       }
-      if (previewWindow) {
-        previewWindow.location.href = url;
-        setPreviewFailed(false);
-      } else {
-        setPreviewFailed(true);
-        toast.error("Vorschau wurde vom Browser blockiert. Nutze den direkten Link unten.");
-      }
+      // Inline-Vorschau im Dialog öffnen – kein Popup, kein neues Fenster.
+      setPreviewOpen(true);
+      setPreviewFailed(false);
     } catch (e: any) {
-      if (previewWindow) previewWindow.close();
       setPreviewFailed(true);
       toast.error(e.message || "PDF-Fehler", {
         action: { label: "Erneut", onClick: () => retryPreview() },
       });
     }
     finally { setBusy(false); }
+  };
+
+  // Vom Vorschau-Dialog aus direkt herunterladen (verbraucht Quota).
+  const downloadFromPreview = async () => {
+    setPreviewOpen(false);
+    // Kurz warten, damit der Dialog sauber schließt, bevor der Download startet.
+    setTimeout(() => downloadPDF(), 150);
   };
 
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
@@ -837,6 +837,38 @@ export default function QuoteResult() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
+            <DialogTitle>PDF-Vorschau</DialogTitle>
+            <DialogDescription>
+              So wird dein PDF aussehen. Mit „PDF erstellen" wird es heruntergeladen und auf dein Kontingent angerechnet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 bg-muted">
+            {previewBlobUrl && (
+              <iframe
+                src={previewBlobUrl}
+                title="PDF-Vorschau"
+                className="w-full h-full border-0"
+              />
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 p-4 border-t border-border">
+            <Button variant="outline" onClick={() => setPreviewOpen(false)} className="h-11">
+              Schließen
+            </Button>
+            <Button
+              onClick={downloadFromPreview}
+              disabled={busy}
+              className="h-11 gradient-primary text-primary-foreground border-0"
+            >
+              <FileDown className="h-4 w-4 mr-2" /> PDF erstellen & laden
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
