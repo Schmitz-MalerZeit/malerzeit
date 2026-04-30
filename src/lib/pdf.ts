@@ -58,16 +58,27 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     } catch {/* ignore */}
   }
 
+  // Reserve a safe slot on the right for the date so a long company name never overlaps it.
+  // Date is fixed-width (~32 mm at fontSize 9). We leave 8 mm padding before it.
+  const dateText = `Datum: ${d.date}`;
+  const dateSlotW = 38;
+  const nameStartX = d.company.logoDataUrl ? margin + 28 : margin;
+  const nameMaxW = pageW - margin - dateSlotW - nameStartX;
+
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
-  doc.text(d.company.name || "Ihr Malerbetrieb", d.company.logoDataUrl ? margin + 28 : margin, 20);
+  // splitTextToSize returns an array – we only render the first line and append "…" if cut.
+  const rawName = d.company.name || "Ihr Malerbetrieb";
+  const nameLines = doc.splitTextToSize(rawName, nameMaxW);
+  const nameLine = nameLines.length > 1 ? nameLines[0].replace(/\s+\S*$/, "") + "…" : nameLines[0];
+  doc.text(nameLine, nameStartX, 20);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text("Unverbindlicher Preisvorschlag", d.company.logoDataUrl ? margin + 28 : margin, 27);
+  doc.text("Unverbindlicher Preisvorschlag", nameStartX, 27);
 
   doc.setFontSize(9);
-  doc.text(`Datum: ${d.date}`, pageW - margin, 20, { align: "right" });
+  doc.text(dateText, pageW - margin, 20, { align: "right" });
 
   let y = 50;
 
