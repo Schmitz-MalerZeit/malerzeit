@@ -264,11 +264,23 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setTextColor(40, 40, 40);
   doc.text("Mit freundlichen Grüßen", margin, y);
   y += 6;
+  // Zeichnungsberechtigte Person (Fallback: Inhaber/Ansprechpartner, sonst Firmenname).
+  // Darunter automatisch der Firmenname, wenn Unterzeichner ≠ Firma.
   const sigName = (d.signatureName || d.company.contact || d.company.name || "").trim();
+  const companyName = (d.company.name || "").trim();
   if (sigName) {
     doc.setFont("helvetica", "bold");
     doc.text(sigName, margin, y);
-    y += 7;
+    y += 5;
+    if (companyName && companyName.toLowerCase() !== sigName.toLowerCase()) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(80, 80, 80);
+      doc.text(companyName, margin, y);
+      y += 7;
+    } else {
+      y += 2;
+    }
   } else {
     y += 4;
   }

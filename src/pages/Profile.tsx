@@ -16,9 +16,14 @@ const VOICE_FIELDS = new Set(["company_name", "contact_person", "address", "city
 const appendText = (prev: string, add: string) =>
   prev.trim().length === 0 ? add : `${prev.replace(/\s+$/, "")} ${add}`;
 
-const FIELDS: { k: string; l: string; type?: string }[] = [
+const FIELDS: { k: string; l: string; type?: string; hint?: string }[] = [
   { k: "company_name", l: "Firma" },
   { k: "contact_person", l: "Inhaber / Ansprechpartner (optional)" },
+  {
+    k: "signatory_name",
+    l: "Zeichnungsberechtigte Person (optional)",
+    hint: "Diese Person erscheint am Ende jeder Preisorientierung unter „Mit freundlichen Grüßen“ – darunter automatisch der Firmenname. Praktisch, wenn z. B. ein Vorarbeiter im Auftrag des Betriebs unterzeichnet. Bleibt das Feld leer, wird der Inhaber bzw. der Firmenname verwendet.",
+  },
   { k: "address", l: "Straße & Hausnummer" },
   { k: "address_line2", l: "Adresszusatz (z. B. Gebäude B, c/o, 2. OG)" },
   { k: "postal_code", l: "Postleitzahl" },
@@ -37,7 +42,7 @@ export default function Profile() {
   const tier = getTier(subState);
   const showPdfPreview = canUseLogoInPdf(tier);
   const [p, setP] = useState<Record<string, string>>({
-    company_name: "", contact_person: "", address: "", address_line2: "", postal_code: "", city: "",
+    company_name: "", contact_person: "", signatory_name: "", address: "", address_line2: "", postal_code: "", city: "",
     phone: "", email: "", website: "", vat_id: "",
     logo_url: "", logo_primary_color: "", logo_secondary_color: "",
   });
@@ -174,7 +179,7 @@ export default function Profile() {
         </div>
 
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft space-y-4">
-          {FIELDS.map(({ k, l, type }) => (
+          {FIELDS.map(({ k, l, type, hint }) => (
             <div key={k} className="space-y-1.5">
               <Label htmlFor={k}>{l}</Label>
               <div className="flex gap-2">
@@ -186,6 +191,7 @@ export default function Profile() {
                     onTranscript={(t) => setP((prev) => ({ ...prev, [k]: appendText(prev[k] || "", t) }))} />
                 )}
               </div>
+              {hint && <p className="text-xs text-muted-foreground leading-relaxed">{hint}</p>}
             </div>
           ))}
         </div>

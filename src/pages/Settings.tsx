@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Star } from "lucide-react";
-import { VoiceInput } from "@/components/VoiceInput";
+
 
 interface Rate {
   id?: string;
@@ -159,8 +159,6 @@ export default function Settings() {
                   onChange={(e) => updateRate(i, { label: e.target.value })}
                   className="h-10 flex-1 min-w-0"
                 />
-                <VoiceInput size="sm" label="Bezeichnung diktieren"
-                  onTranscript={(t) => updateRate(i, { label: r.label.trim() ? `${r.label.trim()} ${t}` : t })} />
                 <div className="relative shrink-0 w-24">
                   <Input
                     type="number" inputMode="decimal" step="1" min="0"

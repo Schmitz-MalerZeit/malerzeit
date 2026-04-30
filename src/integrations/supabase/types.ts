@@ -89,6 +89,7 @@ export type Database = {
           logo_url: string | null
           phone: string | null
           postal_code: string | null
+          signatory_name: string | null
           trial_ends_at: string | null
           updated_at: string
           vat_id: string | null
@@ -108,6 +109,7 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          signatory_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
           vat_id?: string | null
@@ -127,6 +129,7 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          signatory_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
           vat_id?: string | null
