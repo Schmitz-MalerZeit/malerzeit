@@ -41,6 +41,8 @@ export default function Settings() {
         material_markup: Number(settings.material_markup),
         quality_level: settings.quality_level,
         vat_rate: Number(settings.vat_rate),
+        quote_validity_days: Number((settings as any).quote_validity_days ?? 14),
+        closing_text: (settings as any).closing_text ?? "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
       });
       setRates((hr || []).map((r: any) => ({
         id: r.id, label: r.label, rate: Number(r.rate),
