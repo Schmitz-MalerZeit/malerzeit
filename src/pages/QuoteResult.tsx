@@ -439,18 +439,18 @@ export default function QuoteResult() {
     if (!guardPdfAccess()) return;
     setBusy(true);
     try {
-      // Reuse already-built PDF if available (avoid double quota consumption)
-      if (previewBlobUrl) {
-        openBlob(previewBlobUrl);
-        return;
+      // Vorschau ist KOSTENLOS (kein Quota-Verbrauch). Erst der Download
+      // zählt aufs Kontingent. So kann ein blockiertes Popup niemals
+      // Kontingent verbrennen.
+      let url = previewBlobUrl;
+      if (!url) {
+        const pdf = await buildPDF();
+        const blob = pdf.output("blob");
+        url = URL.createObjectURL(blob);
+        setPreviewBlobUrl(url);
+        // Bewusst NICHT in sessionStorage cachen – die Vorschau ist nur
+        // temporär. Erst beim tatsächlichen Download wird gecached.
       }
-      const pdf = await buildPDF();
-      const ok = await consumeQuota();
-      if (!ok) return;
-      const blob = pdf.output("blob");
-      const url = URL.createObjectURL(blob);
-      setPreviewBlobUrl(url);
-      await cachePdfInSession(blob);                // persist across reloads
       openBlob(url);
     } catch (e: any) {
       setPreviewFailed(true);
@@ -590,11 +590,11 @@ export default function QuoteResult() {
 
         {pdfAllowed ? (
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={() => setConfirmAction("preview")} disabled={busy} className="h-12">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>PDF ansehen</>}
+            <Button variant="outline" onClick={previewPDF} disabled={busy} className="h-12">
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Eye className="h-4 w-4 mr-2" /> Vorschau</>}
             </Button>
             <Button onClick={() => setConfirmAction("download")} disabled={busy} className="h-12 gradient-primary text-primary-foreground border-0">
-              <FileDown className="h-4 w-4 mr-2" /> Download
+              <FileDown className="h-4 w-4 mr-2" /> PDF erstellen
             </Button>
           </div>
         ) : (
@@ -666,10 +666,11 @@ export default function QuoteResult() {
       <AlertDialog open={confirmAction !== null} onOpenChange={(o) => { if (!o) setConfirmAction(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Preisorientierung jetzt erstellen?</AlertDialogTitle>
+            <AlertDialogTitle>PDF jetzt erstellen?</AlertDialogTitle>
             <AlertDialogDescription>
               Bitte prüfe die Inhalte oben sorgfältig. Mit dem Erstellen wird die Preisorientierung
-              auf dein monatliches Kontingent angerechnet. Möchtest du fortfahren?
+              auf dein monatliches Kontingent angerechnet. Tipp: Über „Vorschau" kannst du das PDF
+              vorher kostenlos ansehen. Möchtest du fortfahren?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
