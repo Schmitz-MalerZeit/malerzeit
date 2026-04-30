@@ -26,6 +26,7 @@ export default function QuoteResult() {
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
+  const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
   // Bestätigungs-Dialog vor PDF-Erstellung (zählt aufs Kontingent).
   const [confirmAction, setConfirmAction] = useState<null | "preview" | "download">(null);
   // Dialog nach erfolgreichem PDF-Download: Versand per E-Mail / WhatsApp anbieten.
@@ -57,6 +58,7 @@ export default function QuoteResult() {
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
         const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
         setPreviewBlobUrl(url);
+        setPdfQuotaConsumed(true);
       } catch (e) {
         console.warn("could not restore cached PDF", e);
         sessionStorage.removeItem("currentQuotePdf");
@@ -74,6 +76,7 @@ export default function QuoteResult() {
       URL.revokeObjectURL(previewBlobUrl);
       setPreviewBlobUrl(null);
     }
+    setPdfQuotaConsumed(false);
   };
 
   const updateLineItem = (index: number, value: string) => {
@@ -411,6 +414,11 @@ export default function QuoteResult() {
     try {
       // Reuse the preview blob if it has already been built (no extra quota cost)
       if (previewBlobUrl) {
+        if (!pdfQuotaConsumed) {
+          const ok = await consumeQuota();
+          if (!ok) return;
+          setPdfQuotaConsumed(true);
+        }
         triggerBlobDownload(previewBlobUrl);
         setPreviewFailed(false);
         setLastFilename(filename());
@@ -423,6 +431,7 @@ export default function QuoteResult() {
       const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
       const ok = await consumeQuota();              // 2) atomically consume quota
       if (!ok) return;
+      setPdfQuotaConsumed(true);
       const fileName = filename();
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
