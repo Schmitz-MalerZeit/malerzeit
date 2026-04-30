@@ -50,6 +50,12 @@ export default function QuoteResult() {
         primaryColor: profile?.logo_primary_color,
         secondaryColor: profile?.logo_secondary_color,
       },
+      customer: data.customer ? {
+        name: data.customer.name,
+        address: data.customer.address,
+        postalCode: data.customer.postal_code,
+        city: data.customer.city,
+      } : undefined,
       date: new Date().toLocaleDateString("de-DE"),
       lineItems: ai.line_items,
       net: p.net_amount, vat: p.vat_amount, gross: p.gross_amount, vatRate: p.vat_rate,
