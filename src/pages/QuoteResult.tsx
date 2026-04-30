@@ -689,7 +689,7 @@ export default function QuoteResult() {
         {previewFailed && (
           <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
             <p className="text-sm text-destructive">
-              Die PDF-Vorschau konnte nicht geöffnet werden. Eventuell hat dein Browser das neue Fenster blockiert.
+              Die PDF-Vorschau konnte nicht automatisch geöffnet werden. Eventuell hat dein Browser das neue Fenster blockiert.
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -724,6 +724,31 @@ export default function QuoteResult() {
                 <Eye className="h-3.5 w-3.5" /> Direkt im neuen Tab öffnen
               </a>
             )}
+          </div>
+        )}
+
+        {previewBlobUrl && !previewFailed && (
+          <div className="rounded-xl border border-border bg-card p-4 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              PDF ist erstellt und bereit zur Vorschau oder zum Download.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href={previewBlobUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+              >
+                <Eye className="h-4 w-4 mr-2" /> Vorschau öffnen
+              </a>
+              <button
+                type="button"
+                onClick={() => triggerBlobDownload(previewBlobUrl)}
+                className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                <FileDown className="h-4 w-4 mr-2" /> PDF laden
+              </button>
+            </div>
           </div>
         )}
 
