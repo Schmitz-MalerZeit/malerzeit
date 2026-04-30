@@ -68,12 +68,13 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen erlaubt" : "Finali
               items: { type: "string" },
               description: "Professionelle Leistungsstichpunkte",
             },
-            estimated_hours: { type: "number", description: "Geschätzter Arbeitsaufwand in Stunden" },
+            estimated_hours: { type: "number", description: "Summe aller Arbeitsstunden aller Personen" },
+            estimated_labor_cost: { type: "number", description: "Lohnkosten netto in Euro (Summe Stunden × Stundenlohn der genannten Personen)" },
             estimated_material_cost: { type: "number", description: "Geschätzte Materialkosten netto in Euro (vor Aufschlag)" },
             customer_text: { type: "string", description: "Professioneller, kurzer, freundlicher Kundentext (3-5 Sätze)" },
             whatsapp_text: { type: "string", description: "Kurzer WhatsApp-tauglicher Text mit Stichpunkten und Preis" },
           },
-          required: ["needs_clarification", "line_items", "estimated_hours", "estimated_material_cost", "customer_text", "whatsapp_text"],
+          required: ["needs_clarification", "line_items", "estimated_hours", "estimated_labor_cost", "estimated_material_cost", "customer_text", "whatsapp_text"],
           additionalProperties: false,
         },
       },
@@ -107,8 +108,8 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen erlaubt" : "Finali
     if (body.mode === "finalize") parsed.needs_clarification = false;
 
     // Compute pricing server-side (deterministic)
-    const labor = Math.round(parsed.estimated_hours * body.hourlyRate);
-    const material = Math.round(parsed.estimated_material_cost * (1 + body.materialMarkup / 100));
+    const labor = Math.round(Number(parsed.estimated_labor_cost) || 0);
+    const material = Math.round((Number(parsed.estimated_material_cost) || 0) * (1 + body.materialMarkup / 100));
     const net = labor + material;
     const vat = Math.round(net * (body.vatRate / 100) * 100) / 100;
     const gross = Math.round((net + vat) * 100) / 100;
