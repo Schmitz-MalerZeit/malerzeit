@@ -468,8 +468,11 @@ export default function QuoteResult() {
     finally { setBusy(false); }
   };
 
-  const save = async () => {
-    setBusy(true);
+  // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
+  // und den Busy-Spinner – wird beim Auto-Speichern nach PDF-Erstellung genutzt.
+  const save = async (silent = false) => {
+    if (saved) return;
+    if (!silent) setBusy(true);
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Nicht angemeldet");
@@ -494,9 +497,12 @@ export default function QuoteResult() {
       });
       if (error) throw error;
       setSaved(true);
-      toast.success("Vorschlag gespeichert");
-    } catch (e: any) { toast.error(e.message); }
-    finally { setBusy(false); }
+      if (!silent) toast.success("Vorschlag gespeichert");
+    } catch (e: any) {
+      if (!silent) toast.error(e.message);
+      else console.warn("Auto-Speichern fehlgeschlagen:", e?.message);
+    }
+    finally { if (!silent) setBusy(false); }
   };
 
   const headerTitle = data.customer?.name?.trim() || "Preisorientierung";
