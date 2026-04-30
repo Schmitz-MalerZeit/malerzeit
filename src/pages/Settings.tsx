@@ -216,6 +216,42 @@ export default function Settings() {
           </div>
         </div>
 
+        {/* Preisvorschlag-Texte */}
+        <div className="rounded-2xl bg-card border border-border p-5 shadow-soft space-y-5">
+          <div>
+            <h2 className="font-semibold">Preisvorschlag</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Diese Angaben erscheinen unten auf jedem PDF-Preisvorschlag.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="validity">Gültigkeit des Preises (Tage)</Label>
+            <Input
+              id="validity" type="number" step="1" min="1" max="365"
+              value={s.quote_validity_days}
+              onChange={(e) => setS({ ...s, quote_validity_days: Number(e.target.value) || 14 })}
+              className="h-11"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Wird als „Dieser Preisvorschlag ist X Tage ab Angebotsdatum gültig." angezeigt.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="closing">Abschlusssatz</Label>
+            <Textarea
+              id="closing" rows={3}
+              value={s.closing_text}
+              onChange={(e) => setS({ ...s, closing_text: e.target.value })}
+              placeholder="Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage."
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Wird unter der Grußformel in kleinerer Schrift gezeigt.
+            </p>
+          </div>
+        </div>
+
         <Button onClick={save} disabled={saving} className="w-full h-12 gradient-primary text-primary-foreground border-0 font-semibold">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
         </Button>
