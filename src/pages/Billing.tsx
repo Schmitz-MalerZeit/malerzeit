@@ -42,6 +42,31 @@ export default function Billing() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [txs, setTxs] = useState<Tx[] | null>(null);
   const [txLoading, setTxLoading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const downloadInvoice = async (t: Tx) => {
+    if (!t.invoice_url) return;
+    setDownloadingId(t.id);
+    try {
+      const res = await fetch(t.invoice_url);
+      if (!res.ok) throw new Error(String(res.status));
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Rechnung_${(t.billed_at ?? t.created_at).slice(0, 10)}_${t.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      // CORS or network — fall back to opening in a new tab
+      console.warn("invoice download fallback", e);
+      window.open(t.invoice_url, "_blank", "noopener,noreferrer");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   useEffect(() => {
     if (params.get("checkout") === "success") {
