@@ -33,6 +33,8 @@ export default function QuoteResult() {
   // Dialog nach erfolgreichem PDF-Download: Versand per E-Mail / WhatsApp anbieten.
   const [shareOpen, setShareOpen] = useState(false);
   const [lastFilename, setLastFilename] = useState<string>("");
+  // Inline-PDF-Vorschau (Dialog mit iframe) – funktioniert ohne Popup-Blocker.
+  const [previewOpen, setPreviewOpen] = useState(false);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
