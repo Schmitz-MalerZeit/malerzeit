@@ -122,6 +122,15 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
     // Force-skip clarification in finalize mode
     if (body.mode === "finalize") parsed.needs_clarification = false;
 
+    // Filter out any clarifying questions about hourly rates – these are always taken from settings.
+    if (Array.isArray(parsed.clarifying_questions)) {
+      const rateRegex = /(stundenlohn|stundensatz|stundenpreis|€\s*\/\s*std|euro pro stunde|pro stunde|stundenverrechnung)/i;
+      parsed.clarifying_questions = parsed.clarifying_questions.filter(
+        (q: string) => typeof q === "string" && !rateRegex.test(q)
+      );
+      if (parsed.clarifying_questions.length === 0) parsed.needs_clarification = false;
+    }
+
     // Compute pricing server-side (deterministic)
     const labor = Math.round(Number(parsed.estimated_labor_cost) || 0);
     const material = Math.round((Number(parsed.estimated_material_cost) || 0) * (1 + body.materialMarkup / 100));
