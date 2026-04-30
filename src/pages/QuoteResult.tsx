@@ -87,9 +87,13 @@ export default function QuoteResult() {
   const consumeQuota = async (): Promise<boolean> => {
     const { data, error } = await supabase.rpc("consume_pdf_quota");
     if (error) { toast.error("Limit-Prüfung fehlgeschlagen: " + error.message); return false; }
-    const res = data as { ok: boolean; error?: string; limit?: number; used?: number };
+    const res = data as { ok: boolean; error?: string; limit?: number; used?: number; mode?: string };
     if (!res?.ok) {
-      if (res?.error === "limit_reached") {
+      if (res?.error === "trial_exhausted") {
+        toast.error(`Test-PDFs aufgebraucht (${res.used}/${res.limit}). Wähle einen Tarif, um weiter PDFs herunterzuladen.`, {
+          action: { label: "Tarife", onClick: () => nav("/pricing") },
+        });
+      } else if (res?.error === "limit_reached") {
         toast.error(`Monatslimit erreicht (${res.used}/${res.limit}).`, {
           action: { label: "Upgrade", onClick: () => nav("/pricing") },
         });
