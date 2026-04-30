@@ -59,8 +59,8 @@ export default function QuoteNew() {
     })();
   }, []);
 
-  const checkAndIncrementUsage = async (): Promise<boolean> => {
-    // Trial users: free quota up to 50 in trial
+  // Soft pre-check only (UX). Actual increment happens server-side after PDF success.
+  const preflightLimit = (): boolean => {
     if (subState.pdfLimit > 0 && subState.pdfUsed >= subState.pdfLimit) {
       toast.error(
         `Monatslimit erreicht (${subState.pdfUsed}/${subState.pdfLimit}). Bitte upgrade deinen Tarif.`,
@@ -68,26 +68,11 @@ export default function QuoteNew() {
       );
       return false;
     }
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return false;
-    const period = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-    const { data: existing } = await supabase.from("pdf_usage").select("count")
-      .eq("user_id", u.user.id).eq("period_start", period).maybeSingle();
-    if (existing) {
-      await supabase.from("pdf_usage").update({ count: (existing.count as number) + 1, updated_at: new Date().toISOString() })
-        .eq("user_id", u.user.id).eq("period_start", period);
-    } else {
-      await supabase.from("pdf_usage").insert({ user_id: u.user.id, period_start: period, count: 1 });
-    }
-    subState.refresh();
     return true;
   };
 
   const callAI = async (mode: "analyze" | "finalize") => {
-    if (mode === "analyze") {
-      const ok = await checkAndIncrementUsage();
-      if (!ok) return;
-    }
+    if (mode === "analyze" && !preflightLimit()) return;
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-quote", {
