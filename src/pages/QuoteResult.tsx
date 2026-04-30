@@ -361,13 +361,21 @@ export default function QuoteResult() {
     return `Preisorientierung_${date}.pdf`;
   };
 
-  const triggerBlobDownload = (url: string) => {
+  const triggerBlobDownload = (url: string, fileName = filename()) => {
     const a = document.createElement("a");
     a.href = url;
-    a.download = filename();
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();
+  };
+
+  const openPendingPreviewWindow = () => {
+    const win = window.open("", "_blank");
+    if (!win) return null;
+    win.document.title = "PDF-Vorschau";
+    win.document.body.innerHTML = "<p style='font-family:system-ui,sans-serif;padding:24px'>PDF wird erstellt …</p>";
+    return win;
   };
 
   // Cache the freshly built PDF in sessionStorage so it survives a reload
@@ -415,13 +423,14 @@ export default function QuoteResult() {
       const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
       const ok = await consumeQuota();              // 2) atomically consume quota
       if (!ok) return;
+      const fileName = filename();
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
       await cachePdfInSession(blob);                // persist across reloads
-      triggerBlobDownload(url);
+      triggerBlobDownload(url, fileName);
       setPreviewFailed(false);
-      setLastFilename(filename());
+      setLastFilename(fileName);
       // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
       // den Browser-Download nicht abbricht (insb. iOS Safari).
       setTimeout(() => setShareOpen(true), 800);
@@ -431,7 +440,7 @@ export default function QuoteResult() {
   };
 
   const openBlob = (url: string): boolean => {
-    const win = window.open(url, "_blank", "noopener,noreferrer");
+    const win = window.open(url, "_blank");
     if (!win || win.closed || typeof win.closed === "undefined") {
       setPreviewFailed(true);
       toast.error("Vorschau konnte nicht geöffnet werden (evtl. Popup blockiert).", {
@@ -439,6 +448,7 @@ export default function QuoteResult() {
       });
       return false;
     }
+    try { win.opener = null; } catch { /* noop */ }
     setPreviewFailed(false);
     return true;
   };
@@ -450,6 +460,7 @@ export default function QuoteResult() {
 
   const previewPDF = async () => {
     if (!guardPdfAccess()) return;
+    const previewWindow = openPendingPreviewWindow();
     setBusy(true);
     try {
       // Vorschau ist KOSTENLOS (kein Quota-Verbrauch). Erst der Download
@@ -464,8 +475,15 @@ export default function QuoteResult() {
         // Bewusst NICHT in sessionStorage cachen – die Vorschau ist nur
         // temporär. Erst beim tatsächlichen Download wird gecached.
       }
-      openBlob(url);
+      if (previewWindow) {
+        previewWindow.location.href = url;
+        setPreviewFailed(false);
+      } else {
+        setPreviewFailed(true);
+        toast.error("Vorschau wurde vom Browser blockiert. Nutze den direkten Link unten.");
+      }
     } catch (e: any) {
+      if (previewWindow) previewWindow.close();
       setPreviewFailed(true);
       toast.error(e.message || "PDF-Fehler", {
         action: { label: "Erneut", onClick: () => retryPreview() },
