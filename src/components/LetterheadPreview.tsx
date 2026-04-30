@@ -112,9 +112,14 @@ export function LetterheadPreview({
             className="absolute inset-x-0 top-0 flex items-center gap-3 px-4"
             style={{ backgroundColor: primary, height: "25%" }}
           >
-            <div className="h-12 w-12 flex items-center justify-center shrink-0">
+            {/* Logo-Slot: feste Bounding-Box, Bild wird per object-contain proportional skaliert (nie verzerrt, nie beschnitten) */}
+            <div className="h-[75%] w-16 flex items-center justify-start shrink-0">
               {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="max-h-full max-w-full object-contain" />
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  className="max-h-full max-w-full object-contain object-left"
+                />
               ) : (
                 <ImageIcon className="h-5 w-5 text-white/70" />
               )}
