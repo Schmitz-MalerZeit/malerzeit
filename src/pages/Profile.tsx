@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Upload, ImageIcon } from "lucide-react";
+import { Loader2, Upload, ImageIcon, Eye } from "lucide-react";
 import { extractDominantColors } from "@/lib/colorExtractor";
 import { VoiceInput } from "@/components/VoiceInput";
+import { LetterheadPreview } from "@/components/LetterheadPreview";
+import { useSubscription } from "@/hooks/useSubscription";
+import { canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 
 const VOICE_FIELDS = new Set(["company_name", "contact_person", "address", "city"]);
 const appendText = (prev: string, add: string) =>
@@ -29,6 +32,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const subState = useSubscription();
+  const tier = getTier(subState);
+  const showPdfPreview = canUseLogoInPdf(tier);
   const [p, setP] = useState<Record<string, string>>({
     company_name: "", contact_person: "", address: "", postal_code: "", city: "",
     phone: "", email: "", website: "", vat_id: "",
@@ -107,6 +113,28 @@ export default function Profile() {
               <span>PDF-Farben:</span>
               <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: p.logo_primary_color }} />
               <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: p.logo_secondary_color }} />
+            </div>
+          )}
+
+          {showPdfPreview && (
+            <div className="mt-5 pt-5 border-t border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <Eye className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">PDF-Vorschau (Briefkopf)</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                So erscheinen Logo, Farben und Firmendaten oben auf jedem Angebots-PDF. Änderungen werden sofort übernommen.
+              </p>
+              <LetterheadPreview
+                companyName={p.company_name}
+                contact={p.contact_person}
+                address={[p.address, [p.postal_code, p.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")}
+                phone={p.phone}
+                email={p.email}
+                logoUrl={p.logo_url}
+                primaryColor={p.logo_primary_color}
+                secondaryColor={p.logo_secondary_color}
+              />
             </div>
           )}
         </div>
