@@ -99,13 +99,18 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     : [];
 
   const companyCity = [d.company.postalCode, d.company.city].filter(Boolean).join(" ");
+  // Header line of the sender block: prefer the human contact (e.g. "Anna Müller").
+  // If no contact person is set (typical for GmbHs / single-line companies), fall back
+  // to the company name so the block never starts with a bare street.
+  const senderHeader = d.company.contact || d.company.name;
   const right: { label: string; value: string }[] = [
-    ...(d.company.contact ? [{ label: "z.Hd.",  value: d.company.contact }] : []),
-    ...(d.company.address ? [{ label: "Adr.",   value: d.company.address }] : []),
-    ...(companyCity       ? [{ label: "Ort",    value: companyCity }]       : []),
-    ...(d.company.phone   ? [{ label: "Tel.",   value: d.company.phone }]   : []),
-    ...(d.company.email   ? [{ label: "E-Mail", value: d.company.email }]   : []),
-    ...(d.company.website ? [{ label: "Web",    value: d.company.website }] : []),
+    ...(senderHeader        ? [{ label: "",      value: senderHeader }]        : []),
+    ...(d.company.address   ? [{ label: "",      value: d.company.address }]   : []),
+    ...(d.company.addressLine2 ? [{ label: "",   value: d.company.addressLine2 }] : []),
+    ...(companyCity         ? [{ label: "",      value: companyCity }]         : []),
+    ...(d.company.phone     ? [{ label: "Tel.",  value: d.company.phone }]     : []),
+    ...(d.company.email     ? [{ label: "E-Mail", value: d.company.email }]    : []),
+    ...(d.company.website   ? [{ label: "Web",   value: d.company.website }]   : []),
   ];
 
   if (left.length || right.length) {
