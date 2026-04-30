@@ -232,6 +232,35 @@ export default function QuoteResult() {
           </Button>
         </div>
 
+        {previewFailed && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+            <p className="text-sm text-destructive">
+              Die PDF-Vorschau konnte nicht geöffnet werden. Eventuell hat dein Browser das neue Fenster blockiert.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={retryPreview}
+              disabled={busy}
+              className="w-full h-11 border-destructive/40 text-destructive hover:bg-destructive/10"
+            >
+              {busy
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <><RotateCw className="h-4 w-4 mr-2" /> Vorschau erneut öffnen</>}
+            </Button>
+            {previewBlobUrl && (
+              <a
+                href={previewBlobUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"
+              >
+                <Eye className="h-3.5 w-3.5" /> Direkt im neuen Tab öffnen
+              </a>
+            )}
+          </div>
+        )}
+
         <Button onClick={save} disabled={busy || saved} variant={saved ? "secondary" : "default"} className="w-full h-12">
           {saved ? <><Check className="h-4 w-4 mr-2" /> Gespeichert</> : <><Save className="h-4 w-4 mr-2" /> Vorschlag speichern</>}
         </Button>
