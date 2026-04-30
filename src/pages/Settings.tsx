@@ -33,6 +33,8 @@ export default function Settings() {
   });
   const [rates, setRates] = useState<Rate[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     (async () => {
