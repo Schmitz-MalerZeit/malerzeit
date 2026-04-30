@@ -167,7 +167,32 @@ export default function Pricing() {
                     return (
                       <li key={f} className="flex gap-2 text-sm">
                         <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <span className={isQuotaLine ? "font-bold text-foreground text-[15px]" : ""}>{f}</span>
+                        <span className={isQuotaLine ? "font-bold text-foreground text-[15px] flex items-center gap-1.5 flex-wrap" : ""}>
+                          {f}
+                          {isQuotaLine && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label="Was sind KI-Angebote?"
+                                  className="inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-base"
+                                >
+                                  <Info className="h-4 w-4" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent side="top" className="w-72 text-xs leading-relaxed">
+                                <p className="font-semibold text-foreground mb-1.5">Was sind KI-Angebote?</p>
+                                <p className="text-muted-foreground mb-2">
+                                  Jedes Mal, wenn du ein neues Angebot per KI erstellen lässt, zählt das als ein KI-Angebot. PDF-Downloads, Vorschauen und das erneute Öffnen alter Angebote zählen <strong>nicht</strong> mit.
+                                </p>
+                                <p className="font-semibold text-foreground mb-1">Monatlich vs. Jährlich</p>
+                                <p className="text-muted-foreground">
+                                  Das Kontingent gilt <strong>pro Monat</strong> und wird am Monatsanfang zurückgesetzt – unabhängig davon, ob du monatlich oder jährlich zahlst. Nicht genutzte Angebote verfallen am Monatsende.
+                                </p>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </span>
                       </li>
                     );
                   })}
