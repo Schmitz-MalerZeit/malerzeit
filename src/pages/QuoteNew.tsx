@@ -26,6 +26,7 @@ interface Rate { id: string; label: string; rate: number; is_default: boolean; }
 export default function QuoteNew() {
   const nav = useNavigate();
   const [description, setDescription] = useState("");
+  const [customer, setCustomer] = useState({ name: "", address: "", postal_code: "", city: "" });
   const [step, setStep] = useState<"input" | "questions" | "loading">("input");
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -77,6 +78,7 @@ export default function QuoteNew() {
       } else {
         sessionStorage.setItem("currentQuote", JSON.stringify({
           description, answers, ai: resp,
+          customer,
           rate: { label: chosen.label, value: chosen.rate },
         }));
         nav("/quote/result");
@@ -86,16 +88,61 @@ export default function QuoteNew() {
     } finally { setLoading(false); }
   };
 
+  const customerComplete =
+    customer.name.trim().length > 1 &&
+    customer.address.trim().length > 2 &&
+    customer.postal_code.trim().length >= 4 &&
+    customer.city.trim().length > 1;
+
   if (step === "input") {
     return (
       <AppShell title="Neuer Preisvorschlag">
         <div className="space-y-5">
           <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+              <h2 className="font-semibold">Kundendaten</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Bitte zuerst den Kundennamen und die Adresse erfassen – sie erscheinen später im Preisvorschlag.
+            </p>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="cust_name">Kundenname</Label>
+                <Input id="cust_name" value={customer.name}
+                  onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+                  placeholder="z. B. Familie Müller" className="h-11" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cust_addr">Straße & Hausnummer</Label>
+                <Input id="cust_addr" value={customer.address}
+                  onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
+                  placeholder="Musterstraße 12" className="h-11" />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5 col-span-1">
+                  <Label htmlFor="cust_plz">PLZ</Label>
+                  <Input id="cust_plz" value={customer.postal_code}
+                    onChange={(e) => setCustomer({ ...customer, postal_code: e.target.value })}
+                    placeholder="12345" className="h-11" />
+                </div>
+                <div className="space-y-1.5 col-span-2">
+                  <Label htmlFor="cust_city">Ort</Label>
+                  <Input id="cust_city" value={customer.city}
+                    onChange={(e) => setCustomer({ ...customer, city: e.target.value })}
+                    placeholder="Musterstadt" className="h-11" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
             <div className="flex items-center gap-2 mb-3">
+              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
               <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
-              <h2 className="font-semibold">Beschreiben Sie die Arbeiten</h2>
+              <h2 className="font-semibold">Beschreibe die Arbeiten</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               Frei formuliert – die KI strukturiert daraus professionelle Leistungsstichpunkte.
@@ -129,14 +176,20 @@ export default function QuoteNew() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-2">
-                Standard ist vorausgewählt. Sie können in den Einstellungen weitere Sätze pflegen.
+                Standard ist vorausgewählt. Du kannst in den Einstellungen weitere Sätze pflegen.
               </p>
             </div>
           )}
 
+          {!customerComplete && (
+            <p className="text-xs text-muted-foreground text-center">
+              Bitte zuerst die Kundendaten vollständig ausfüllen.
+            </p>
+          )}
+
           <Button
             onClick={() => callAI("analyze")}
-            disabled={loading || description.trim().length < 10}
+            disabled={loading || description.trim().length < 10 || !customerComplete}
             className="w-full h-14 text-base font-semibold gradient-primary text-primary-foreground border-0 shadow-soft hover:shadow-glow transition-base"
           >
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Weiter <ArrowRight className="h-5 w-5 ml-2" /></>}

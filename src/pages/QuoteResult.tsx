@@ -50,6 +50,12 @@ export default function QuoteResult() {
         primaryColor: profile?.logo_primary_color,
         secondaryColor: profile?.logo_secondary_color,
       },
+      customer: data.customer ? {
+        name: data.customer.name,
+        address: data.customer.address,
+        postalCode: data.customer.postal_code,
+        city: data.customer.city,
+      } : undefined,
       date: new Date().toLocaleDateString("de-DE"),
       lineItems: ai.line_items,
       net: p.net_amount, vat: p.vat_amount, gross: p.gross_amount, vatRate: p.vat_rate,
@@ -92,6 +98,10 @@ export default function QuoteResult() {
         vat_rate: p.vat_rate,
         estimated_hours: ai.estimated_hours,
         estimated_material: ai.estimated_material_cost,
+        customer_name: data.customer?.name || null,
+        customer_address: data.customer?.address || null,
+        customer_postal_code: data.customer?.postal_code || null,
+        customer_city: data.customer?.city || null,
       });
       if (error) throw error;
       setSaved(true);
