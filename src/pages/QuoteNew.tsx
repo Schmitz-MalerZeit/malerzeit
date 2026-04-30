@@ -50,16 +50,23 @@ export default function QuoteNew() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState({ material_markup: 15, quality_level: "standard", vat_rate: 19 });
+  const [hourlyRates, setHourlyRates] = useState<{ label: string; rate: number; is_default: boolean }[]>([]);
   const subState = useSubscription();
 
   useEffect(() => {
     (async () => {
-      const { data: s } = await supabase.from("user_settings").select("*").maybeSingle();
+      const [{ data: s }, { data: hr }] = await Promise.all([
+        supabase.from("user_settings").select("*").maybeSingle(),
+        supabase.from("hourly_rates").select("label, rate, is_default, sort_order").order("sort_order", { ascending: true }),
+      ]);
       if (s) setSettings({
         material_markup: Number(s.material_markup),
         quality_level: s.quality_level,
         vat_rate: Number(s.vat_rate),
       });
+      setHourlyRates((hr || []).map((r: any) => ({
+        label: r.label, rate: Number(r.rate), is_default: !!r.is_default,
+      })));
     })();
   }, []);
 
@@ -87,6 +94,7 @@ export default function QuoteNew() {
           materialMarkup: settings.material_markup,
           qualityLevel: settings.quality_level,
           vatRate: settings.vat_rate,
+          hourlyRates,
         },
       });
       if (error) throw error;
