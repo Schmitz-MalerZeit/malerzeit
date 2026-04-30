@@ -38,6 +38,8 @@ export default function Settings() {
 
   useEffect(() => {
     (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      setCurrentUserId(userData.user?.id ?? null);
       const [{ data: settings }, { data: hr }] = await Promise.all([
         supabase.from("user_settings").select("*").maybeSingle(),
         supabase.from("hourly_rates").select("*").order("sort_order", { ascending: true }),
@@ -56,6 +58,23 @@ export default function Settings() {
       setLoading(false);
     })();
   }, []);
+
+  // Test-Reset: nur für den Entwickler-Account sichtbar. Ruft die geschützte
+  // RPC `reset_my_pdf_quota` auf, die serverseitig gegen die User-ID prüft.
+  const resetQuota = async () => {
+    setResetting(true);
+    try {
+      const { data, error } = await supabase.rpc("reset_my_pdf_quota" as any);
+      if (error) throw error;
+      const res = data as { ok: boolean; error?: string };
+      if (!res?.ok) throw new Error(res?.error || "Reset fehlgeschlagen");
+      toast.success("PDF-Kontingent zurückgesetzt");
+    } catch (e: any) {
+      toast.error(e.message || "Reset fehlgeschlagen");
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const addRate = () => {
     setRates([...rates, {
