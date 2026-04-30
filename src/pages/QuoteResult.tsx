@@ -105,7 +105,30 @@ export default function QuoteResult() {
     return true;
   };
 
-  const filename = () => `Preisvorschlag_${new Date().toISOString().slice(0, 10)}.pdf`;
+  const slugify = (s: string, maxLen = 50): string => {
+    if (!s) return "";
+    return s
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip diacritics
+      .replace(/ß/gi, "ss")
+      .replace(/[^a-zA-Z0-9\s-]/g, " ")                 // drop punctuation
+      .trim()
+      .split(/\s+/).join("_")
+      .slice(0, maxLen)
+      .replace(/_+$/g, "");
+  };
+
+  const filename = () => {
+    const date = new Date().toISOString().slice(0, 10);
+    const customerSlug = slugify(data.customer?.name || "");
+    if (customerSlug) return `Preisvorschlag_${customerSlug}_${date}.pdf`;
+
+    // Fallback: first ~6 words of the description
+    const firstWords = (data.description || "").split(/\s+/).slice(0, 6).join(" ");
+    const descSlug = slugify(firstWords);
+    if (descSlug) return `Preisvorschlag_${descSlug}_${date}.pdf`;
+
+    return `Preisvorschlag_${date}.pdf`;
+  };
 
   const triggerBlobDownload = (url: string) => {
     const a = document.createElement("a");
