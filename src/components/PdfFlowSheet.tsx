@@ -167,76 +167,14 @@ export function PdfFlowSheet({
    * genau das verursacht den langen Storage-Link in WhatsApp. */
   const downloadPdfAsBlob = async () => {
     const fileName = state.fileName || "Preisorientierung.pdf";
-    // iOS Safari: Web Share mit Datei ist hier der zuverlässigste Weg, weil
-    // Blob-Download via <a download> dort oft ignoriert wird.
     const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !(window as any).MSStream;
-    const reservedIosTab = isIOS ? window.open("", "_blank") : null;
-    const closeReservedIosTab = () => {
-      try { reservedIosTab?.close(); } catch { /* ignore */ }
-    };
-    const openUrlFallback = (url: string) => {
-      if (reservedIosTab) {
-        reservedIosTab.location.href = url;
-        return;
-      }
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    };
-    const openBlobAsDataUrl = (blob: Blob) => {
-      if (!isIOS || typeof FileReader === "undefined") return false;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === "string") {
-          openUrlFallback(reader.result);
-        } else if (downloadUrl) {
-          openUrlFallback(downloadUrl);
-        }
-      };
-      reader.onerror = () => {
-        if (downloadUrl) openUrlFallback(downloadUrl);
-        else closeReservedIosTab();
-      };
-      reader.readAsDataURL(blob);
+    const originalUrl = downloadUrl || state.url || "";
+    const openOriginalUrl = () => {
+      if (!originalUrl) return false;
+      window.open(originalUrl, "_blank", "noopener,noreferrer");
       return true;
     };
-    const shareFileOnIOS = async (file: File) => {
-      const navAny = navigator as any;
-      if (!isIOS || typeof navAny.share !== "function") return false;
-      if (typeof navAny.canShare === "function" && !navAny.canShare({ files: [file] })) return false;
-      try {
-        await navAny.share({ files: [file], title: fileName });
-        closeReservedIosTab();
-        return true;
-      } catch (e: any) {
-        if (e?.name === "AbortError") {
-          closeReservedIosTab();
-          return true;
-        }
-        return false;
-      }
-    };
-    if (pdfFile && await shareFileOnIOS(pdfFile)) {
-      return;
-    }
-    let blob = state.pdfBlob || fetchedBlob;
-    if (!blob && state.url) {
-      try {
-        const r = await fetch(state.url);
-        if (r.ok) blob = await r.blob();
-      } catch (e) { console.warn("Download-Fetch fehlgeschlagen:", e); }
-    }
-    if (blob) {
-      try {
-        const freshFile = new File([blob], fileName, { type: blob.type || "application/pdf" });
-        if (await shareFileOnIOS(freshFile)) return;
-      } catch { /* File constructor not supported: continue with download fallback */ }
-      if (openBlobAsDataUrl(blob)) return;
+    const saveBlobWithDownloadAttribute = (blob: Blob) => {
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = objectUrl;
@@ -245,17 +183,74 @@ export function PdfFlowSheet({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
-      closeReservedIosTab();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 15000);
+    };
+    const openBlobInNewTab = (blob: Blob) => {
+      const objectUrl = URL.createObjectURL(blob);
+      const tab = window.open(objectUrl, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+      return !!tab;
+    };
+    const openBlobAsDataUrl = (blob: Blob) => new Promise<boolean>((resolve) => {
+      if (typeof FileReader === "undefined") {
+        resolve(false);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result !== "string") {
+          resolve(false);
+          return;
+        }
+        const tab = window.open(reader.result, "_blank", "noopener,noreferrer");
+        resolve(!!tab);
+      };
+      reader.onerror = () => resolve(false);
+      reader.readAsDataURL(blob);
+    });
+    const shareFileOnIOS = async (file: File) => {
+      const navAny = navigator as any;
+      if (!isIOS || typeof navAny.share !== "function") return false;
+      if (typeof navAny.canShare === "function" && !navAny.canShare({ files: [file] })) return false;
+      try {
+        await navAny.share({ files: [file], title: fileName });
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    let blob = state.pdfBlob || fetchedBlob;
+    if (!blob && state.url) {
+      try {
+        const r = await fetch(state.url);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        blob = await r.blob();
+      } catch (e) { console.warn("Download-Fetch fehlgeschlagen:", e); }
+    }
+
+    if (!blob) {
+      if (!openOriginalUrl()) toast.error("PDF-Download nicht möglich. Bitte erneut öffnen.");
       return;
     }
-    // Letzter Fallback: signierte URL als Anhang öffnen.
-    if (downloadUrl) {
-      openUrlFallback(downloadUrl);
+
+    if (isIOS) {
+      try {
+        const file = pdfFile || new File([blob], fileName, { type: blob.type || "application/pdf" });
+        if (await shareFileOnIOS(file)) return;
+      } catch { /* continue with iOS fallbacks */ }
+      if (openBlobInNewTab(blob)) return;
+      if (await openBlobAsDataUrl(blob)) return;
+      if (!openOriginalUrl()) toast.error("PDF-Download nicht möglich. Bitte erneut öffnen.");
       return;
     }
-    closeReservedIosTab();
-    toast.error("PDF-Download nicht möglich. Bitte erneut öffnen.");
+
+    try {
+      saveBlobWithDownloadAttribute(blob);
+    } catch (e) {
+      console.warn("Blob-Download fehlgeschlagen:", e);
+      if (!openOriginalUrl()) toast.error("PDF-Download nicht möglich. Bitte erneut öffnen.");
+    }
   };
 
   /** „Teilen" – immer mit Datei-Anhang, wenn das Gerät es unterstützt. */
