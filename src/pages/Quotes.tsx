@@ -90,9 +90,32 @@ export default function Quotes() {
   const [pdfFlowOpen, setPdfFlowOpen] = useState(false);
   const [pdfFlow, setPdfFlow] = useState<PdfFlowState>({ phase: "idle" });
   const [lastQuote, setLastQuote] = useState<any | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const sub = useSubscription();
   const tier = getTier(sub);
   const csvAllowed = canExportCsv(tier);
+
+  const deleteQuote = async (q: any) => {
+    setDeleting(true);
+    try {
+      if (q.pdf_storage_path) {
+        const { error: storageErr } = await supabase.storage
+          .from("quote-pdfs")
+          .remove([q.pdf_storage_path]);
+        if (storageErr) console.warn("PDF-Datei konnte nicht entfernt werden:", storageErr);
+      }
+      const { error } = await supabase.from("quotes").delete().eq("id", q.id);
+      if (error) throw error;
+      setItems((prev) => (prev || []).filter((x) => x.id !== q.id));
+      toast.success("Vorschlag gelöscht");
+      setDeleteCandidate(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Löschen fehlgeschlagen");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     supabase.from("quotes").select("*").order("created_at", { ascending: false })
