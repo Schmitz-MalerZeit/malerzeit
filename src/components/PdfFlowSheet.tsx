@@ -390,12 +390,6 @@ export function PdfFlowSheet({
                 <Download className="h-4 w-4 mr-2" /> Download
               </a>
             </Button>
-            <Button variant="outline" onClick={sharePdf} className="h-11">
-              <Share2 className="h-4 w-4 mr-2" /> Teilen
-            </Button>
-            <Button variant="outline" onClick={sendMail} className="h-11">
-              <Mail className="h-4 w-4 mr-2" /> E-Mail
-            </Button>
             <Button variant="outline" onClick={sendWhatsapp} className="h-11">
               <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
             </Button>
