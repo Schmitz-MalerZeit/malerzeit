@@ -5,8 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { PdfPreviewRenderer, type PdfDiagnostics } from "@/components/PdfPreviewRenderer";
 import { toast } from "sonner";
 import {
-  AlertCircle, CheckCircle2, Download, ExternalLink, FileDown, Loader2, Mail,
-  MessageCircle, RefreshCw, Share2, X,
+  AlertCircle, CheckCircle2, Download, ExternalLink, FileDown, Loader2,
+  MessageCircle, RefreshCw, X,
 } from "lucide-react";
 
 export type PdfFlowPhase =
@@ -389,12 +389,6 @@ export function PdfFlowSheet({
               <a href={downloadUrl} download={state.fileName || "Preisorientierung.pdf"} target="_blank" rel="noopener noreferrer">
                 <Download className="h-4 w-4 mr-2" /> Download
               </a>
-            </Button>
-            <Button variant="outline" onClick={sharePdf} className="h-11">
-              <Share2 className="h-4 w-4 mr-2" /> Teilen
-            </Button>
-            <Button variant="outline" onClick={sendMail} className="h-11">
-              <Mail className="h-4 w-4 mr-2" /> E-Mail
             </Button>
             <Button variant="outline" onClick={sendWhatsapp} className="h-11">
               <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp

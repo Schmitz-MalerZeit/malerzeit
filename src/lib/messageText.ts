@@ -66,7 +66,9 @@ export const buildWhatsappMessageBody = (
   whatsappText: string,
   opts: BuildMessageOptions = {},
 ): string => {
-  let body = stripClosingSignature(whatsappText || "").trim();
+  // Bewusst KEIN stripClosingSignature für WhatsApp – die Vorlage soll die
+  // Grußformel + Unterschrift mitliefern (WhatsApp hat keine eigene Signatur).
+  let body = (whatsappText || "").trim();
   if (opts.grossFormatted && !/gesamtpreis|brutto|preis|betrag/i.test(body)) {
     body += `\n\nGesamtpreis (brutto): ${opts.grossFormatted}`;
   }
