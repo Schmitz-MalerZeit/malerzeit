@@ -288,7 +288,15 @@ export default function Settings() {
             />
             <p className="text-[11px] text-muted-foreground">
               Wird beim Versenden per WhatsApp verwendet. Bitte in der Sie-Form formulieren.
-              Gleiche Platzhalter wie bei der E-Mail-Vorlage.
+              Verfügbare Platzhalter:{" "}
+              <code className="text-[10px]">{"{kunde}"}</code>,{" "}
+              <code className="text-[10px]">{"{anrede}"}</code>,{" "}
+              <code className="text-[10px]">{"{leistungen}"}</code>,{" "}
+              <code className="text-[10px]">{"{preis}"}</code>,{" "}
+              <code className="text-[10px]">{"{netto}"}</code>,{" "}
+              <code className="text-[10px]">{"{mwst}"}</code>,{" "}
+              <code className="text-[10px]">{"{firma}"}</code>,{" "}
+              <code className="text-[10px]">{"{unterschrift}"}</code>.
             </p>
             <Button
               type="button" variant="ghost" size="sm" className="h-8 text-xs"
