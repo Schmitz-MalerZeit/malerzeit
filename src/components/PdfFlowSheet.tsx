@@ -81,6 +81,18 @@ export function PdfFlowSheet({
   const [diag, setDiag] = useState<PdfDiagnostics | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
+  const toAttachmentUrl = (url: string, fileName?: string | null) => {
+    if (!url || url.startsWith("blob:")) return url;
+    try {
+      const u = new URL(url);
+      u.searchParams.set("download", fileName || "Preisorientierung.pdf");
+      return u.toString();
+    } catch {
+      const sep = url.includes("?") ? "&" : "?";
+      return `${url}${sep}download=${encodeURIComponent(fileName || "Preisorientierung.pdf")}`;
+    }
+  };
+
   useEffect(() => {
     if (!open) {
       setDiag(null);
@@ -88,58 +100,49 @@ export function PdfFlowSheet({
     }
   }, [open]);
 
+  const downloadUrl = useMemo(
+    () => state.url ? toAttachmentUrl(state.url, state.fileName) : "",
+    [state.url, state.fileName],
+  );
+
+  const fallbackDownloadUrl = useMemo(
+    () => fallbackUrl ? toAttachmentUrl(fallbackUrl, fallbackFileName) : "",
+    [fallbackUrl, fallbackFileName],
+  );
+
   const waUrl = useMemo(() => {
     if (!state.whatsappText) return "";
     const base = state.whatsappPhone ? `https://wa.me/${state.whatsappPhone}` : "https://wa.me/";
-    return `${base}?text=${encodeURIComponent(state.whatsappText)}`;
-  }, [state.whatsappText, state.whatsappPhone]);
-
-  const fetchPdfBlob = async (): Promise<Blob | null> => {
-    if (!state.url) return null;
-    try {
-      const r = await fetch(state.url);
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return await r.blob();
-    } catch (e: any) {
-      toast.error(e?.message || "Download fehlgeschlagen");
-      return null;
-    }
-  };
-
-  const downloadPdf = async () => {
-    if (!state.url || !state.fileName) return;
-    const blob = await fetchPdfBlob();
-    if (!blob) return;
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = state.fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-  };
+    const text = downloadUrl ? `${state.whatsappText}\n\nPDF herunterladen: ${downloadUrl}` : state.whatsappText;
+    return `${base}?text=${encodeURIComponent(text)}`;
+  }, [downloadUrl, state.whatsappText, state.whatsappPhone]);
 
   const sharePdf = async () => {
-    if (!state.url || !state.fileName) return;
-    const blob = await fetchPdfBlob();
-    if (!blob) return;
-    const file = new File([blob], state.fileName, { type: "application/pdf" });
-    if (navigator.canShare?.({ files: [file] })) {
+    const url = downloadUrl || state.url;
+    if (!url) return;
+
+    if (navigator.share) {
       try {
-        await navigator.share({ files: [file], title: state.subject, text: state.subject });
+        await navigator.share({ title: state.subject || state.fileName, text: state.subject, url });
         return;
       } catch {
         /* user cancelled */
         return;
       }
     }
-    toast.info("Direktes Teilen wird auf diesem Gerät nicht unterstützt. Bitte Download nutzen.");
+
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("PDF-Link kopiert");
+    } catch {
+      toast.error("Teilen ist auf diesem Gerät nicht verfügbar.");
+    }
   };
 
   const sendMail = () => {
     if (!state.subject || !state.emailBody) return;
-    const body = `${state.emailBody}\n\nHinweis: Bitte die PDF nach dem Download als Anhang hinzufügen.`;
+    const linkLine = downloadUrl ? `\n\nPDF herunterladen: ${downloadUrl}` : "";
+    const body = `${state.emailBody}${linkLine}\n\nHinweis: Falls kein Anhang möglich ist, kann die PDF über den Link geöffnet und gespeichert werden.`;
     window.location.href = `mailto:?subject=${encodeURIComponent(state.subject)}&body=${encodeURIComponent(body)}`;
   };
 
@@ -210,16 +213,10 @@ export function PdfFlowSheet({
               <RefreshCw className="h-4 w-4 mr-2" /> Erneut versuchen
             </Button>
             {fallbackUrl && (
-              <Button variant="secondary" className="h-11" onClick={() => {
-                const a = document.createElement("a");
-                a.href = fallbackUrl;
-                a.download = fallbackFileName || "Preisorientierung.pdf";
-                a.rel = "noopener";
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-              }}>
-                <FileDown className="h-4 w-4 mr-2" /> Letzte gespeicherte PDF laden
+              <Button asChild variant="secondary" className="h-11">
+                <a href={fallbackDownloadUrl} download={fallbackFileName || "Preisorientierung.pdf"} target="_blank" rel="noopener noreferrer">
+                  <FileDown className="h-4 w-4 mr-2" /> Letzte gespeicherte PDF laden
+                </a>
               </Button>
             )}
             <Button variant="ghost" className="h-9" onClick={() => onOpenChange(false)}>
@@ -258,8 +255,10 @@ export function PdfFlowSheet({
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={downloadPdf} className="h-11">
-              <Download className="h-4 w-4 mr-2" /> Download
+            <Button asChild className="h-11">
+              <a href={downloadUrl} download={state.fileName || "Preisorientierung.pdf"} target="_blank" rel="noopener noreferrer">
+                <Download className="h-4 w-4 mr-2" /> Download
+              </a>
             </Button>
             <Button variant="outline" onClick={sharePdf} className="h-11">
               <Share2 className="h-4 w-4 mr-2" /> Teilen
