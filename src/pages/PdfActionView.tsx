@@ -29,15 +29,18 @@ export default function PdfActionView() {
       "pdfActionOptions",
     ].filter(Boolean) as string[];
     for (const key of keys) {
-      const raw = sessionStorage.getItem(key);
+      const raw = key.startsWith("pdfActionOptions:")
+        ? localStorage.getItem(key)
+        : sessionStorage.getItem(key);
       if (!raw) continue;
       try {
         setOptions(JSON.parse(raw));
         // Cleanup the one-shot token entry, keep "latest" for reloads.
-        if (key.startsWith("pdfActionOptions:")) sessionStorage.removeItem(key);
+        if (key.startsWith("pdfActionOptions:")) localStorage.removeItem(key);
         return;
       } catch {
-        sessionStorage.removeItem(key);
+        if (key.startsWith("pdfActionOptions:")) localStorage.removeItem(key);
+        else sessionStorage.removeItem(key);
       }
     }
   }, []);
