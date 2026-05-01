@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { FolderOpen, Loader2, Download, Lock } from "lucide-react";
+import { FolderOpen, Loader2, Download, Lock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -79,6 +79,7 @@ function toCsv(rows: any[]): string {
 export default function Quotes() {
   const nav = useNavigate();
   const [items, setItems] = useState<any[] | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const sub = useSubscription();
   const tier = getTier(sub);
   const csvAllowed = canExportCsv(tier);
@@ -138,6 +139,28 @@ export default function Quotes() {
     });
   };
 
+  const openSavedPdf = async (q: any) => {
+    if (!q.pdf_storage_path) {
+      toast.info("Für diesen älteren Vorschlag wurde noch keine PDF-Datei gespeichert.");
+      return;
+    }
+    const pendingWindow = window.open("", "_blank", "noopener,noreferrer");
+    setOpeningId(q.id);
+    try {
+      const { data, error } = await supabase.storage
+        .from("quote-pdfs")
+        .createSignedUrl(q.pdf_storage_path, 60 * 10);
+      if (error || !data?.signedUrl) throw error || new Error("PDF konnte nicht geöffnet werden");
+      if (pendingWindow && !pendingWindow.closed) pendingWindow.location.replace(data.signedUrl);
+      else window.location.href = data.signedUrl;
+    } catch (e: any) {
+      if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
+      toast.error(e.message || "PDF konnte nicht geöffnet werden");
+    } finally {
+      setOpeningId(null);
+    }
+  };
+
 
   return (
     <AppShell title="Gespeicherte Vorschläge">
@@ -178,6 +201,17 @@ export default function Quotes() {
               {Array.isArray(q.line_items) && q.line_items.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-2">{q.line_items.length} Leistungspositionen</p>
               )}
+              <Button
+                type="button"
+                variant={q.pdf_storage_path ? "outline" : "secondary"}
+                onClick={() => openSavedPdf(q)}
+                disabled={openingId === q.id}
+                className="mt-3 h-10 w-full"
+              >
+                {openingId === q.id
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF öffnen" : "Noch kein PDF gespeichert"}</>}
+              </Button>
             </div>
           ))}
         </div>
