@@ -31,6 +31,7 @@ export default function Home() {
   const { t } = useTranslation();
   const sub = useSubscription();
   const [firstName, setFirstName] = useState<string>("");
+  const [addonOpen, setAddonOpen] = useState(false);
 
   useEffect(() => {
     supabase.from("profiles").select("contact_person").maybeSingle().then(({ data }) => {
