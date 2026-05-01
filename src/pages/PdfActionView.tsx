@@ -96,12 +96,14 @@ export default function PdfActionView() {
     window.open(options.url, "_blank", "noopener,noreferrer");
   };
 
-  const emailStoredPdf = () => {
+  const emailStoredPdf = async () => {
     if (!options) return;
+    toast.info("Teilen-Fenster geöffnet – bitte Mail auswählen, damit die PDF als Anhang übernommen wird.");
+    if (await sharePdf()) return;
     const note = "Hinweis: Die gespeicherte PDF ist auf Ihrem Gerät verfügbar – bitte vor dem Senden als Anhang hinzufügen.";
     const body = `${options.emailBody}\n\n${note}`;
     window.location.href = `mailto:?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(body)}`;
-    toast.info("E-Mail-Programm geöffnet. Bitte gespeicherte PDF als Anhang hinzufügen.");
+    toast.info("Direkter PDF-Anhang wird auf diesem Gerät nicht unterstützt. Bitte PDF manuell anhängen.");
   };
 
   const sharePdf = async () => {
