@@ -404,9 +404,13 @@ export function PdfFlowSheet({
             </Button>
           </div>
 
-          <div className="rounded-md border border-border overflow-hidden h-[55vh] min-h-[320px]">
+          <div className="rounded-md border border-border overflow-hidden h-[40vh] min-h-[260px]">
             <PdfPreviewRenderer url={state.url} onDiagnostics={setDiag} />
           </div>
+
+          <Button variant="ghost" className="h-10 mt-1" onClick={() => onOpenChange(false)}>
+            Schließen
+          </Button>
 
           {diag && (
             <div className="flex flex-wrap gap-1.5 text-[10px] text-muted-foreground">
@@ -433,7 +437,7 @@ export function PdfFlowSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[92dvh] max-h-[92dvh] flex flex-col p-0 gap-0 rounded-t-2xl"
+        className="h-[85dvh] max-h-[85dvh] flex flex-col p-0 gap-0 rounded-t-2xl"
       >
         <SheetHeader className="px-4 pt-4 pb-2 border-b border-border text-left">
           <div className="flex items-start justify-between gap-2">

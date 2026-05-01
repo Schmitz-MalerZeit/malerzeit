@@ -2,7 +2,7 @@ const CUSTOMER_NOTICE =
   "Hinweis: Diese unverbindliche Preisorientierung ist eine Schätzung auf Grundlage der vorliegenden Angaben. Wenn sie für Sie passt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.";
 
 const WHATSAPP_NOTICE =
-  "Hinweis: Das ist eine unverbindliche Preisorientierung/Schätzung auf Grundlage der vorliegenden Angaben. Wenn das für dich passt, erstellen wir dir gerne ein verbindliches schriftliches Angebot.";
+  "Hinweis: Das ist eine unverbindliche Preisorientierung/Schätzung auf Grundlage der vorliegenden Angaben. Wenn das für Sie passt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.";
 
 const hasOrientationLanguage = (text: string) =>
   /(unverbindlich|preisorientierung|preisschätzung|preisschaetzung|schätzung|schaetzung)/i.test(text);
