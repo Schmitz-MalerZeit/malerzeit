@@ -516,7 +516,10 @@ export default function QuoteResult() {
       if (previewBlob && previewBlobUrl) {
         if (!pdfQuotaConsumed) {
           const ok = await consumeQuota();
-          if (!ok) return;
+          if (!ok) {
+            if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
+            return;
+          }
           setPdfQuotaConsumed(true);
         }
         await ensureSavedQuoteWithPdf(previewBlob, fileName);
@@ -530,7 +533,10 @@ export default function QuoteResult() {
       }
       const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
       const ok = await consumeQuota();              // 2) atomically consume quota
-      if (!ok) return;
+      if (!ok) {
+        if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
+        return;
+      }
       setPdfQuotaConsumed(true);
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
