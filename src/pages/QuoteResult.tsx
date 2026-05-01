@@ -7,8 +7,8 @@ import { toast } from "sonner";
 import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
-import { openPendingPdfActionWindow, showPdfActionWindow } from "@/lib/pdfActionWindow";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
+import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 
