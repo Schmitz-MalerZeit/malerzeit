@@ -31,6 +31,8 @@ export default function Settings() {
     vat_rate: 19,
     quote_validity_days: 14,
     closing_text: "Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.",
+    email_template: DEFAULT_EMAIL_TEMPLATE,
+    whatsapp_template: DEFAULT_WHATSAPP_TEMPLATE,
   });
   const [rates, setRates] = useState<Rate[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
