@@ -276,6 +276,7 @@ export type Database = {
         Row: {
           closing_text: string
           created_at: string
+          email_template: string
           hourly_rate: number
           material_markup: number
           quality_level: string
@@ -283,10 +284,12 @@ export type Database = {
           updated_at: string
           user_id: string
           vat_rate: number
+          whatsapp_template: string
         }
         Insert: {
           closing_text?: string
           created_at?: string
+          email_template?: string
           hourly_rate?: number
           material_markup?: number
           quality_level?: string
@@ -294,10 +297,12 @@ export type Database = {
           updated_at?: string
           user_id: string
           vat_rate?: number
+          whatsapp_template?: string
         }
         Update: {
           closing_text?: string
           created_at?: string
+          email_template?: string
           hourly_rate?: number
           material_markup?: number
           quality_level?: string
@@ -305,6 +310,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vat_rate?: number
+          whatsapp_template?: string
         }
         Relationships: []
       }

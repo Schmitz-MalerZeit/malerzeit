@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Star, RefreshCw } from "lucide-react";
+import { DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/messageTemplate";
 
 const TEST_USER_ID = "4f497125-b2e8-46af-a6ef-477dbe7a8a0c";
 
@@ -30,6 +31,8 @@ export default function Settings() {
     vat_rate: 19,
     quote_validity_days: 14,
     closing_text: "Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.",
+    email_template: DEFAULT_EMAIL_TEMPLATE,
+    whatsapp_template: DEFAULT_WHATSAPP_TEMPLATE,
   });
   const [rates, setRates] = useState<Rate[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
@@ -50,6 +53,8 @@ export default function Settings() {
         vat_rate: Number(settings.vat_rate),
         quote_validity_days: Number((settings as any).quote_validity_days ?? 14),
         closing_text: (settings as any).closing_text ?? "Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.",
+        email_template: (settings as any).email_template ?? DEFAULT_EMAIL_TEMPLATE,
+        whatsapp_template: (settings as any).whatsapp_template ?? DEFAULT_WHATSAPP_TEMPLATE,
       });
       setRates((hr || []).map((r: any) => ({
         id: r.id, label: r.label, rate: Number(r.rate),
@@ -260,7 +265,7 @@ export default function Settings() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="closing">Abschlusssatz</Label>
+            <Label htmlFor="closing">Abschlusssatz (PDF)</Label>
             <Textarea
               id="closing" rows={3}
               value={s.closing_text}
@@ -268,8 +273,59 @@ export default function Settings() {
               placeholder="Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot."
             />
             <p className="text-[11px] text-muted-foreground">
-              Wird unter der Grußformel in kleinerer Schrift gezeigt.
+              Wird unter der Grußformel im PDF in kleinerer Schrift gezeigt.
             </p>
+          </div>
+
+          <div className="space-y-1.5 pt-2 border-t border-border">
+            <Label htmlFor="email_tpl">E-Mail-Vorlage</Label>
+            <Textarea
+              id="email_tpl" rows={9}
+              value={s.email_template}
+              onChange={(e) => setS({ ...s, email_template: e.target.value })}
+              placeholder={DEFAULT_EMAIL_TEMPLATE}
+              className="font-mono text-xs leading-relaxed"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Wird beim Versenden per E-Mail verwendet. Verfügbare Platzhalter:{" "}
+              <code className="text-[10px]">{"{kunde}"}</code>,{" "}
+              <code className="text-[10px]">{"{anrede}"}</code>,{" "}
+              <code className="text-[10px]">{"{leistungen}"}</code>,{" "}
+              <code className="text-[10px]">{"{preis}"}</code>,{" "}
+              <code className="text-[10px]">{"{netto}"}</code>,{" "}
+              <code className="text-[10px]">{"{mwst}"}</code>,{" "}
+              <code className="text-[10px]">{"{firma}"}</code>,{" "}
+              <code className="text-[10px]">{"{unterschrift}"}</code>.
+              Eine eigene Grußformel/Signatur ist nicht nötig – die kommt aus deinem E-Mail-Programm.
+            </p>
+            <Button
+              type="button" variant="ghost" size="sm" className="h-8 text-xs"
+              onClick={() => setS({ ...s, email_template: DEFAULT_EMAIL_TEMPLATE })}
+            >
+              Auf Standard zurücksetzen
+            </Button>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="wa_tpl">WhatsApp-Vorlage</Label>
+            <Textarea
+              id="wa_tpl" rows={9}
+              value={s.whatsapp_template}
+              onChange={(e) => setS({ ...s, whatsapp_template: e.target.value })}
+              placeholder={DEFAULT_WHATSAPP_TEMPLATE}
+              className="font-mono text-xs leading-relaxed"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Wird beim Versenden per WhatsApp verwendet. Bitte in der Sie-Form formulieren.
+              Gleiche Platzhalter wie bei der E-Mail-Vorlage. Der Brutto-Preis wird in WhatsApp
+              automatisch fett dargestellt.
+            </p>
+            <Button
+              type="button" variant="ghost" size="sm" className="h-8 text-xs"
+              onClick={() => setS({ ...s, whatsapp_template: DEFAULT_WHATSAPP_TEMPLATE })}
+            >
+              Auf Standard zurücksetzen
+            </Button>
           </div>
         </div>
 
