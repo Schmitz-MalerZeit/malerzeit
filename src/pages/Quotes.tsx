@@ -29,6 +29,8 @@ export default function Quotes() {
   const [profile, setProfile] = useState<any | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const subState = useSubscription();
+  const waAllowed = canSendViaWhatsapp(getTier(subState));
 
   const deleteQuote = async (q: any) => {
     setDeleting(true);
