@@ -928,6 +928,36 @@ export default function QuoteResult() {
         onOpenChange={setAddonDialogOpen}
         contextLine={addonDialogContext}
       />
+      <AlertDialog open={whatsappUpgradeOpen} onOpenChange={setWhatsappUpgradeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="mx-auto mb-2 h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <MessageCircle className="h-6 w-6 text-emerald-600" />
+            </div>
+            <AlertDialogTitle className="text-center">
+              WhatsApp-Versand ist Profi-exklusiv
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center leading-relaxed">
+              Mit dem <strong className="text-foreground">Profi</strong>-Tarif sendest du deine
+              Preisorientierung mit einem Tipp direkt per WhatsApp – inklusive persönlicher
+              Anrede deines Kunden und der PDF als Anhang.
+              <br /><br />
+              Im Starter-Tarif lädst du das PDF einfach herunter und teilst es selbst.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:flex-col sm:space-x-0 gap-2">
+            <AlertDialogAction
+              onClick={() => { setWhatsappUpgradeOpen(false); nav("/pricing"); }}
+              className="w-full h-11 gradient-primary text-primary-foreground border-0"
+            >
+              <Sparkles className="h-4 w-4 mr-2" /> Auf Profi upgraden
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full h-10 mt-0">
+              Vielleicht später
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
