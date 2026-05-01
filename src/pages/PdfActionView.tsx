@@ -99,14 +99,19 @@ export default function PdfActionView() {
     toast.info("Direkter PDF-Anhang wird auf diesem Gerät nicht unterstützt. Bitte PDF manuell anhängen.");
   };
 
-  const sharePdf = async () => {
+  const sharePdf = async (opts: { includeText?: boolean } = {}) => {
     if (!options) return false;
     setBusy(true);
     try {
       const blob = await fetchPdfBlob();
       const file = new File([blob], options.fileName, { type: "application/pdf" });
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: options.subject, text: options.subject });
+        // Kein `text`/`url`, wenn nicht explizit gewünscht – sonst sendet z. B.
+        // iOS WhatsApp eine zusätzliche zweite Nachricht mit dem (langen)
+        // Storage-Link bzw. dem Dateinamen, was unprofessionell wirkt.
+        const payload: ShareData = { files: [file], title: options.fileName };
+        if (opts.includeText) payload.text = options.subject;
+        await navigator.share(payload);
         return true;
       }
       toast.info("Direktes Teilen wird auf diesem Gerät nicht unterstützt. Bitte Download nutzen und die PDF anhängen.");
@@ -125,9 +130,15 @@ export default function PdfActionView() {
     window.open(`mailto:?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(body)}`, "_blank", "noopener,noreferrer");
   };
 
-  const sendWhatsapp = () => {
+  const sendWhatsapp = async () => {
     if (!options) return;
-    window.open(waUrl, "_blank", "noopener,noreferrer");
+    // Bevorzugt das native Teilen-Sheet mit echtem PDF-Anhang ohne Caption,
+    // damit kein zusätzlicher Storage-Link in WhatsApp gepostet wird.
+    if (await sharePdf()) return;
+    // Fallback: wa.me ohne Text – damit nur der WhatsApp-Chat geöffnet wird
+    // und der Nutzer die PDF manuell anhängen kann.
+    const fallback = options.whatsappPhone ? `https://wa.me/${options.whatsappPhone}` : "https://wa.me/";
+    window.open(fallback, "_blank", "noopener,noreferrer");
   };
 
   const goBack = () => {
@@ -156,7 +167,7 @@ export default function PdfActionView() {
           <Button type="button" onClick={downloadPdf} disabled={busy} className="h-11 min-w-0">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Download className="h-4 w-4 mr-2" />Download</>}
           </Button>
-          <Button type="button" variant="outline" onClick={sharePdf} disabled={busy} className="h-11 min-w-0">
+          <Button type="button" variant="outline" onClick={() => sharePdf()} disabled={busy} className="h-11 min-w-0">
             <Share2 className="h-4 w-4 mr-2" />Teilen
           </Button>
         </div>
