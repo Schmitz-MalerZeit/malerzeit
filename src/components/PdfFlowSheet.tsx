@@ -448,7 +448,7 @@ export function PdfFlowSheet({
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={downloadPdfAsBlob} className="h-11" disabled={fetchingBlob && !pdfFile}>
+            <Button onClick={downloadPdfAsBlob} className="h-11">
               <Download className="h-4 w-4 mr-2" /> Download
             </Button>
             <Button variant="outline" onClick={sendWhatsapp} className="h-11">
