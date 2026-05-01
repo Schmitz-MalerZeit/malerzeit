@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, Minus, Plus, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import type { PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";
 import pdfWorkerSrc from "pdfjs-dist/build/pdf.worker.min.js?url";
@@ -23,6 +24,7 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInput, setPageInput] = useState("1");
+  const [pageInputError, setPageInputError] = useState<string | null>(null);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -188,10 +190,38 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
   }, [zoom]);
 
   const submitPageInput = () => {
-    const n = parseInt(pageInput, 10);
-    if (!Number.isNaN(n)) goToPage(n);
-    else setPageInput(String(currentPage));
+    const raw = pageInput.trim();
+    if (raw === "") {
+      setPageInputError("Bitte eine Seitenzahl eingeben.");
+      toast.error("Bitte eine Seitenzahl eingeben.");
+      setPageInput(String(currentPage));
+      return;
+    }
+    if (!/^\d+$/.test(raw)) {
+      setPageInputError("Nur ganze Zahlen erlaubt.");
+      toast.error("Ungültige Seitenzahl: nur ganze Zahlen erlaubt.");
+      setPageInput(String(currentPage));
+      return;
+    }
+    const n = parseInt(raw, 10);
+    if (!Number.isFinite(n) || n < 1 || n > numPages) {
+      const msg = numPages > 0
+        ? `Seitenzahl muss zwischen 1 und ${numPages} liegen.`
+        : "Keine Seiten verfügbar.";
+      setPageInputError(msg);
+      toast.error(msg);
+      setPageInput(String(currentPage));
+      return;
+    }
+    setPageInputError(null);
+    goToPage(n);
   };
+
+  // Clear error when user edits again
+  useEffect(() => {
+    if (pageInputError) setPageInputError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageInput]);
 
   return (
     <div className="relative h-full flex flex-col bg-muted">
@@ -214,8 +244,11 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
           onChange={(e) => setPageInput(e.target.value.replace(/[^0-9]/g, ""))}
           onBlur={submitPageInput}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitPageInput(); } }}
-          className="h-8 w-10 rounded border border-border bg-background text-center text-xs tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          className={`h-8 w-10 rounded border bg-background text-center text-xs tabular-nums text-foreground focus:outline-none focus:ring-1 ${pageInputError ? "border-destructive ring-destructive focus:ring-destructive" : "border-border focus:ring-ring"}`}
           aria-label="Seitenzahl"
+          aria-invalid={pageInputError ? true : undefined}
+          aria-errormessage={pageInputError ? "page-input-error" : undefined}
+          title={pageInputError ?? undefined}
           disabled={status !== "ready"}
         />
         <span className="px-1 text-xs tabular-nums text-muted-foreground">
