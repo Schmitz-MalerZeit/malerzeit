@@ -604,8 +604,7 @@ export default function QuoteResult() {
   // Vom Vorschau-Dialog aus direkt herunterladen (verbraucht Quota).
   const downloadFromPreview = async () => {
     setPreviewOpen(false);
-    // Kurz warten, damit der Dialog sauber schließt, bevor der Download startet.
-    setTimeout(() => downloadPDF(), 150);
+    await downloadPDF();
   };
 
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
