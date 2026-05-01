@@ -159,6 +159,11 @@ export function PdfFlowSheet({
     return `${base}?text=${encodeURIComponent(state.whatsappText)}`;
   }, [state.whatsappText, state.whatsappPhone]);
 
+  const isIOS = useMemo(
+    () => (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !("MSStream" in window),
+    [],
+  );
+
   /** „Download" – speichert die PDF als echte Datei (Blob) statt einen Link
    * zur Storage-URL zu öffnen. Wichtig: Wenn wir einen `<a href={signedUrl}>`
    * verwenden, öffnet iOS Safari die PDF in einem Tab. Klickt der Nutzer dort
@@ -166,7 +171,6 @@ export function PdfFlowSheet({
    * genau das verursacht den langen Storage-Link in WhatsApp. */
   const downloadPdfAsBlob = () => {
     const fileName = state.fileName || "Preisorientierung.pdf";
-    const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !("MSStream" in window);
     const originalUrl = downloadUrl || state.url || "";
     const openOriginalUrl = () => {
       if (!originalUrl) return false;
@@ -199,12 +203,6 @@ export function PdfFlowSheet({
 
     if (!blob) {
       if (!openOriginalUrl()) toast.error("PDF-Download nicht möglich. Bitte erneut öffnen.");
-      return;
-    }
-
-    if (isIOS) {
-      openBlobImmediately(blob);
-      toast.success("PDF wurde geöffnet. Tippe auf Teilen/Sichern, falls iOS keinen direkten Download anbietet.");
       return;
     }
 
