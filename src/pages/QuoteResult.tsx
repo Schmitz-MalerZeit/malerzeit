@@ -692,10 +692,10 @@ export default function QuoteResult() {
 
   const headerTitle = data.customer?.name?.trim() || "Preisorientierung";
 
-  // Telefonnummer für WhatsApp normalisieren.
+  // Telefonnummer für WhatsApp normalisieren – nur ab Profi/Exklusiv aktiv.
 
   const customerPhone = (data.customer?.phone || "").trim();
-  const waPhone = normalizePhoneForWa(customerPhone);
+  const waPhone = whatsappAllowed ? normalizePhoneForWa(customerPhone) : null;
 
   return (
     <AppShell title={headerTitle}>
