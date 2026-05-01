@@ -667,7 +667,32 @@ export default function QuoteResult() {
   const customerPhone = (data.customer?.phone || "").trim();
   const waPhone = normalizePhoneForWa(customerPhone);
 
-  const sendViaEmail = () => {
+  const sharePdfFile = async (label: string): Promise<boolean> => {
+    if (!previewBlob || !lastFilename) {
+      toast.error("PDF ist noch nicht bereit. Bitte erst PDF erstellen.");
+      return false;
+    }
+    try {
+      const navShare: any = navigator;
+      const file = new File([previewBlob], lastFilename, { type: "application/pdf" });
+      if (typeof navShare.share !== "function" || (typeof navShare.canShare === "function" && !navShare.canShare({ files: [file] }))) {
+        return false;
+      }
+      await navShare.share({
+        files: [file],
+        title: lastFilename,
+        text: whatsappDisplay,
+      });
+      setShareOpen(false);
+      return true;
+    } catch (e: any) {
+      if (e?.name !== "AbortError") toast.error(`${label} konnte das PDF nicht direkt übernehmen.`);
+      return true;
+    }
+  };
+
+  const sendViaEmail = async () => {
+    if (await sharePdfFile("E-Mail")) return;
     const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
     const body = (ai.customer_text || "") + (lastFilename ? `\n\n(PDF im Anhang: ${lastFilename} – bitte aus deinem Download-Ordner anhängen.)` : "");
     const to = encodeURIComponent(customerEmail);
@@ -676,7 +701,8 @@ export default function QuoteResult() {
     setShareOpen(false);
   };
 
-  const sendViaWhatsapp = () => {
+  const sendViaWhatsapp = async () => {
+    if (await sharePdfFile("WhatsApp")) return;
     if (!waPhone) return;
     const text = whatsappDisplay + (lastFilename ? `\n\n📎 PDF im Anhang: ${lastFilename}\n(Bitte das PDF aus deinem Download-Ordner an diesen Chat anhängen.)` : "");
     const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
