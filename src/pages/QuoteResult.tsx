@@ -12,6 +12,10 @@ import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageTe
 import { renderMessageTemplate, DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE, ensureWhatsappSignature } from "@/lib/messageTemplate";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 import { AddonPurchaseDialog } from "@/components/AddonPurchaseDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
 
@@ -37,6 +41,7 @@ export default function QuoteResult() {
   const [lastSignedPdfUrl, setLastSignedPdfUrl] = useState<string | null>(null);
   const [addonDialogOpen, setAddonDialogOpen] = useState(false);
   const [addonDialogContext, setAddonDialogContext] = useState<string | undefined>(undefined);
+  const [whatsappUpgradeOpen, setWhatsappUpgradeOpen] = useState(false);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
@@ -676,9 +681,7 @@ export default function QuoteResult() {
   const sendWhatsappDirect = async () => {
     if (!guardPdfAccess()) return;
     if (!whatsappAllowed) {
-      toast.error("WhatsApp-Versand ist ab dem Profi-Tarif verfügbar.", {
-        action: { label: "Tarife ansehen", onClick: () => nav("/pricing") },
-      });
+      setWhatsappUpgradeOpen(true);
       return;
     }
     await runPdfFlow(true);
@@ -825,14 +828,23 @@ export default function QuoteResult() {
           </Button>
         )}
 
-        {pdfAllowed && whatsappAllowed && (
+        {pdfAllowed && (
           <Button
             onClick={sendWhatsappDirect}
             disabled={busy}
             variant="outline"
             className="w-full h-12 border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><MessageCircle className="h-4 w-4 mr-2" /> Per WhatsApp senden</>}
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+              <>
+                <MessageCircle className="h-4 w-4 mr-2" /> Per WhatsApp senden
+                {!whatsappAllowed && (
+                  <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide rounded-full bg-primary/10 text-primary px-2 py-0.5">
+                    Profi
+                  </span>
+                )}
+              </>
+            )}
           </Button>
         )}
 
@@ -916,6 +928,36 @@ export default function QuoteResult() {
         onOpenChange={setAddonDialogOpen}
         contextLine={addonDialogContext}
       />
+      <AlertDialog open={whatsappUpgradeOpen} onOpenChange={setWhatsappUpgradeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="mx-auto mb-2 h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <MessageCircle className="h-6 w-6 text-emerald-600" />
+            </div>
+            <AlertDialogTitle className="text-center">
+              WhatsApp-Versand ist Profi-exklusiv
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center leading-relaxed">
+              Mit dem <strong className="text-foreground">Profi</strong>-Tarif sendest du deine
+              Preisorientierung mit einem Tipp direkt per WhatsApp – inklusive persönlicher
+              Anrede deines Kunden und der PDF als Anhang.
+              <br /><br />
+              Im Starter-Tarif lädst du das PDF einfach herunter und teilst es selbst.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:flex-col sm:space-x-0 gap-2">
+            <AlertDialogAction
+              onClick={() => { setWhatsappUpgradeOpen(false); nav("/pricing"); }}
+              className="w-full h-11 gradient-primary text-primary-foreground border-0"
+            >
+              <Sparkles className="h-4 w-4 mr-2" /> Auf Profi upgraden
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full h-10 mt-0">
+              Vielleicht später
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
