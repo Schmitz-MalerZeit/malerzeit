@@ -448,7 +448,7 @@ export default function QuoteResult() {
 
   const downloadPDF = async () => {
     if (!guardPdfAccess()) return;
-    const pendingWindow = openPendingPreviewWindow();
+    const pendingWindow = openPendingPdfActionWindow();
     setBusy(true);
     try {
       const fileName = filename();
@@ -491,42 +491,6 @@ export default function QuoteResult() {
     finally { setBusy(false); }
   };
 
-  const retryPreview = () => {
-    previewPDF();
-  };
-
-  const previewPDF = async () => {
-    if (!guardPdfAccess()) return;
-    setBusy(true);
-    try {
-      // Vorschau ist KOSTENLOS (kein Quota-Verbrauch). Erst der Download
-      // zählt aufs Kontingent.
-      let url = previewBlobUrl;
-      if (!url) {
-        const pdf = await buildPDF();
-        const blob = pdf.output("blob");
-        url = URL.createObjectURL(blob);
-        setPreviewBlob(blob);
-        setPreviewBlobUrl(url);
-      }
-      // Inline-Vorschau im Dialog öffnen – kein Popup, kein neues Fenster.
-      setPreviewOpen(true);
-      setPreviewFailed(false);
-    } catch (e: any) {
-      setPreviewFailed(true);
-      toast.error(e.message || "PDF-Fehler", {
-        action: { label: "Erneut", onClick: () => retryPreview() },
-      });
-    }
-    finally { setBusy(false); }
-  };
-
-  // Vom Vorschau-Dialog aus direkt herunterladen (verbraucht Quota).
-  const downloadFromPreview = async () => {
-    setPreviewOpen(false);
-    await downloadPDF();
-  };
-
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
   // und den Busy-Spinner – wird beim Auto-Speichern nach PDF-Erstellung genutzt.
   const save = async (silent = false) => {
@@ -539,7 +503,7 @@ export default function QuoteResult() {
         user_id: u.user.id,
         description: data.description,
         line_items: ai.line_items,
-        customer_text: ai.customer_text,
+        customer_text: customerDisplay,
         whatsapp_text: whatsappDisplay,
         net_amount: p.net_amount,
         vat_amount: p.vat_amount,
