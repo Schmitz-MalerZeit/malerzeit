@@ -11,8 +11,10 @@ export interface SubscriptionState {
   trialPdfsLimit: number;   // total trial PDFs (= 3)
   trialPdfsUsed: number;    // used trial PDFs (lifetime)
   subscription: any | null;
-  pdfLimit: number;         // monthly limit for paid plans, 0 in trial
+  pdfLimit: number;         // base monthly limit for paid plans, 0 in trial
   pdfUsed: number;          // monthly usage for paid plans
+  addonBonus: number;       // extra PDFs from purchased add-ons (current month)
+  effectiveLimit: number;   // pdfLimit + addonBonus
   refresh: () => Promise<void>;
 }
 
