@@ -150,8 +150,7 @@ export function PdfFlowSheet({
 
   const canShareFile = useMemo(() => {
     if (!pdfFile) return false;
-    const navAny = navigator as any;
-    return typeof navAny.canShare === "function" && navAny.canShare({ files: [pdfFile] });
+    return typeof navigator.canShare === "function" && navigator.canShare({ files: [pdfFile] });
   }, [pdfFile]);
 
   const waUrl = useMemo(() => {
@@ -167,7 +166,7 @@ export function PdfFlowSheet({
    * genau das verursacht den langen Storage-Link in WhatsApp. */
   const downloadPdfAsBlob = () => {
     const fileName = state.fileName || "Preisorientierung.pdf";
-    const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !(window as any).MSStream;
+    const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !("MSStream" in window);
     const originalUrl = downloadUrl || state.url || "";
     const openOriginalUrl = () => {
       if (!originalUrl) return false;
