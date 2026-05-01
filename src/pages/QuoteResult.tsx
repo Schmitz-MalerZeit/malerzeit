@@ -494,12 +494,27 @@ export default function QuoteResult() {
     setPdfFlow({
       phase: "building",
       step: "PDF wird zusammengebaut …",
+      progress: 5,
       fileName,
       ...meta,
       whatsappPhone: waPhone,
     });
     setPdfFlowOpen(true);
     setBusy(true);
+
+    // Soft, monotone build progress (jsPDF is synchronous and gives no events).
+    // We tick towards 90% so the user sees motion; the final 10% snap when
+    // the blob is ready and we transition into the upload phase.
+    const buildStart = performance.now();
+    let buildPct = 5;
+    const buildTimer = window.setInterval(() => {
+      buildPct = Math.min(90, buildPct + 4);
+      const elapsed = (performance.now() - buildStart) / 1000;
+      const eta = Math.max(0, (elapsed / Math.max(buildPct, 1)) * (100 - buildPct));
+      setPdfFlow((s) => s.phase === "building"
+        ? { ...s, progress: buildPct, etaSeconds: eta }
+        : s);
+    }, 180);
 
     try {
       // 1) Build (or reuse) the PDF blob
@@ -511,6 +526,7 @@ export default function QuoteResult() {
         const ok = await consumeQuota();
         if (!ok) {
           // Quota errors already toast; close sheet quietly.
+          window.clearInterval(buildTimer);
           setPdfFlowOpen(false);
           setPdfFlow({ phase: "idle" });
           return;
@@ -524,20 +540,44 @@ export default function QuoteResult() {
       } else if (!pdfQuotaConsumed) {
         const ok = await consumeQuota();
         if (!ok) {
+          window.clearInterval(buildTimer);
           setPdfFlowOpen(false);
           setPdfFlow({ phase: "idle" });
           return;
         }
         setPdfQuotaConsumed(true);
       }
+      window.clearInterval(buildTimer);
 
-      // 3) Upload + persist quote row
-      setPdfFlow((s) => ({ ...s, phase: "uploading", step: "PDF wird gespeichert …" }));
-      const savedPdf = await ensureSavedQuoteWithPdf(blob, fileName);
+      // 3) Upload + persist quote row — with REAL progress + ETA
+      const uploadStart = performance.now();
+      setPdfFlow((s) => ({
+        ...s,
+        phase: "uploading",
+        step: "PDF wird hochgeladen …",
+        progress: 0,
+        loadedBytes: 0,
+        totalBytes: blob!.size,
+        etaSeconds: undefined,
+      }));
+      const savedPdf = await ensureSavedQuoteWithPdf(blob, fileName, (loaded, total) => {
+        const pct = total > 0 ? (loaded / total) * 100 : 0;
+        const elapsed = (performance.now() - uploadStart) / 1000;
+        const speed = elapsed > 0 ? loaded / elapsed : 0; // bytes/s
+        const remaining = speed > 0 ? (total - loaded) / speed : undefined;
+        setPdfFlow((s) => s.phase === "uploading"
+          ? { ...s, progress: pct, loadedBytes: loaded, totalBytes: total, etaSeconds: remaining }
+          : s);
+      });
       if (!savedPdf?.path) throw new Error("PDF konnte nicht gespeichert werden");
 
       // 4) Sign URL for preview + sharing
-      setPdfFlow((s) => ({ ...s, step: "Sicheren Link erstellen …" }));
+      setPdfFlow((s) => ({
+        ...s,
+        step: "Sicheren Link erstellen …",
+        progress: 98,
+        etaSeconds: 1,
+      }));
       const signedUrl = await createSignedPdfUrl(savedPdf.path);
       setLastSignedPdfUrl(signedUrl);
       setLastFilename(fileName);
@@ -550,6 +590,7 @@ export default function QuoteResult() {
         whatsappPhone: waPhone,
       });
     } catch (e: any) {
+      window.clearInterval(buildTimer);
       console.error("PDF flow failed", e);
       setPdfFlow((prev) => ({
         ...prev,
