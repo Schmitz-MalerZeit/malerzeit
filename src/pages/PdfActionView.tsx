@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, ExternalLink, FileDown, Loader2, Mail, MailPlus, MessageCircle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PdfPreviewRenderer } from "@/components/PdfPreviewRenderer";
+import { PdfPreviewRenderer, type PdfDiagnostics } from "@/components/PdfPreviewRenderer";
 import { toast } from "sonner";
 
 interface PdfActionOptions {
