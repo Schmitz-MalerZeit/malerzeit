@@ -174,16 +174,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.text("Unverbindliche Preisorientierung", margin, y);
   y += 6;
 
-  // Kleine Überschrift mit Kundenname als sofortiger Bezugspunkt
-  if (d.customer?.name) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10.5);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`für ${d.customer.name}`, margin, y);
-    y += 6;
-  } else {
-    y += 4;
-  }
+  y += 4;
 
   // ───────── Anrede ─────────
   const salutation = "Sehr geehrte Damen und Herren,";
