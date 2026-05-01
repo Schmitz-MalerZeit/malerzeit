@@ -75,6 +75,9 @@ export default function QuoteResult() {
     }
     setPreviewBlob(null);
     setPdfQuotaConsumed(false);
+    // Mark as dirty: after edits the user can save again (UPDATE if a row
+    // already exists, INSERT otherwise).
+    setSaved(false);
   };
 
   const updateLineItem = (index: number, value: string) => {
@@ -490,13 +493,16 @@ export default function QuoteResult() {
 
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
   // und den Busy-Spinner – wird beim Auto-Speichern nach PDF-Erstellung genutzt.
+  // Wenn bereits ein Datensatz existiert (savedQuoteId), wird ein UPDATE statt
+  // INSERT ausgeführt – verhindert Duplikate, wenn der Nutzer nach dem
+  // PDF-Erstellen noch manuell auf "Speichern" tippt.
   const save = async (silent = false) => {
-    if (saved) return;
+    if (saved && !savedQuoteId) return; // already saved, nothing to update
     if (!silent) setBusy(true);
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Nicht angemeldet");
-      const { data: inserted, error } = await supabase.from("quotes").insert({
+      const payload = {
         user_id: u.user.id,
         description: data.description,
         line_items: ai.line_items,
@@ -519,11 +525,16 @@ export default function QuoteResult() {
         pdf_created_at: lastSavedPdfPath ? new Date().toISOString() : null,
         pdf_size_bytes: previewBlob?.size ?? null,
         pdf_mime_type: lastSavedPdfPath ? "application/pdf" : null,
-      }).select("id").single();
+      };
+
+      const query = savedQuoteId
+        ? supabase.from("quotes").update(payload).eq("id", savedQuoteId).select("id").single()
+        : supabase.from("quotes").insert(payload).select("id").single();
+      const { data: row, error } = await query;
       if (error) throw error;
-      setSavedQuoteId(inserted.id);
+      setSavedQuoteId(row.id);
       setSaved(true);
-      if (!silent) toast.success("Vorschlag gespeichert");
+      if (!silent) toast.success(savedQuoteId ? "Vorschlag aktualisiert" : "Vorschlag gespeichert");
     } catch (e: any) {
       if (!silent) toast.error(e.message);
       else console.warn("Auto-Speichern fehlgeschlagen:", e?.message);
