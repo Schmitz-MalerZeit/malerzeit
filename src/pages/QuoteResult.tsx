@@ -41,6 +41,7 @@ export default function QuoteResult() {
   const [lastSignedPdfUrl, setLastSignedPdfUrl] = useState<string | null>(null);
   const [addonDialogOpen, setAddonDialogOpen] = useState(false);
   const [addonDialogContext, setAddonDialogContext] = useState<string | undefined>(undefined);
+  const [whatsappUpgradeOpen, setWhatsappUpgradeOpen] = useState(false);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
