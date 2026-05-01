@@ -197,6 +197,17 @@ export function PdfFlowSheet({
         const freshFile = new File([blob], fileName, { type: blob.type || "application/pdf" });
         if (await shareFileOnIOS(freshFile)) return;
       } catch { /* File constructor not supported: continue with download fallback */ }
+      const canUseFileReaderFallback = isIOS && typeof FileReader !== "undefined";
+      if (canUseFileReaderFallback) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === "string") {
+            window.location.href = reader.result;
+          }
+        };
+        reader.readAsDataURL(blob);
+        return;
+      }
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = objectUrl;
