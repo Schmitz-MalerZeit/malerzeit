@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -370,27 +369,6 @@ export default function QuoteResult() {
     if (descSlug) return `Preisorientierung_${descSlug}_${date}.pdf`;
 
     return `Preisorientierung_${date}.pdf`;
-  };
-
-  // Detects mobile browsers where the standard `<a download>` trick is unreliable
-  // (notably iOS Safari, where it silently navigates instead of saving).
-  const isMobileBrowser = (): boolean => {
-    if (typeof navigator === "undefined") return false;
-    const ua = navigator.userAgent || "";
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
-    const isAndroid = /Android/i.test(ua);
-    return isIOS || isAndroid;
-  };
-
-  const triggerBlobDownload = (url: string, fileName = filename()) => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    a.rel = "noopener";
-    a.target = "_self";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
   };
 
   const openPdfForSaving = (url: string): void => {
