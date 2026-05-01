@@ -246,6 +246,8 @@ export default function QuoteResult() {
       }
       return false;
     }
+    // Kontingent-Anzeige (Home/Billing) sofort aktualisieren
+    void subState.refresh();
     return true;
   };
 
