@@ -827,6 +827,11 @@ export default function QuoteResult() {
         fallbackUrl={lastSignedPdfUrl}
         fallbackFileName={lastFilename || null}
       />
+      <AddonPurchaseDialog
+        open={addonDialogOpen}
+        onOpenChange={setAddonDialogOpen}
+        contextLine={addonDialogContext}
+      />
     </AppShell>
   );
 }
