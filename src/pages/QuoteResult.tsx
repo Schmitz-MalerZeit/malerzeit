@@ -825,6 +825,17 @@ export default function QuoteResult() {
           </Button>
         )}
 
+        {pdfAllowed && whatsappAllowed && (
+          <Button
+            onClick={sendWhatsappDirect}
+            disabled={busy}
+            variant="outline"
+            className="w-full h-12 border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><MessageCircle className="h-4 w-4 mr-2" /> Per WhatsApp senden</>}
+          </Button>
+        )}
+
         {pdfAllowed && tier === "starter" && (
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3">
             <div className="flex items-start gap-3">
