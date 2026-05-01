@@ -814,7 +814,18 @@ export default function QuoteResult() {
         state={pdfFlow}
         onOpenChange={(o) => {
           setPdfFlowOpen(o);
-          if (!o && pdfFlow.phase === "error") setPdfFlow({ phase: "idle" });
+          if (!o) {
+            // Wenn die PDF erfolgreich erstellt wurde, leiten wir nach dem
+            // Schließen zur Liste der gespeicherten Vorschläge weiter, damit
+            // der Nutzer NICHT erneut auf der Eingabemaske landet (sonst würde
+            // er versehentlich nochmal Kontingent verbrauchen).
+            if (pdfFlow.phase === "ready") {
+              setPdfFlow({ phase: "idle" });
+              nav("/quotes");
+              return;
+            }
+            if (pdfFlow.phase === "error") setPdfFlow({ phase: "idle" });
+          }
         }}
         onRetry={() => { void runPdfFlow(); }}
         fallbackUrl={lastSignedPdfUrl}
