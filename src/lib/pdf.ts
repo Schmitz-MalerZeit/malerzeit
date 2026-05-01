@@ -174,11 +174,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   y += 10;
 
   // ───────── Anrede ─────────
-  const customerName = (d.customer?.name || "").trim();
-  const lastName = customerName.split(/\s+/).slice(-1)[0] || "";
-  const salutation = lastName
-    ? `Sehr geehrte/r Frau/Herr ${lastName},`
-    : "Sehr geehrte Damen und Herren,";
+  const salutation = "Sehr geehrte Damen und Herren,";
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
   doc.setTextColor(50, 50, 50);
