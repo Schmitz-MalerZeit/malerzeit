@@ -35,8 +35,8 @@
     "termsHint": "By signing in you accept our <1>Terms</1> and <3>Privacy Policy</3>."
   },
   "home": {
-    "greetingPersonal": "Hello, {{name}}",
-    "greetingFallback": "Hello",
+    "greetingPersonal": "Hello {{name}} 😊",
+    "greetingFallback": "Hello 😊",
     "tagline": "Create a professional price quote in just a few minutes.",
     "badgeAi": "AI-powered",
     "ctaNew": "Create price quote",
