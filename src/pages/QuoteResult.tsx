@@ -13,7 +13,7 @@ import { renderMessageTemplate, DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLAT
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 import { AddonPurchaseDialog } from "@/components/AddonPurchaseDialog";
 import { useSubscription } from "@/hooks/useSubscription";
-import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
+import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
