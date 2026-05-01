@@ -681,9 +681,7 @@ export default function QuoteResult() {
   const sendWhatsappDirect = async () => {
     if (!guardPdfAccess()) return;
     if (!whatsappAllowed) {
-      toast.error("WhatsApp-Versand ist ab dem Profi-Tarif verfügbar.", {
-        action: { label: "Tarife ansehen", onClick: () => nav("/pricing") },
-      });
+      setWhatsappUpgradeOpen(true);
       return;
     }
     await runPdfFlow(true);
