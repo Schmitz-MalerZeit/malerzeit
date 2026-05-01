@@ -193,14 +193,20 @@ export function PdfFlowSheet({
     toast.error("Teilen ist auf diesem Gerät nicht verfügbar.");
   };
 
-  /** WhatsApp – versucht zuerst echten Datei-Anhang via Share-Sheet. */
+  /** WhatsApp – versucht zuerst echten Datei-Anhang via Share-Sheet.
+   *
+   * WICHTIG: Wir übergeben hier **kein** `text` und **keine** `url`. Sonst
+   * sendet iOS WhatsApp die PDF UND zusätzlich eine zweite Textnachricht mit
+   * der signierten Storage-URL (bzw. dem Dateinamen) – das wirkt unprofessionell
+   * und verwirrt den Empfänger. Der gesamte Anschreibe-Text steht ohnehin
+   * bereits im PDF; eine zusätzliche Caption ist nicht nötig.
+   */
   const sendWhatsapp = async () => {
     if (canShareFile && pdfFile) {
       try {
         await (navigator as any).share({
           files: [pdfFile],
-          title: state.subject || state.fileName,
-          text: state.whatsappText || state.subject || "",
+          title: state.fileName || state.subject,
         });
         toast.message("Wähle WhatsApp im Teilen-Menü", {
           description: "Die PDF wird dann als Datei mitgeschickt.",
