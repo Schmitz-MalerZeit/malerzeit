@@ -8,6 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { canExportCsv, getTier } from "@/lib/planFeatures";
 import { toast } from "sonner";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
+import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
