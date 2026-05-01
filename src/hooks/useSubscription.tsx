@@ -60,11 +60,8 @@ export function useSubscription(): SubscriptionState {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [user?.id]);
-
-  // Beim Tab-Fokus / Sichtbarwerden den Stand frisch ziehen,
-  // damit die Kontingent-Anzeige nach PDF-Erstellung nicht veraltet.
   useEffect(() => {
+    void load();
     if (!user?.id) return;
     const onFocus = () => { void load(); };
     const onVisible = () => { if (document.visibilityState === "visible") void load(); };
