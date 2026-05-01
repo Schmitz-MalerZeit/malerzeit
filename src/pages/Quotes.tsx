@@ -150,16 +150,31 @@ export default function Quotes() {
     const pendingWindow = openPendingPdfActionWindow();
     setOpeningId(q.id);
     try {
+      // Use a generously long signed URL so we have time to fetch the blob.
       const { data, error } = await supabase.storage
         .from("quote-pdfs")
-        .createSignedUrl(q.pdf_storage_path, 60 * 10);
+        .createSignedUrl(q.pdf_storage_path, 60 * 60); // 1h
       if (error || !data?.signedUrl) throw error || new Error("PDF konnte nicht geöffnet werden");
+
+      // Materialize into a same-tab Blob URL so the action window doesn't
+      // depend on the (expiring) signed URL for previewing/zooming/sharing.
+      let previewUrl = data.signedUrl;
+      try {
+        const res = await fetch(data.signedUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          previewUrl = URL.createObjectURL(blob);
+        }
+      } catch (fetchErr) {
+        console.warn("PDF-Blob konnte nicht geladen werden, falle zurück auf signierte URL", fetchErr);
+      }
+
       const fileName = q.pdf_filename || `Preisorientierung_${new Date(q.created_at).toISOString().slice(0, 10)}.pdf`;
       const subject = `Unverbindliche Preisorientierung${q.customer_name ? " – " + q.customer_name : ""}`;
       const emailBody = `${ensureCustomerPriceOrientationText(q.customer_text || "Anbei erhalten Sie unsere unverbindliche Preisorientierung.")}\n\nDie PDF-Datei heißt: ${fileName}\nBitte hängen Sie die heruntergeladene PDF an, falls Ihr Gerät sie nicht automatisch übernimmt.`;
       const whatsappText = `${ensureWhatsappPriceOrientationText(q.whatsapp_text || "Anbei unsere unverbindliche Preisorientierung/Schätzung.")}\n\nPDF-Datei: ${fileName}`;
       showPdfActionWindow(pendingWindow, {
-        url: data.signedUrl,
+        url: previewUrl,
         fileName,
         subject,
         emailBody,
