@@ -52,7 +52,7 @@ const TIERS: Tier[] = [
   {
     id: "profiplus", name: "Exklusiv",
     tagline: "Für Betriebe, die ihre Angebote auswerten wollen",
-    monthly: 49.9, yearly: 499, pdfs: 200,
+    monthly: 34.95, yearly: 349, pdfs: 200,
     features: [
       "Bis zu 200 KI-Angebote / Monat",
       "Alles aus Profi",
