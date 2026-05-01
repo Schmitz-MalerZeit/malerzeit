@@ -8,6 +8,7 @@ import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Tra
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
+import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
