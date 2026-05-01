@@ -25,6 +25,7 @@ export default function QuoteResult() {
   const [profile, setProfile] = useState<any>(null);
   const [settings, setSettings] = useState<any>(null);
   const [saved, setSaved] = useState(false);
+  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
@@ -435,14 +436,14 @@ export default function QuoteResult() {
       pdf_mime_type: "application/pdf",
     };
 
-    const { data: inserted, error: insertError } = await supabase
-      .from("quotes")
-      .insert(payload)
-      .select("id, pdf_storage_path")
-      .single();
+    const query = savedQuoteId
+      ? supabase.from("quotes").update(payload).eq("id", savedQuoteId).select("id, pdf_storage_path").single()
+      : supabase.from("quotes").insert(payload).select("id, pdf_storage_path").single();
+    const { data: inserted, error: insertError } = await query;
     if (insertError) throw insertError;
 
     setSaved(true);
+    setSavedQuoteId(inserted.id);
     setLastSavedPdfPath(path);
     return { path: inserted.pdf_storage_path || path, quoteId: inserted.id };
   };
