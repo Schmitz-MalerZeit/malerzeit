@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2, X, Mail, MessageCircle } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2, Mail, MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
@@ -25,6 +25,7 @@ export default function QuoteResult() {
   const [profile, setProfile] = useState<any>(null);
   const [settings, setSettings] = useState<any>(null);
   const [saved, setSaved] = useState(false);
+  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
@@ -35,6 +36,7 @@ export default function QuoteResult() {
   // Dialog nach erfolgreichem PDF-Download: Versand per E-Mail / WhatsApp anbieten.
   const [shareOpen, setShareOpen] = useState(false);
   const [lastFilename, setLastFilename] = useState<string>("");
+  const [lastSavedPdfPath, setLastSavedPdfPath] = useState<string | null>(null);
   // Inline-PDF-Vorschau (Dialog mit iframe) – funktioniert ohne Popup-Blocker.
   const [previewOpen, setPreviewOpen] = useState(false);
   const subState = useSubscription();
@@ -382,24 +384,6 @@ export default function QuoteResult() {
     return isIOS || isAndroid;
   };
 
-  // Try to share the PDF as a real file via the native Share Sheet (iOS/Android).
-  // Returns true on success, false if the API is unavailable or the user cancels.
-  const tryNativeShare = async (blob: Blob, fileName: string): Promise<boolean> => {
-    try {
-      const nav: any = navigator;
-      if (typeof nav.canShare !== "function") return false;
-      const file = new File([blob], fileName, { type: "application/pdf" });
-      if (!nav.canShare({ files: [file] })) return false;
-      await nav.share({ files: [file], title: fileName });
-      return true;
-    } catch (e: any) {
-      // AbortError = user cancelled; treat as "handled" so we don't fall back
-      if (e?.name === "AbortError") return true;
-      console.warn("native share failed", e);
-      return false;
-    }
-  };
-
   const triggerBlobDownload = (url: string, fileName = filename()) => {
     const a = document.createElement("a");
     a.href = url;
@@ -411,22 +395,73 @@ export default function QuoteResult() {
     a.remove();
   };
 
+  const openPdfForSaving = (url: string): void => {
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) window.location.href = url;
+  };
+
+  const ensureSavedQuoteWithPdf = async (blob: Blob, fileName: string): Promise<{ path: string; quoteId: string } | null> => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) throw new Error("Nicht angemeldet");
+
+    const safeName = fileName.replace(/[^A-Za-z0-9._-]+/g, "_");
+    const path = `${u.user.id}/${Date.now()}_${safeName}`;
+    const { error: uploadError } = await supabase.storage
+      .from("quote-pdfs")
+      .upload(path, blob, { contentType: "application/pdf", upsert: true });
+    if (uploadError) throw uploadError;
+
+    const payload = {
+      user_id: u.user.id,
+      description: data.description,
+      line_items: ai.line_items,
+      customer_text: ai.customer_text,
+      whatsapp_text: whatsappDisplay,
+      net_amount: p.net_amount,
+      vat_amount: p.vat_amount,
+      gross_amount: p.gross_amount,
+      vat_rate: p.vat_rate,
+      estimated_hours: ai.estimated_hours,
+      estimated_material: ai.estimated_material_cost,
+      customer_name: data.customer?.name || null,
+      customer_address: data.customer?.address || null,
+      customer_postal_code: data.customer?.postal_code || null,
+      customer_city: data.customer?.city || null,
+      customer_phone: data.customer?.phone || null,
+      customer_email: data.customer?.email || null,
+      pdf_storage_path: path,
+      pdf_filename: fileName,
+      pdf_created_at: new Date().toISOString(),
+      pdf_size_bytes: blob.size,
+      pdf_mime_type: "application/pdf",
+    };
+
+    const query = savedQuoteId
+      ? supabase.from("quotes").update(payload).eq("id", savedQuoteId).select("id, pdf_storage_path").single()
+      : supabase.from("quotes").insert(payload).select("id, pdf_storage_path").single();
+    const { data: inserted, error: insertError } = await query;
+    if (insertError) throw insertError;
+
+    setSaved(true);
+    setSavedQuoteId(inserted.id);
+    setLastSavedPdfPath(path);
+    return { path: inserted.pdf_storage_path || path, quoteId: inserted.id };
+  };
+
   // Mobile-safe "save the PDF" flow:
   // 1) Try native share (iOS/Android can save to Files / Drive directly)
   // 2) Otherwise, open the PDF in a new tab so the OS preview offers "Save to Files"
   // 3) On desktop, the standard download attribute works fine.
-  const savePdfBlob = async (blob: Blob, url: string, fileName: string): Promise<void> => {
+  const savePdfBlob = async (_blob: Blob, url: string, fileName: string, pendingWindow?: Window | null): Promise<void> => {
     if (isMobileBrowser()) {
-      const shared = await tryNativeShare(blob, fileName);
-      if (shared) return;
-      // Fallback: open in new tab. iOS Safari then shows the PDF with a share button.
-      const win = window.open(url, "_blank");
-      if (!win) {
-        // Popup blocked → last-resort same-tab navigation
-        window.location.href = url;
+      if (pendingWindow && !pendingWindow.closed) {
+        pendingWindow.location.replace(url);
+      } else {
+        openPdfForSaving(url);
       }
       return;
     }
+    if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
     triggerBlobDownload(url, fileName);
   };
 
@@ -467,6 +502,7 @@ export default function QuoteResult() {
 
   const downloadPDF = async () => {
     if (!guardPdfAccess()) return;
+    const pendingWindow = isMobileBrowser() ? openPendingPreviewWindow() : null;
     setBusy(true);
     try {
       const fileName = filename();
@@ -474,50 +510,45 @@ export default function QuoteResult() {
       if (previewBlob && previewBlobUrl) {
         if (!pdfQuotaConsumed) {
           const ok = await consumeQuota();
-          if (!ok) return;
+          if (!ok) {
+            if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
+            return;
+          }
           setPdfQuotaConsumed(true);
         }
-        await savePdfBlob(previewBlob, previewBlobUrl, fileName);
+        await ensureSavedQuoteWithPdf(previewBlob, fileName);
+        await savePdfBlob(previewBlob, previewBlobUrl, fileName, pendingWindow);
         setPreviewFailed(false);
         setLastFilename(fileName);
         // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
         // den Browser-Download nicht abbricht (insb. iOS Safari).
         setTimeout(() => setShareOpen(true), 800);
-        save(true); // automatisch speichern (still, ohne Toast)
         return;
       }
       const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
       const ok = await consumeQuota();              // 2) atomically consume quota
-      if (!ok) return;
+      if (!ok) {
+        if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
+        return;
+      }
       setPdfQuotaConsumed(true);
       const blob = pdf.output("blob");
       const url = URL.createObjectURL(blob);
       setPreviewBlob(blob);
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
       await cachePdfInSession(blob);                // persist across reloads
-      await savePdfBlob(blob, url, fileName);
+      await ensureSavedQuoteWithPdf(blob, fileName);
+      await savePdfBlob(blob, url, fileName, pendingWindow);
       setPreviewFailed(false);
       setLastFilename(fileName);
       // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
       // den Browser-Download nicht abbricht (insb. iOS Safari).
       setTimeout(() => setShareOpen(true), 800);
-      save(true); // automatisch speichern (still, ohne Toast)
-    } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
-    finally { setBusy(false); }
-  };
-
-  const openBlob = (url: string): boolean => {
-    const win = window.open(url, "_blank");
-    if (!win || win.closed || typeof win.closed === "undefined") {
-      setPreviewFailed(true);
-      toast.error("Vorschau konnte nicht geöffnet werden (evtl. Popup blockiert).", {
-        action: { label: "Erneut", onClick: () => retryPreview() },
-      });
-      return false;
+    } catch (e: any) {
+      if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
+      toast.error(e.message || "PDF-Fehler");
     }
-    try { win.opener = null; } catch { /* noop */ }
-    setPreviewFailed(false);
-    return true;
+    finally { setBusy(false); }
   };
 
   const retryPreview = () => {
@@ -553,8 +584,7 @@ export default function QuoteResult() {
   // Vom Vorschau-Dialog aus direkt herunterladen (verbraucht Quota).
   const downloadFromPreview = async () => {
     setPreviewOpen(false);
-    // Kurz warten, damit der Dialog sauber schließt, bevor der Download startet.
-    setTimeout(() => downloadPDF(), 150);
+    await downloadPDF();
   };
 
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
@@ -565,12 +595,12 @@ export default function QuoteResult() {
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Nicht angemeldet");
-      const { error } = await supabase.from("quotes").insert({
+      const { data: inserted, error } = await supabase.from("quotes").insert({
         user_id: u.user.id,
         description: data.description,
         line_items: ai.line_items,
         customer_text: ai.customer_text,
-        whatsapp_text: ai.whatsapp_text,
+        whatsapp_text: whatsappDisplay,
         net_amount: p.net_amount,
         vat_amount: p.vat_amount,
         gross_amount: p.gross_amount,
@@ -583,8 +613,14 @@ export default function QuoteResult() {
         customer_city: data.customer?.city || null,
         customer_phone: data.customer?.phone || null,
         customer_email: data.customer?.email || null,
-      });
+        pdf_storage_path: lastSavedPdfPath,
+        pdf_filename: lastFilename || null,
+        pdf_created_at: lastSavedPdfPath ? new Date().toISOString() : null,
+        pdf_size_bytes: previewBlob?.size ?? null,
+        pdf_mime_type: lastSavedPdfPath ? "application/pdf" : null,
+      }).select("id").single();
       if (error) throw error;
+      setSavedQuoteId(inserted.id);
       setSaved(true);
       if (!silent) toast.success("Vorschlag gespeichert");
     } catch (e: any) {
@@ -610,7 +646,32 @@ export default function QuoteResult() {
   const customerPhone = (data.customer?.phone || "").trim();
   const waPhone = normalizePhoneForWa(customerPhone);
 
-  const sendViaEmail = () => {
+  const sharePdfFile = async (label: string): Promise<boolean> => {
+    if (!previewBlob || !lastFilename) {
+      toast.error("PDF ist noch nicht bereit. Bitte erst PDF erstellen.");
+      return false;
+    }
+    try {
+      const navShare: any = navigator;
+      const file = new File([previewBlob], lastFilename, { type: "application/pdf" });
+      if (typeof navShare.share !== "function" || (typeof navShare.canShare === "function" && !navShare.canShare({ files: [file] }))) {
+        return false;
+      }
+      await navShare.share({
+        files: [file],
+        title: lastFilename,
+        text: whatsappDisplay,
+      });
+      setShareOpen(false);
+      return true;
+    } catch (e: any) {
+      if (e?.name !== "AbortError") toast.error(`${label} konnte das PDF nicht direkt übernehmen.`);
+      return true;
+    }
+  };
+
+  const sendViaEmail = async () => {
+    if (await sharePdfFile("E-Mail")) return;
     const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
     const body = (ai.customer_text || "") + (lastFilename ? `\n\n(PDF im Anhang: ${lastFilename} – bitte aus deinem Download-Ordner anhängen.)` : "");
     const to = encodeURIComponent(customerEmail);
@@ -619,7 +680,8 @@ export default function QuoteResult() {
     setShareOpen(false);
   };
 
-  const sendViaWhatsapp = () => {
+  const sendViaWhatsapp = async () => {
+    if (await sharePdfFile("WhatsApp")) return;
     if (!waPhone) return;
     const text = whatsappDisplay + (lastFilename ? `\n\n📎 PDF im Anhang: ${lastFilename}\n(Bitte das PDF aus deinem Download-Ordner an diesen Chat anhängen.)` : "");
     const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
@@ -795,7 +857,7 @@ export default function QuoteResult() {
         {previewBlobUrl && !previewFailed && (
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-3">
             <p className="text-sm text-muted-foreground">
-              PDF ist erstellt und bereit zur Vorschau oder zum Download.
+              {lastSavedPdfPath ? "PDF ist gespeichert und kann erneut geöffnet werden." : "Vorschau ist bereit. Mit PDF erstellen wird die Datei gespeichert."}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -812,7 +874,7 @@ export default function QuoteResult() {
                 disabled={busy}
                 className="h-11 gradient-primary text-primary-foreground border-0"
               >
-                <FileDown className="h-4 w-4 mr-2" /> PDF laden
+                <FileDown className="h-4 w-4 mr-2" /> PDF erstellen
               </Button>
             </div>
           </div>
