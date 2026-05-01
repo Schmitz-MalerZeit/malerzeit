@@ -35,6 +35,8 @@ export default function QuoteResult() {
   const [pdfFlowOpen, setPdfFlowOpen] = useState(false);
   const [pdfFlow, setPdfFlow] = useState<PdfFlowState>({ phase: "idle" });
   const [lastSignedPdfUrl, setLastSignedPdfUrl] = useState<string | null>(null);
+  const [addonDialogOpen, setAddonDialogOpen] = useState(false);
+  const [addonDialogContext, setAddonDialogContext] = useState<string | undefined>(undefined);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
