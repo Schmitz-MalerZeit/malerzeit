@@ -619,6 +619,41 @@ export default function QuoteResult() {
         whatsappPhone: waPhone,
         pdfBlob: blob,
       });
+
+      // Direkt-Versand via WhatsApp: PDF lokal herunterladen, dann wa.me öffnen
+      // (mit Telefonnummer + vorbereitetem Anschreibe-Text inkl. Kundenanrede).
+      if (autoShareWhatsapp && meta.whatsappText) {
+        try {
+          const dlUrl = (() => {
+            try {
+              const u = new URL(signedUrl);
+              u.searchParams.set("download", fileName);
+              return u.toString();
+            } catch { return signedUrl; }
+          })();
+          const a = document.createElement("a");
+          a.href = dlUrl;
+          a.download = fileName;
+          a.rel = "noopener";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } catch (err) {
+          console.warn("PDF-Vorab-Download fehlgeschlagen:", err);
+        }
+        const base = waPhone ? `https://wa.me/${waPhone}` : "https://wa.me/";
+        const waUrl = `${base}?text=${encodeURIComponent(meta.whatsappText)}`;
+        toast.message("PDF wurde heruntergeladen", {
+          description: "WhatsApp öffnet sich – hänge die PDF aus dem Download-Ordner an.",
+        });
+        const waA = document.createElement("a");
+        waA.href = waUrl;
+        waA.target = "_blank";
+        waA.rel = "noopener noreferrer";
+        document.body.appendChild(waA);
+        waA.click();
+        document.body.removeChild(waA);
+      }
     } catch (e: any) {
       window.clearInterval(buildTimer);
       console.error("PDF flow failed", e);
