@@ -159,6 +159,11 @@ export function PdfFlowSheet({
     return `${base}?text=${encodeURIComponent(state.whatsappText)}`;
   }, [state.whatsappText, state.whatsappPhone]);
 
+  const isIOS = useMemo(
+    () => (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !("MSStream" in window),
+    [],
+  );
+
   /** „Download" – speichert die PDF als echte Datei (Blob) statt einen Link
    * zur Storage-URL zu öffnen. Wichtig: Wenn wir einen `<a href={signedUrl}>`
    * verwenden, öffnet iOS Safari die PDF in einem Tab. Klickt der Nutzer dort
@@ -166,7 +171,6 @@ export function PdfFlowSheet({
    * genau das verursacht den langen Storage-Link in WhatsApp. */
   const downloadPdfAsBlob = () => {
     const fileName = state.fileName || "Preisorientierung.pdf";
-    const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !("MSStream" in window);
     const originalUrl = downloadUrl || state.url || "";
     const openOriginalUrl = () => {
       if (!originalUrl) return false;
@@ -185,26 +189,10 @@ export function PdfFlowSheet({
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(objectUrl), 15000);
     };
-    const openBlobImmediately = (blob: Blob) => {
-      const objectUrl = URL.createObjectURL(blob);
-      const tab = window.open(objectUrl, "_blank", "noopener,noreferrer");
-      if (!tab) {
-        window.location.href = objectUrl;
-      }
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 120000);
-      return true;
-    };
-
     const blob = state.pdfBlob || fetchedBlob;
 
     if (!blob) {
       if (!openOriginalUrl()) toast.error("PDF-Download nicht möglich. Bitte erneut öffnen.");
-      return;
-    }
-
-    if (isIOS) {
-      openBlobImmediately(blob);
-      toast.success("PDF wurde geöffnet. Tippe auf Teilen/Sichern, falls iOS keinen direkten Download anbietet.");
       return;
     }
 
@@ -448,9 +436,17 @@ export function PdfFlowSheet({
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={downloadPdfAsBlob} className="h-11">
-              <Download className="h-4 w-4 mr-2" /> Download
-            </Button>
+            {isIOS ? (
+              <Button asChild className="h-11">
+                <a href={downloadUrl || state.url} download={state.fileName || "Preisorientierung.pdf"} target="_blank" rel="noopener noreferrer">
+                  <Download className="h-4 w-4 mr-2" /> Download
+                </a>
+              </Button>
+            ) : (
+              <Button onClick={downloadPdfAsBlob} className="h-11">
+                <Download className="h-4 w-4 mr-2" /> Download
+              </Button>
+            )}
             <Button variant="outline" onClick={sendWhatsapp} className="h-11">
               <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
             </Button>
