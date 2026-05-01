@@ -19,3 +19,16 @@ const ensureNotice = (text: string, notice: string) => {
 export const ensureCustomerPriceOrientationText = (text: string) => ensureNotice(text, CUSTOMER_NOTICE);
 
 export const ensureWhatsappPriceOrientationText = (text: string) => ensureNotice(text, WHATSAPP_NOTICE);
+
+/**
+ * Normalize a German phone number for use with the wa.me deep link.
+ * Returns digits only (no '+'), or null if the result is not 8–15 digits long.
+ */
+export const normalizePhoneForWa = (raw: string | null | undefined): string | null => {
+  if (!raw) return null;
+  let digits = raw.replace(/[^\d+]/g, "");
+  if (digits.startsWith("+")) digits = digits.slice(1);
+  else if (digits.startsWith("00")) digits = digits.slice(2);
+  else if (digits.startsWith("0")) digits = "49" + digits.slice(1);
+  return /^\d{8,15}$/.test(digits) ? digits : null;
+};
