@@ -397,10 +397,8 @@ export function PdfFlowSheet({
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Button asChild className="h-11">
-              <a href={downloadUrl} download={state.fileName || "Preisorientierung.pdf"} target="_blank" rel="noopener noreferrer">
-                <Download className="h-4 w-4 mr-2" /> Download
-              </a>
+            <Button onClick={downloadPdfAsBlob} className="h-11" disabled={fetchingBlob && !pdfFile}>
+              <Download className="h-4 w-4 mr-2" /> Download
             </Button>
             <Button variant="outline" onClick={sendWhatsapp} className="h-11">
               <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
