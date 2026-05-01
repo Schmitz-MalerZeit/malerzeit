@@ -35,16 +35,11 @@ export function canUseLogoInPdf(tier: PlanTier): boolean {
   return tier === "trial" || tier === "profi" || tier === "exklusiv";
 }
 
-export function canExportCsv(tier: PlanTier): boolean {
-  return tier === "trial" || tier === "exklusiv";
-}
-
 export function hasPrioritySupport(tier: PlanTier): boolean {
   return tier === "exklusiv";
 }
 
-export const REQUIRED_TIER_LABEL: Record<"pdf" | "logo" | "csv", string> = {
+export const REQUIRED_TIER_LABEL: Record<"pdf" | "logo", string> = {
   pdf: "Profi",
   logo: "Profi",
-  csv: "Exklusiv",
 };
