@@ -7,8 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canExportCsv, getTier } from "@/lib/planFeatures";
 import { toast } from "sonner";
-import { openPendingPdfActionWindow, showPdfActionWindow } from "@/lib/pdfActionWindow";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
+import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
@@ -82,6 +82,9 @@ export default function Quotes() {
   const nav = useNavigate();
   const [items, setItems] = useState<any[] | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [pdfFlowOpen, setPdfFlowOpen] = useState(false);
+  const [pdfFlow, setPdfFlow] = useState<PdfFlowState>({ phase: "idle" });
+  const [lastQuote, setLastQuote] = useState<any | null>(null);
   const sub = useSubscription();
   const tier = getTier(sub);
   const csvAllowed = canExportCsv(tier);
@@ -147,30 +150,33 @@ export default function Quotes() {
       toast.info("Für diesen älteren Vorschlag wurde noch keine PDF-Datei gespeichert.");
       return;
     }
-    const pendingWindow = openPendingPdfActionWindow();
+    const fileName = q.pdf_filename || `Preisorientierung_${new Date(q.created_at).toISOString().slice(0, 10)}.pdf`;
+    const subject = `Unverbindliche Preisorientierung${q.customer_name ? " – " + q.customer_name : ""}`;
+    const emailBody = `${ensureCustomerPriceOrientationText(q.customer_text || "Anbei erhalten Sie unsere unverbindliche Preisorientierung.")}\n\nDie PDF-Datei heißt: ${fileName}\nBitte hängen Sie die heruntergeladene PDF an, falls Ihr Gerät sie nicht automatisch übernimmt.`;
+    const whatsappText = `${ensureWhatsappPriceOrientationText(q.whatsapp_text || "Anbei unsere unverbindliche Preisorientierung/Schätzung.")}\n\nPDF-Datei: ${fileName}`;
+    const whatsappPhone = normalizePhoneForWa(q.customer_phone || "");
+
+    setLastQuote(q);
+    setPdfFlow({ phase: "uploading", step: "Sicheren Link erstellen …", fileName, subject, emailBody, whatsappText, whatsappPhone });
+    setPdfFlowOpen(true);
     setOpeningId(q.id);
     try {
-      // Use a generously long signed URL so we have time to fetch the blob.
       const { data, error } = await supabase.storage
         .from("quote-pdfs")
-        .createSignedUrl(q.pdf_storage_path, 60 * 60); // 1h
+        .createSignedUrl(q.pdf_storage_path, 60 * 60);
       if (error || !data?.signedUrl) throw error || new Error("PDF konnte nicht geöffnet werden");
-
-      const fileName = q.pdf_filename || `Preisorientierung_${new Date(q.created_at).toISOString().slice(0, 10)}.pdf`;
-      const subject = `Unverbindliche Preisorientierung${q.customer_name ? " – " + q.customer_name : ""}`;
-      const emailBody = `${ensureCustomerPriceOrientationText(q.customer_text || "Anbei erhalten Sie unsere unverbindliche Preisorientierung.")}\n\nDie PDF-Datei heißt: ${fileName}\nBitte hängen Sie die heruntergeladene PDF an, falls Ihr Gerät sie nicht automatisch übernimmt.`;
-      const whatsappText = `${ensureWhatsappPriceOrientationText(q.whatsapp_text || "Anbei unsere unverbindliche Preisorientierung/Schätzung.")}\n\nPDF-Datei: ${fileName}`;
-      showPdfActionWindow(pendingWindow, {
+      setPdfFlow({
+        phase: "ready",
         url: data.signedUrl,
-        fileName,
-        subject,
-        emailBody,
-        whatsappText,
-        whatsappPhone: normalizePhoneForWa(q.customer_phone || ""),
+        fileName, subject, emailBody, whatsappText, whatsappPhone,
       });
     } catch (e: any) {
-      if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
-      toast.error(e.message || "PDF konnte nicht geöffnet werden");
+      setPdfFlow((prev) => ({
+        ...prev,
+        phase: "error",
+        errorMessage: e?.message || "PDF konnte nicht geöffnet werden",
+        errorDetail: typeof e?.stack === "string" ? e.stack.split("\n").slice(0, 8).join("\n") : String(e),
+      }));
     } finally {
       setOpeningId(null);
     }
@@ -231,6 +237,15 @@ export default function Quotes() {
           ))}
         </div>
       )}
+      <PdfFlowSheet
+        open={pdfFlowOpen}
+        state={pdfFlow}
+        onOpenChange={(o) => {
+          setPdfFlowOpen(o);
+          if (!o && pdfFlow.phase === "error") setPdfFlow({ phase: "idle" });
+        }}
+        onRetry={() => { if (lastQuote) void openSavedPdf(lastQuote); }}
+      />
     </AppShell>
   );
 }
