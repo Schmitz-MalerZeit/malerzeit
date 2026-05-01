@@ -9,12 +9,13 @@ GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
 interface PdfPreviewRendererProps {
   url: string | null;
+  onLoadPdfData?: (data: Uint8Array) => void;
 }
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 4;
 
-export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
+export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pagesRef = useRef<HTMLDivElement | null>(null);
   const pageElementsRef = useRef<HTMLCanvasElement[]>([]);
@@ -54,7 +55,10 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
         return response.arrayBuffer();
       })
       .then((buffer) => {
-        if (!cancelled) setPdfData(new Uint8Array(buffer));
+        if (cancelled) return;
+        const bytes = new Uint8Array(buffer);
+        setPdfData(bytes);
+        onLoadPdfData?.(bytes);
       })
       .catch((error) => {
         console.error("PDF preview load failed", error);
@@ -62,7 +66,7 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
       });
 
     return () => { cancelled = true; };
-  }, [url]);
+  }, [url, onLoadPdfData]);
 
   useEffect(() => {
     if (!pdfData || !containerWidth || !pagesRef.current) return;
