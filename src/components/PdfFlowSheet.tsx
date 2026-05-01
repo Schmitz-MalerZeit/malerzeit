@@ -165,13 +165,14 @@ export function PdfFlowSheet({
    * verwenden, öffnet iOS Safari die PDF in einem Tab. Klickt der Nutzer dort
    * auf „Teilen → WhatsApp", verschickt Safari die **URL**, nicht die Datei –
    * genau das verursacht den langen Storage-Link in WhatsApp. */
-  const downloadPdfAsBlob = async () => {
+  const downloadPdfAsBlob = () => {
     const fileName = state.fileName || "Preisorientierung.pdf";
     const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !(window as any).MSStream;
     const originalUrl = downloadUrl || state.url || "";
     const openOriginalUrl = () => {
       if (!originalUrl) return false;
-      window.open(originalUrl, "_blank", "noopener,noreferrer");
+      const opened = window.open(originalUrl, "_blank", "noopener,noreferrer");
+      if (!opened) window.location.href = originalUrl;
       return true;
     };
     const saveBlobWithDownloadAttribute = (blob: Blob) => {
@@ -185,49 +186,17 @@ export function PdfFlowSheet({
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(objectUrl), 15000);
     };
-    const openBlobInNewTab = (blob: Blob) => {
+    const openBlobImmediately = (blob: Blob) => {
       const objectUrl = URL.createObjectURL(blob);
       const tab = window.open(objectUrl, "_blank", "noopener,noreferrer");
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
-      return !!tab;
-    };
-    const openBlobAsDataUrl = (blob: Blob) => new Promise<boolean>((resolve) => {
-      if (typeof FileReader === "undefined") {
-        resolve(false);
-        return;
+      if (!tab) {
+        window.location.href = objectUrl;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result !== "string") {
-          resolve(false);
-          return;
-        }
-        const tab = window.open(reader.result, "_blank", "noopener,noreferrer");
-        resolve(!!tab);
-      };
-      reader.onerror = () => resolve(false);
-      reader.readAsDataURL(blob);
-    });
-    const shareFileOnIOS = async (file: File) => {
-      const navAny = navigator as any;
-      if (!isIOS || typeof navAny.share !== "function") return false;
-      if (typeof navAny.canShare === "function" && !navAny.canShare({ files: [file] })) return false;
-      try {
-        await navAny.share({ files: [file], title: fileName });
-        return true;
-      } catch {
-        return false;
-      }
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 120000);
+      return true;
     };
 
-    let blob = state.pdfBlob || fetchedBlob;
-    if (!blob && state.url) {
-      try {
-        const r = await fetch(state.url);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        blob = await r.blob();
-      } catch (e) { console.warn("Download-Fetch fehlgeschlagen:", e); }
-    }
+    const blob = state.pdfBlob || fetchedBlob;
 
     if (!blob) {
       if (!openOriginalUrl()) toast.error("PDF-Download nicht möglich. Bitte erneut öffnen.");
@@ -235,13 +204,8 @@ export function PdfFlowSheet({
     }
 
     if (isIOS) {
-      try {
-        const file = pdfFile || new File([blob], fileName, { type: blob.type || "application/pdf" });
-        if (await shareFileOnIOS(file)) return;
-      } catch { /* continue with iOS fallbacks */ }
-      if (openBlobInNewTab(blob)) return;
-      if (await openBlobAsDataUrl(blob)) return;
-      if (!openOriginalUrl()) toast.error("PDF-Download nicht möglich. Bitte erneut öffnen.");
+      openBlobImmediately(blob);
+      toast.success("PDF wurde geöffnet. Tippe auf Teilen/Sichern, falls iOS keinen direkten Download anbietet.");
       return;
     }
 
