@@ -6,6 +6,7 @@ import { Logo } from "@/components/Logo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/hooks/useSubscription";
+import { AddonPurchaseDialog } from "@/components/AddonPurchaseDialog";
 import { toast } from "sonner";
 
 const Tile = ({ icon: Icon, title, subtitle, onClick, primary }: any) => (
