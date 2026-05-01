@@ -157,7 +157,12 @@ export default function Quotes() {
     const whatsappPhone = normalizePhoneForWa(q.customer_phone || "");
 
     setLastQuote(q);
-    setPdfFlow({ phase: "uploading", step: "Sicheren Link erstellen …", fileName, subject, emailBody, whatsappText, whatsappPhone });
+    setPdfFlow({
+      phase: "uploading",
+      step: "Sicheren Link erstellen …",
+      progress: 40,
+      fileName, subject, emailBody, whatsappText, whatsappPhone,
+    });
     setPdfFlowOpen(true);
     setOpeningId(q.id);
     try {
