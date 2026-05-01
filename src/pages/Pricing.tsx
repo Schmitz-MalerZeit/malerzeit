@@ -56,7 +56,6 @@ const TIERS: Tier[] = [
     features: [
       "Bis zu 200 KI-Angebote / Monat",
       "Alles aus Profi",
-      "Vollständige Kundendaten in jedem Angebot (Name, Adresse, Telefon, E-Mail)",
       "Bevorzugter Support (Antwort < 24 h)",
     ],
   },
