@@ -615,7 +615,7 @@ export default function QuoteResult() {
               </button>
             </div>
             <Textarea
-              value={ai.customer_text}
+              value={customerDisplay}
               onChange={(e) => updateCustomerText(e.target.value)}
               className="min-h-[120px] text-sm leading-relaxed resize-y"
             />
