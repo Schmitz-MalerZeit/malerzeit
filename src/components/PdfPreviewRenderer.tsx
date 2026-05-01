@@ -217,11 +217,10 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
     goToPage(n);
   };
 
-  // Clear error when user edits again
-  useEffect(() => {
+  const onPageInputChange = (value: string) => {
+    setPageInput(value.replace(/[^0-9]/g, ""));
     if (pageInputError) setPageInputError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageInput]);
+  };
 
   return (
     <div className="relative h-full flex flex-col bg-muted">
@@ -241,7 +240,7 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
           inputMode="numeric"
           pattern="[0-9]*"
           value={pageInput}
-          onChange={(e) => setPageInput(e.target.value.replace(/[^0-9]/g, ""))}
+          onChange={(e) => onPageInputChange(e.target.value)}
           onBlur={submitPageInput}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitPageInput(); } }}
           className={`h-8 w-10 rounded border bg-background text-center text-xs tabular-nums text-foreground focus:outline-none focus:ring-1 ${pageInputError ? "border-destructive ring-destructive focus:ring-destructive" : "border-border focus:ring-ring"}`}

@@ -20,10 +20,26 @@ export default function PdfActionView() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("pdfActionOptions");
-    if (!raw) return;
-    try { setOptions(JSON.parse(raw)); }
-    catch { sessionStorage.removeItem("pdfActionOptions"); }
+    // Try token-scoped payload first (set by the opener), then fall back to
+    // the "latest" copy for same-tab navigation.
+    const hash = window.location.hash || "";
+    const tokenMatch = hash.match(/token=([A-Za-z0-9-]+)/);
+    const keys = [
+      tokenMatch ? `pdfActionOptions:${tokenMatch[1]}` : null,
+      "pdfActionOptions",
+    ].filter(Boolean) as string[];
+    for (const key of keys) {
+      const raw = sessionStorage.getItem(key);
+      if (!raw) continue;
+      try {
+        setOptions(JSON.parse(raw));
+        // Cleanup the one-shot token entry, keep "latest" for reloads.
+        if (key.startsWith("pdfActionOptions:")) sessionStorage.removeItem(key);
+        return;
+      } catch {
+        sessionStorage.removeItem(key);
+      }
+    }
   }, []);
 
   const waUrl = useMemo(() => {
