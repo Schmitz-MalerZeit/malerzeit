@@ -645,14 +645,9 @@ export default function QuoteResult() {
         </div>
 
         {pdfAllowed ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={previewPDF} disabled={busy} className="h-12">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Eye className="h-4 w-4 mr-2" /> Vorschau</>}
-            </Button>
-            <Button onClick={() => setConfirmAction("download")} disabled={busy} className="h-12 gradient-primary text-primary-foreground border-0">
-              <FileDown className="h-4 w-4 mr-2" /> PDF erstellen
-            </Button>
-          </div>
+          <Button onClick={downloadPDF} disabled={busy} className="w-full h-12 gradient-primary text-primary-foreground border-0">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FileDown className="h-4 w-4 mr-2" /> PDF jetzt erstellen</>}
+          </Button>
         ) : (
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3">
             <div className="flex items-start gap-3">
@@ -673,130 +668,10 @@ export default function QuoteResult() {
           </div>
         )}
 
-        {previewFailed && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
-            <p className="text-sm text-destructive">
-              Die PDF-Vorschau konnte nicht automatisch geöffnet werden. Eventuell hat dein Browser das neue Fenster blockiert.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={retryPreview}
-                disabled={busy}
-                className="h-11 border-destructive/40 text-destructive hover:bg-destructive/10"
-              >
-                {busy
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <><RotateCw className="h-4 w-4 mr-2" /> Erneut öffnen</>}
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setConfirmAction("download")}
-                disabled={busy}
-                className="h-11 gradient-primary text-primary-foreground border-0"
-              >
-                {busy
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <><FileDown className="h-4 w-4 mr-2" /> Stattdessen herunterladen</>}
-              </Button>
-            </div>
-            {previewBlobUrl && (
-              <a
-                href={previewBlobUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"
-              >
-                <Eye className="h-3.5 w-3.5" /> Direkt im neuen Tab öffnen
-              </a>
-            )}
-          </div>
-        )}
-
-        {previewBlobUrl && !previewFailed && (
-          <div className="rounded-xl border border-border bg-card p-4 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {lastSavedPdfPath ? "PDF ist gespeichert und kann erneut geöffnet werden." : "Vorschau ist bereit. Mit PDF erstellen wird die Datei gespeichert."}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setPreviewOpen(true)}
-                className="h-11"
-              >
-                <Eye className="h-4 w-4 mr-2" /> Vorschau öffnen
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setConfirmAction("download")}
-                disabled={busy}
-                className="h-11 gradient-primary text-primary-foreground border-0"
-              >
-                <FileDown className="h-4 w-4 mr-2" /> PDF erstellen
-              </Button>
-            </div>
-          </div>
-        )}
-
         <Button onClick={() => save()} disabled={busy || saved} variant={saved ? "secondary" : "default"} className="w-full h-12">
           {saved ? <><Check className="h-4 w-4 mr-2" /> Gespeichert</> : <><Save className="h-4 w-4 mr-2" /> Vorschlag speichern</>}
         </Button>
       </div>
-
-      <AlertDialog open={confirmAction !== null} onOpenChange={(o) => { if (!o) setConfirmAction(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>PDF jetzt erstellen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bitte prüfe die Inhalte oben sorgfältig. Mit dem Erstellen wird die Preisorientierung
-              auf dein monatliches Kontingent angerechnet. Tipp: Über „Vorschau" kannst du das PDF
-              vorher kostenlos ansehen. Möchtest du fortfahren?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                const action = confirmAction;
-                setConfirmAction(null);
-                if (action === "preview") previewPDF();
-                else if (action === "download") downloadPDF();
-              }}
-            >
-              Ja, jetzt erstellen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl w-[95vw] h-[90vh] max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-5 pt-5 pb-3 border-b border-border text-center">
-            <DialogTitle className="text-center">PDF-Vorschau</DialogTitle>
-            <DialogDescription className="text-center leading-relaxed">
-              So wird dein PDF aussehen. Mit „PDF erstellen" wird es heruntergeladen und auf dein Kontingent angerechnet.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 min-h-0">
-            <PdfPreviewRenderer url={previewBlobUrl} />
-          </div>
-          <div className="grid grid-cols-2 gap-2 p-4 border-t border-border bg-card">
-            <Button variant="outline" onClick={() => setPreviewOpen(false)} className="h-11 min-w-0">
-              Schließen
-            </Button>
-            <Button
-              onClick={downloadFromPreview}
-              disabled={busy}
-              className="h-11 min-w-0 gradient-primary text-primary-foreground border-0"
-            >
-              <FileDown className="h-4 w-4 mr-2 shrink-0" />
-              <span className="truncate">PDF erstellen & laden</span>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </AppShell>
   );
 }
