@@ -131,15 +131,8 @@ export default function PdfActionView() {
   };
 
   const goBack = () => {
-    if (window.history.length > 1) {
-      nav(-1);
-      window.setTimeout(() => {
-        if (window.location.pathname === "/pdf-action") nav("/quotes", { replace: true });
-      }, 120);
-    } else {
-      window.close();
-      window.setTimeout(() => nav("/quotes"), 80);
-    }
+    window.close();
+    window.setTimeout(() => nav("/quotes", { replace: true }), 80);
   };
 
   if (!options) {
