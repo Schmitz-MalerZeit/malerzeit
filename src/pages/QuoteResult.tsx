@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
 import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
+import { renderMessageTemplate, DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/messageTemplate";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
