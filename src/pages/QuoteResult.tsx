@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { openPendingPdfActionWindow, showPdfActionWindow } from "@/lib/pdfActionWindow";
@@ -24,7 +24,6 @@ export default function QuoteResult() {
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
-  const [previewFailed, setPreviewFailed] = useState(false);
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
   const [lastFilename, setLastFilename] = useState<string>("");
   const [lastSavedPdfPath, setLastSavedPdfPath] = useState<string | null>(null);
@@ -464,7 +463,6 @@ export default function QuoteResult() {
         }
         await ensureSavedQuoteWithPdf(previewBlob, fileName);
         showGeneratedPdfWindow(pendingWindow, previewBlobUrl, fileName);
-        setPreviewFailed(false);
         setLastFilename(fileName);
         return;
       }
@@ -482,7 +480,6 @@ export default function QuoteResult() {
       await cachePdfInSession(blob);                // persist across reloads
       await ensureSavedQuoteWithPdf(blob, fileName);
       showGeneratedPdfWindow(pendingWindow, url, fileName);
-      setPreviewFailed(false);
       setLastFilename(fileName);
     } catch (e: any) {
       if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
@@ -546,7 +543,6 @@ export default function QuoteResult() {
     return /^\d{8,15}$/.test(digits) ? digits : null;
   };
 
-  const customerEmail = (data.customer?.email || "").trim();
   const customerPhone = (data.customer?.phone || "").trim();
   const waPhone = normalizePhoneForWa(customerPhone);
 
