@@ -8,6 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { canExportCsv, getTier } from "@/lib/planFeatures";
 import { toast } from "sonner";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
+import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
@@ -152,8 +153,11 @@ export default function Quotes() {
     }
     const fileName = q.pdf_filename || `Preisorientierung_${new Date(q.created_at).toISOString().slice(0, 10)}.pdf`;
     const subject = `Unverbindliche Preisorientierung${q.customer_name ? " – " + q.customer_name : ""}`;
-    const emailBody = ensureCustomerPriceOrientationText(q.customer_text || "Anbei erhalten Sie unsere unverbindliche Preisorientierung.");
-    const whatsappText = ensureWhatsappPriceOrientationText(q.whatsapp_text || "Anbei unsere unverbindliche Preisorientierung/Schätzung.");
+    const grossFormatted = q.gross_amount != null ? fmt(q.gross_amount) : undefined;
+    const baseEmail = ensureCustomerPriceOrientationText(q.customer_text || "Anbei erhalten Sie unsere unverbindliche Preisorientierung.");
+    const baseWa = ensureWhatsappPriceOrientationText(q.whatsapp_text || "Anbei unsere unverbindliche Preisorientierung/Schätzung.");
+    const emailBody = buildEmailMessageBody(baseEmail, { grossFormatted });
+    const whatsappText = buildWhatsappMessageBody(baseWa, { grossFormatted });
     const whatsappPhone = normalizePhoneForWa(q.customer_phone || "");
 
     setLastQuote(q);

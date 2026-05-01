@@ -8,6 +8,7 @@ import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Tra
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
+import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
@@ -466,11 +467,12 @@ export default function QuoteResult() {
 
   const buildPdfFlowMeta = (_fileName: string) => {
     const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
-    // E-Mail- und WhatsApp-Texte sind identisch zum Inhalt der PDF (inkl. Preis).
-    // Keine Hinweise auf Dateiname oder Download-Link – die PDF wird als echte
-    // Datei über die Share-/Anhangsfunktion mitgegeben.
-    const emailBody = customerDisplay;
-    const whatsappText = whatsappDisplay;
+    // E-Mail- und WhatsApp-Texte nutzen den Inhalt der PDF, ABER:
+    //  - keine Schluss-Grußformel/Signatur (Mail-/WA-Apps haben eigene Signaturen)
+    //  - Brutto-Preis fett hervorgehoben
+    const grossFormatted = fmt(p.gross_amount);
+    const emailBody = buildEmailMessageBody(customerDisplay, { grossFormatted });
+    const whatsappText = buildWhatsappMessageBody(whatsappDisplay, { grossFormatted });
     return { subject, emailBody, whatsappText };
   };
 

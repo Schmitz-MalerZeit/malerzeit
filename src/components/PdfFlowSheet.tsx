@@ -208,13 +208,36 @@ export function PdfFlowSheet({
       }
     }
     if (!waUrl) return;
-    toast.message("Anhang manuell hinzufügen", {
-      description: "WhatsApp wird mit dem Nachrichtentext geöffnet. Hänge die PDF aus dem Download-Ordner an.",
+    // Lade die PDF lokal herunter, damit sie in WhatsApp angehängt werden kann.
+    if (downloadUrl) {
+      try {
+        const dl = document.createElement("a");
+        dl.href = downloadUrl;
+        dl.download = state.fileName || "Preisorientierung.pdf";
+        dl.rel = "noopener";
+        document.body.appendChild(dl);
+        dl.click();
+        document.body.removeChild(dl);
+      } catch { /* ignore */ }
+    }
+    toast.message("PDF wurde heruntergeladen", {
+      description: "WhatsApp öffnet sich – hänge die PDF aus dem Download-Ordner an.",
     });
-    window.open(waUrl, "_blank", "noopener,noreferrer");
+    const a = document.createElement("a");
+    a.href = waUrl;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
-  /** E-Mail – echter Datei-Anhang via Share-Sheet, sonst mailto: ohne Link. */
+  /**
+   * E-Mail – echter Datei-Anhang via Share-Sheet, sonst `mailto:` über
+   * unsichtbaren `<a>`-Klick (nicht via `location.href`, weil das auf manchen
+   * mobilen Browsern den Tab-State invalidiert und der Sheet-Inhalt nach
+   * Rückkehr neu gebaut werden müsste).
+   */
   const sendMail = async () => {
     if (canShareFile && pdfFile) {
       try {
@@ -233,10 +256,29 @@ export function PdfFlowSheet({
       }
     }
     if (!state.subject || !state.emailBody) return;
-    toast.message("Anhang manuell hinzufügen", {
-      description: "Dein Gerät unterstützt keinen Datei-Anhang aus dem Browser. Hänge die PDF aus dem Download-Ordner an.",
+    // Lade die PDF zuerst lokal herunter, damit der Nutzer sie im Mail-Client
+    // direkt aus dem Download-Ordner anhängen kann.
+    if (downloadUrl) {
+      try {
+        const dl = document.createElement("a");
+        dl.href = downloadUrl;
+        dl.download = state.fileName || "Preisorientierung.pdf";
+        dl.rel = "noopener";
+        document.body.appendChild(dl);
+        dl.click();
+        document.body.removeChild(dl);
+      } catch { /* ignore */ }
+    }
+    toast.message("PDF wurde heruntergeladen", {
+      description: "Hänge sie im E-Mail-Programm aus dem Download-Ordner an.",
     });
-    window.location.href = `mailto:?subject=${encodeURIComponent(state.subject)}&body=${encodeURIComponent(state.emailBody)}`;
+    // mailto über unsichtbaren Link – verändert nicht die aktuelle URL der App
+    const a = document.createElement("a");
+    a.href = `mailto:?subject=${encodeURIComponent(state.subject)}&body=${encodeURIComponent(state.emailBody)}`;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const openInBrowser = () => {
