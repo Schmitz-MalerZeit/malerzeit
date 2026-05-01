@@ -635,7 +635,32 @@ export default function QuoteResult() {
         customer_phone: data.customer?.phone || null,
         customer_email: data.customer?.email || null,
       });
+      const { data: inserted, error } = await supabase.from("quotes").insert({
+        user_id: u.user.id,
+        description: data.description,
+        line_items: ai.line_items,
+        customer_text: ai.customer_text,
+        whatsapp_text: whatsappDisplay,
+        net_amount: p.net_amount,
+        vat_amount: p.vat_amount,
+        gross_amount: p.gross_amount,
+        vat_rate: p.vat_rate,
+        estimated_hours: ai.estimated_hours,
+        estimated_material: ai.estimated_material_cost,
+        customer_name: data.customer?.name || null,
+        customer_address: data.customer?.address || null,
+        customer_postal_code: data.customer?.postal_code || null,
+        customer_city: data.customer?.city || null,
+        customer_phone: data.customer?.phone || null,
+        customer_email: data.customer?.email || null,
+        pdf_storage_path: lastSavedPdfPath,
+        pdf_filename: lastFilename || null,
+        pdf_created_at: lastSavedPdfPath ? new Date().toISOString() : null,
+        pdf_size_bytes: previewBlob?.size ?? null,
+        pdf_mime_type: lastSavedPdfPath ? "application/pdf" : null,
+      }).select("id").single();
       if (error) throw error;
+      setSavedQuoteId(inserted.id);
       setSaved(true);
       if (!silent) toast.success("Vorschlag gespeichert");
     } catch (e: any) {
