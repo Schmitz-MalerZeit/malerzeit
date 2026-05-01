@@ -4,17 +4,13 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
+import { openPendingPdfActionWindow, showPdfActionWindow } from "@/lib/pdfActionWindow";
+import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText } from "@/lib/quoteText";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
-import { PdfPreviewRenderer } from "@/components/PdfPreviewRenderer";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
@@ -28,14 +24,9 @@ export default function QuoteResult() {
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
-  const [previewFailed, setPreviewFailed] = useState(false);
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
-  // Bestätigungs-Dialog vor PDF-Erstellung (zählt aufs Kontingent).
-  const [confirmAction, setConfirmAction] = useState<null | "preview" | "download">(null);
   const [lastFilename, setLastFilename] = useState<string>("");
   const [lastSavedPdfPath, setLastSavedPdfPath] = useState<string | null>(null);
-  // Inline-PDF-Vorschau (Dialog mit iframe) – funktioniert ohne Popup-Blocker.
-  const [previewOpen, setPreviewOpen] = useState(false);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
@@ -136,10 +127,11 @@ export default function QuoteResult() {
       .join("\n");
   };
 
-  const whatsappDisplay = ai.whatsapp_edited ? (ai.whatsapp_text || "") : composeWhatsapp();
+  const customerDisplay = ensureCustomerPriceOrientationText(ai.customer_text || "");
+  const whatsappDisplay = ensureWhatsappPriceOrientationText(ai.whatsapp_edited ? (ai.whatsapp_text || "") : composeWhatsapp());
 
   const copyText = async () => {
-    await navigator.clipboard.writeText(ai.customer_text);
+    await navigator.clipboard.writeText(customerDisplay);
     toast.success("Kundentext kopiert");
   };
   const copyWA = async () => {
@@ -371,11 +363,6 @@ export default function QuoteResult() {
     return `Preisorientierung_${date}.pdf`;
   };
 
-  const openPdfForSaving = (url: string): void => {
-    const win = window.open(url, "_blank", "noopener,noreferrer");
-    if (!win) window.location.href = url;
-  };
-
   const ensureSavedQuoteWithPdf = async (blob: Blob, fileName: string): Promise<{ path: string; quoteId: string } | null> => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) throw new Error("Nicht angemeldet");
@@ -391,7 +378,7 @@ export default function QuoteResult() {
       user_id: u.user.id,
       description: data.description,
       line_items: ai.line_items,
-      customer_text: ai.customer_text,
+      customer_text: customerDisplay,
       whatsapp_text: whatsappDisplay,
       net_amount: p.net_amount,
       vat_amount: p.vat_amount,
@@ -424,25 +411,11 @@ export default function QuoteResult() {
     return { path: inserted.pdf_storage_path || path, quoteId: inserted.id };
   };
 
-  const openPendingPreviewWindow = () => {
-    const win = window.open("", "_blank");
-    if (!win) return null;
-    win.document.title = "PDF wird erstellt";
-    win.document.body.innerHTML = "<p style='font-family:system-ui,sans-serif;padding:24px'>PDF wird erstellt und gespeichert …</p>";
-    return win;
-  };
-
   const showGeneratedPdfWindow = (win: Window | null, url: string, fileName: string) => {
-    if (!win || win.closed) {
-      openPdfForSaving(url);
-      return;
-    }
     const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
-    const emailBody = (ai.customer_text || "") + `\n\nPDF: ${fileName}`;
-    const waText = `${whatsappDisplay}\n\nPDF: ${fileName}`;
-    win.document.open();
-    win.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${fileName}</title><style>body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#f4f4f5;color:#111827}.bar{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:10px;background:#fff;border-bottom:1px solid #e5e7eb}button,a{appearance:none;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#111827;text-decoration:none;font:600 13px system-ui;padding:10px 8px;text-align:center}.primary{background:#111827;color:#fff;border-color:#111827}.hint{padding:8px 12px;font-size:12px;color:#6b7280;background:#fff}.pdf{width:100%;height:calc(100dvh - 106px);border:0}@media(max-width:560px){.bar{grid-template-columns:1fr 1fr}.pdf{height:calc(100dvh - 158px)}} </style></head><body><div class="bar"><a class="primary" href="${url}" download="${fileName}">Herunterladen</a><button id="share">Teilen</button><button id="mail">E-Mail</button><button id="wa">WhatsApp</button></div><div class="hint">Falls E-Mail oder WhatsApp die Datei auf diesem Gerät nicht direkt übernimmt, nutze „Teilen“ oder „Herunterladen“.</div><iframe class="pdf" src="${url}"></iframe><script>const url=${JSON.stringify(url)};const fileName=${JSON.stringify(fileName)};const subject=${JSON.stringify(subject)};const emailBody=${JSON.stringify(emailBody)};const waText=${JSON.stringify(waText)};async function shareFile(){try{const blob=await fetch(url).then(r=>r.blob());const file=new File([blob],fileName,{type:'application/pdf'});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:fileName,text:subject});return true}}catch(e){}return false}document.getElementById('share').onclick=async()=>{if(!(await shareFile())) alert('Direktes Teilen wird von diesem Gerät nicht unterstützt. Bitte Herunterladen nutzen.');};document.getElementById('mail').onclick=async()=>{if(await shareFile())return;location.href='mailto:${encodeURIComponent(customerEmail)}?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(emailBody)};document.getElementById('wa').onclick=async()=>{if(await shareFile())return;${waPhone ? `location.href='https://wa.me/${waPhone}?text='+encodeURIComponent(waText)` : "alert('Keine gültige WhatsApp-Nummer hinterlegt.')"};};</script></body></html>`);
-    win.document.close();
+    const emailBody = `${customerDisplay}\n\nDie PDF-Datei heißt: ${fileName}\nBitte hängen Sie die heruntergeladene PDF an, falls Ihr Gerät sie nicht automatisch übernimmt.`;
+    const waText = `${whatsappDisplay}\n\nPDF-Datei: ${fileName}`;
+    showPdfActionWindow(win, { url, fileName, subject, emailBody, whatsappText: waText, whatsappPhone: waPhone });
   };
 
   // Cache the freshly built PDF in sessionStorage so it survives a reload
@@ -474,7 +447,7 @@ export default function QuoteResult() {
 
   const downloadPDF = async () => {
     if (!guardPdfAccess()) return;
-    const pendingWindow = openPendingPreviewWindow();
+    const pendingWindow = openPendingPdfActionWindow();
     setBusy(true);
     try {
       const fileName = filename();
@@ -490,7 +463,6 @@ export default function QuoteResult() {
         }
         await ensureSavedQuoteWithPdf(previewBlob, fileName);
         showGeneratedPdfWindow(pendingWindow, previewBlobUrl, fileName);
-        setPreviewFailed(false);
         setLastFilename(fileName);
         return;
       }
@@ -508,49 +480,12 @@ export default function QuoteResult() {
       await cachePdfInSession(blob);                // persist across reloads
       await ensureSavedQuoteWithPdf(blob, fileName);
       showGeneratedPdfWindow(pendingWindow, url, fileName);
-      setPreviewFailed(false);
       setLastFilename(fileName);
     } catch (e: any) {
       if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
       toast.error(e.message || "PDF-Fehler");
     }
     finally { setBusy(false); }
-  };
-
-  const retryPreview = () => {
-    previewPDF();
-  };
-
-  const previewPDF = async () => {
-    if (!guardPdfAccess()) return;
-    setBusy(true);
-    try {
-      // Vorschau ist KOSTENLOS (kein Quota-Verbrauch). Erst der Download
-      // zählt aufs Kontingent.
-      let url = previewBlobUrl;
-      if (!url) {
-        const pdf = await buildPDF();
-        const blob = pdf.output("blob");
-        url = URL.createObjectURL(blob);
-        setPreviewBlob(blob);
-        setPreviewBlobUrl(url);
-      }
-      // Inline-Vorschau im Dialog öffnen – kein Popup, kein neues Fenster.
-      setPreviewOpen(true);
-      setPreviewFailed(false);
-    } catch (e: any) {
-      setPreviewFailed(true);
-      toast.error(e.message || "PDF-Fehler", {
-        action: { label: "Erneut", onClick: () => retryPreview() },
-      });
-    }
-    finally { setBusy(false); }
-  };
-
-  // Vom Vorschau-Dialog aus direkt herunterladen (verbraucht Quota).
-  const downloadFromPreview = async () => {
-    setPreviewOpen(false);
-    await downloadPDF();
   };
 
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
@@ -565,7 +500,7 @@ export default function QuoteResult() {
         user_id: u.user.id,
         description: data.description,
         line_items: ai.line_items,
-        customer_text: ai.customer_text,
+        customer_text: customerDisplay,
         whatsapp_text: whatsappDisplay,
         net_amount: p.net_amount,
         vat_amount: p.vat_amount,
@@ -608,7 +543,6 @@ export default function QuoteResult() {
     return /^\d{8,15}$/.test(digits) ? digits : null;
   };
 
-  const customerEmail = (data.customer?.email || "").trim();
   const customerPhone = (data.customer?.phone || "").trim();
   const waPhone = normalizePhoneForWa(customerPhone);
 
@@ -681,7 +615,7 @@ export default function QuoteResult() {
               </button>
             </div>
             <Textarea
-              value={ai.customer_text}
+              value={customerDisplay}
               onChange={(e) => updateCustomerText(e.target.value)}
               className="min-h-[120px] text-sm leading-relaxed resize-y"
             />
@@ -707,14 +641,9 @@ export default function QuoteResult() {
         </div>
 
         {pdfAllowed ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={previewPDF} disabled={busy} className="h-12">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Eye className="h-4 w-4 mr-2" /> Vorschau</>}
-            </Button>
-            <Button onClick={() => setConfirmAction("download")} disabled={busy} className="h-12 gradient-primary text-primary-foreground border-0">
-              <FileDown className="h-4 w-4 mr-2" /> PDF erstellen
-            </Button>
-          </div>
+          <Button onClick={downloadPDF} disabled={busy} className="w-full h-12 gradient-primary text-primary-foreground border-0">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FileDown className="h-4 w-4 mr-2" /> PDF jetzt erstellen</>}
+          </Button>
         ) : (
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3">
             <div className="flex items-start gap-3">
@@ -735,130 +664,10 @@ export default function QuoteResult() {
           </div>
         )}
 
-        {previewFailed && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
-            <p className="text-sm text-destructive">
-              Die PDF-Vorschau konnte nicht automatisch geöffnet werden. Eventuell hat dein Browser das neue Fenster blockiert.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={retryPreview}
-                disabled={busy}
-                className="h-11 border-destructive/40 text-destructive hover:bg-destructive/10"
-              >
-                {busy
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <><RotateCw className="h-4 w-4 mr-2" /> Erneut öffnen</>}
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setConfirmAction("download")}
-                disabled={busy}
-                className="h-11 gradient-primary text-primary-foreground border-0"
-              >
-                {busy
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <><FileDown className="h-4 w-4 mr-2" /> Stattdessen herunterladen</>}
-              </Button>
-            </div>
-            {previewBlobUrl && (
-              <a
-                href={previewBlobUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline"
-              >
-                <Eye className="h-3.5 w-3.5" /> Direkt im neuen Tab öffnen
-              </a>
-            )}
-          </div>
-        )}
-
-        {previewBlobUrl && !previewFailed && (
-          <div className="rounded-xl border border-border bg-card p-4 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {lastSavedPdfPath ? "PDF ist gespeichert und kann erneut geöffnet werden." : "Vorschau ist bereit. Mit PDF erstellen wird die Datei gespeichert."}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setPreviewOpen(true)}
-                className="h-11"
-              >
-                <Eye className="h-4 w-4 mr-2" /> Vorschau öffnen
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setConfirmAction("download")}
-                disabled={busy}
-                className="h-11 gradient-primary text-primary-foreground border-0"
-              >
-                <FileDown className="h-4 w-4 mr-2" /> PDF erstellen
-              </Button>
-            </div>
-          </div>
-        )}
-
         <Button onClick={() => save()} disabled={busy || saved} variant={saved ? "secondary" : "default"} className="w-full h-12">
           {saved ? <><Check className="h-4 w-4 mr-2" /> Gespeichert</> : <><Save className="h-4 w-4 mr-2" /> Vorschlag speichern</>}
         </Button>
       </div>
-
-      <AlertDialog open={confirmAction !== null} onOpenChange={(o) => { if (!o) setConfirmAction(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>PDF jetzt erstellen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bitte prüfe die Inhalte oben sorgfältig. Mit dem Erstellen wird die Preisorientierung
-              auf dein monatliches Kontingent angerechnet. Tipp: Über „Vorschau" kannst du das PDF
-              vorher kostenlos ansehen. Möchtest du fortfahren?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                const action = confirmAction;
-                setConfirmAction(null);
-                if (action === "preview") previewPDF();
-                else if (action === "download") downloadPDF();
-              }}
-            >
-              Ja, jetzt erstellen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl w-[95vw] h-[90vh] max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-5 pt-5 pb-3 border-b border-border text-center">
-            <DialogTitle className="text-center">PDF-Vorschau</DialogTitle>
-            <DialogDescription className="text-center leading-relaxed">
-              So wird dein PDF aussehen. Mit „PDF erstellen" wird es heruntergeladen und auf dein Kontingent angerechnet.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 min-h-0">
-            <PdfPreviewRenderer url={previewBlobUrl} />
-          </div>
-          <div className="grid grid-cols-2 gap-2 p-4 border-t border-border bg-card">
-            <Button variant="outline" onClick={() => setPreviewOpen(false)} className="h-11 min-w-0">
-              Schließen
-            </Button>
-            <Button
-              onClick={downloadFromPreview}
-              disabled={busy}
-              className="h-11 min-w-0 gradient-primary text-primary-foreground border-0"
-            >
-              <FileDown className="h-4 w-4 mr-2 shrink-0" />
-              <span className="truncate">PDF erstellen & laden</span>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </AppShell>
   );
 }

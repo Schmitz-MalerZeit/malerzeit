@@ -39,6 +39,8 @@ WICHTIG – Stundenlöhne & flexibles Bezeichnungs-Matching:
 
 Deine Aufgabe:
 - Erzeuge professionelle Leistungsstichpunkte (handwerklich korrekt, z. B. "Wandflächen Q3 spachteln", "Glattvlies einarbeiten").
+- customer_text und whatsapp_text müssen ausdrücklich "unverbindliche Preisorientierung" oder "Preisschätzung" enthalten.
+- customer_text und whatsapp_text müssen ausdrücklich darauf hinweisen, dass es nur eine Schätzung auf Grundlage der Angaben ist und bei Gefallen ein verbindliches schriftliches Angebot erstellt werden kann.
 - Berechne den Lohnanteil als Summe aller (Stunden × zugeordneter Stundenlohn).
 - Übernimm die Gesamtstunden (Summe aller Stunden) als estimated_hours.
 - Übernimm die Materialkosten (netto, vor Aufschlag) als estimated_material_cost.
@@ -46,6 +48,17 @@ Deine Aufgabe:
 - Wenn Stunden fehlen: schätze konservativ-realistisch.
 - Rückfragen NUR zu Arbeitsumfang/Material – NIEMALS zu Stundenlöhnen. Max. 4 Rückfragen, nur wenn wirklich nötig.
 - Antworten ausschließlich auf Deutsch.`;
+
+const ensurePriceOrientationNotice = (text: string, channel: "customer" | "whatsapp") => {
+  const trimmed = (text || "").trim();
+  const hasOrientation = /(unverbindlich|preisorientierung|preisschätzung|preisschaetzung|schätzung|schaetzung)/i.test(trimmed);
+  const hasOffer = /verbindlich\w*\s+(schriftlich\w*\s+)?angebot/i.test(trimmed);
+  if (hasOrientation && hasOffer) return trimmed;
+  const notice = channel === "customer"
+    ? "Hinweis: Diese unverbindliche Preisorientierung ist eine Schätzung auf Grundlage der vorliegenden Angaben. Wenn sie für Sie passt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot."
+    : "Hinweis: Das ist eine unverbindliche Preisorientierung/Schätzung auf Grundlage der vorliegenden Angaben. Wenn das für dich passt, erstellen wir dir gerne ein verbindliches schriftliches Angebot.";
+  return [trimmed, notice].filter(Boolean).join("\n\n");
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -146,6 +159,9 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
     const net = labor + material;
     const vat = Math.round(net * (body.vatRate / 100) * 100) / 100;
     const gross = Math.round((net + vat) * 100) / 100;
+
+    parsed.customer_text = ensurePriceOrientationNotice(parsed.customer_text, "customer");
+    parsed.whatsapp_text = ensurePriceOrientationNotice(parsed.whatsapp_text, "whatsapp");
 
     return new Response(JSON.stringify({
       ...parsed,
