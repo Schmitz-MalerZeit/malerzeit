@@ -508,6 +508,7 @@ export default function QuoteResult() {
 
   const downloadPDF = async () => {
     if (!guardPdfAccess()) return;
+    const pendingWindow = isMobileBrowser() ? openPendingPreviewWindow() : null;
     setBusy(true);
     try {
       const fileName = filename();
@@ -518,13 +519,13 @@ export default function QuoteResult() {
           if (!ok) return;
           setPdfQuotaConsumed(true);
         }
-        await savePdfBlob(previewBlob, previewBlobUrl, fileName);
+        await ensureSavedQuoteWithPdf(previewBlob, fileName);
+        await savePdfBlob(previewBlob, previewBlobUrl, fileName, pendingWindow);
         setPreviewFailed(false);
         setLastFilename(fileName);
         // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
         // den Browser-Download nicht abbricht (insb. iOS Safari).
         setTimeout(() => setShareOpen(true), 800);
-        save(true); // automatisch speichern (still, ohne Toast)
         return;
       }
       const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
@@ -536,14 +537,17 @@ export default function QuoteResult() {
       setPreviewBlob(blob);
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
       await cachePdfInSession(blob);                // persist across reloads
-      await savePdfBlob(blob, url, fileName);
+      await ensureSavedQuoteWithPdf(blob, fileName);
+      await savePdfBlob(blob, url, fileName, pendingWindow);
       setPreviewFailed(false);
       setLastFilename(fileName);
       // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
       // den Browser-Download nicht abbricht (insb. iOS Safari).
       setTimeout(() => setShareOpen(true), 800);
-      save(true); // automatisch speichern (still, ohne Toast)
-    } catch (e: any) { toast.error(e.message || "PDF-Fehler"); }
+    } catch (e: any) {
+      if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
+      toast.error(e.message || "PDF-Fehler");
+    }
     finally { setBusy(false); }
   };
 
