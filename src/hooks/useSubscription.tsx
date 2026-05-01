@@ -32,6 +32,7 @@ export function useSubscription(): SubscriptionState {
   const [sub, setSub] = useState<any | null>(null);
   const [pdfUsed, setPdfUsed] = useState(0);
   const [trialUsed, setTrialUsed] = useState(0);
+  const [addonBonus, setAddonBonus] = useState(0);
 
   const load = async () => {
     if (!user) { setLoading(false); return; }
@@ -41,18 +42,21 @@ export function useSubscription(): SubscriptionState {
     const periodStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
       .toISOString().slice(0, 10);
 
-    const [{ data: subRow }, { data: usage }, { data: lifetime }] = await Promise.all([
+    const [{ data: subRow }, { data: usage }, { data: lifetime }, { data: addons }] = await Promise.all([
       supabase.from("subscriptions").select("*")
         .eq("user_id", user.id).eq("environment", env)
         .order("created_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("pdf_usage").select("count")
         .eq("user_id", user.id).eq("period_start", periodStart).maybeSingle(),
       supabase.from("pdf_usage").select("count").eq("user_id", user.id),
+      supabase.from("pdf_addons").select("pdfs_added")
+        .eq("user_id", user.id).eq("period_start", periodStart),
     ]);
 
     setSub(subRow);
     setPdfUsed(usage?.count ?? 0);
     setTrialUsed((lifetime ?? []).reduce((acc: number, r: any) => acc + (r.count ?? 0), 0));
+    setAddonBonus((addons ?? []).reduce((acc: number, r: any) => acc + (r.pdfs_added ?? 0), 0));
     setLoading(false);
   };
 
@@ -69,10 +73,14 @@ export function useSubscription(): SubscriptionState {
   const inTrial = !subActive && trialPdfsLeft > 0;
   const isActive = !!subActive || inTrial;
   const pdfLimit = sub?.price_id && subActive ? (PDF_LIMIT_BY_PRICE[sub.price_id] ?? 0) : 0;
+  const effectiveLimit = pdfLimit + (subActive ? addonBonus : 0);
 
   return {
     loading, isActive, inTrial,
     trialPdfsLeft, trialPdfsLimit: TRIAL_LIMIT, trialPdfsUsed: trialUsed,
-    subscription: sub, pdfLimit, pdfUsed, refresh: load,
+    subscription: sub, pdfLimit, pdfUsed,
+    addonBonus: subActive ? addonBonus : 0,
+    effectiveLimit,
+    refresh: load,
   };
 }
