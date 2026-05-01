@@ -7,8 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canExportCsv, getTier } from "@/lib/planFeatures";
 import { toast } from "sonner";
-import { openPendingPdfActionWindow, showPdfActionWindow } from "@/lib/pdfActionWindow";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
+import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
