@@ -62,6 +62,30 @@ export const renderMessageTemplate = (
   return out;
 };
 
+const closingGreetingRe = /mit\s+freundlichen\s+gr[üu](ß|ss)en/i;
+
+export const ensureWhatsappTemplateSignature = (template: string): string => {
+  const trimmed = (template || "").trim();
+  if (!trimmed) return DEFAULT_WHATSAPP_TEMPLATE;
+  if (closingGreetingRe.test(trimmed)) return trimmed;
+  return `${trimmed}\n\nMit freundlichen Grüßen\n{unterschrift}\n{firma}`;
+};
+
+export const ensureWhatsappSignature = (
+  text: string,
+  vars: Pick<MessageTemplateVars, "companyName" | "signatureName">,
+): string => {
+  const trimmed = (text || "").trim();
+  const company = (vars.companyName || "").trim();
+  const signature = (vars.signatureName || "").trim() || company;
+  const signatureBlock = ["Mit freundlichen Grüßen", signature, company]
+    .filter(Boolean)
+    .join("\n");
+  if (!trimmed) return signatureBlock;
+  if (closingGreetingRe.test(trimmed)) return trimmed;
+  return [trimmed, signatureBlock].filter(Boolean).join("\n\n");
+};
+
 export const DEFAULT_EMAIL_TEMPLATE =
 `Hallo {kunde},
 
