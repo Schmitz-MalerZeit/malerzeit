@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { PdfPreviewRenderer, type PdfDiagnostics } from "@/components/PdfPreviewRenderer";
 import { toast } from "sonner";
 import {
-  AlertCircle, CheckCircle2, Download, ExternalLink, FileDown, Loader2,
+  AlertCircle, CheckCircle2, Download, FileDown, Loader2,
   MessageCircle, RefreshCw, X,
 } from "lucide-react";
 
@@ -170,14 +170,20 @@ export function PdfFlowSheet({
     // iOS Safari: Web Share mit Datei ist hier der zuverlässigste Weg, weil
     // Blob-Download via <a download> dort oft ignoriert wird.
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    if (isIOS && canShareFile && pdfFile) {
+    const shareFileOnIOS = async (file: File) => {
+      const navAny = navigator as any;
+      if (!isIOS || typeof navAny.share !== "function") return false;
+      if (typeof navAny.canShare === "function" && !navAny.canShare({ files: [file] })) return false;
       try {
-        await (navigator as any).share({ files: [pdfFile], title: fileName });
-        return;
+        await navAny.share({ files: [file], title: fileName });
+        return true;
       } catch (e: any) {
-        if (e?.name === "AbortError") return;
-        // weiter zum Blob-Fallback
+        if (e?.name === "AbortError") return true;
+        return false;
       }
+    };
+    if (pdfFile && await shareFileOnIOS(pdfFile)) {
+      return;
     }
     let blob = state.pdfBlob || fetchedBlob;
     if (!blob && state.url) {
@@ -187,6 +193,10 @@ export function PdfFlowSheet({
       } catch (e) { console.warn("Download-Fetch fehlgeschlagen:", e); }
     }
     if (blob) {
+      try {
+        const freshFile = new File([blob], fileName, { type: blob.type || "application/pdf" });
+        if (await shareFileOnIOS(freshFile)) return;
+      } catch { /* File constructor not supported: continue with download fallback */ }
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = objectUrl;
@@ -344,11 +354,6 @@ export function PdfFlowSheet({
     document.body.removeChild(a);
   };
 
-  const openInBrowser = () => {
-    if (!state.url) return;
-    window.open(state.url, "_blank", "noopener,noreferrer");
-  };
-
   const renderBody = () => {
     if (state.phase === "building" || state.phase === "uploading") {
       const pct = typeof state.progress === "number"
@@ -453,9 +458,6 @@ export function PdfFlowSheet({
             </Button>
             <Button variant="outline" onClick={sendWhatsapp} className="h-11">
               <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
-            </Button>
-            <Button variant="secondary" onClick={openInBrowser} className="h-11 col-span-2">
-              <ExternalLink className="h-4 w-4 mr-2" /> Im Browser öffnen
             </Button>
           </div>
 

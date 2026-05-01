@@ -65,7 +65,7 @@ export function PdfPreviewRenderer({ url, onLoadPdfData, onDiagnostics }: PdfPre
 
   const pushDiag = useCallback((next: PdfDiagnostics) => {
     setDiag(next);
-    onDiagnostics?.(next);
+    window.setTimeout(() => onDiagnostics?.(next), 0);
     // Also log to the console so it appears in browser devtools.
     // eslint-disable-next-line no-console
     console[next.errorPhase ? "error" : "info"]("[PDF-Preview]", next);
@@ -229,7 +229,7 @@ export function PdfPreviewRenderer({ url, onLoadPdfData, onDiagnostics }: PdfPre
               numPages: pdfDocument?.numPages,
               totalMs: (prev?.fetchMs || 0) + parseMs + renderMs,
             };
-            onDiagnostics?.(next);
+            window.setTimeout(() => onDiagnostics?.(next), 0);
             // eslint-disable-next-line no-console
             console.info("[PDF-Preview] render ok", next);
             return next;
@@ -247,7 +247,7 @@ export function PdfPreviewRenderer({ url, onLoadPdfData, onDiagnostics }: PdfPre
               errorMessage: error?.message || String(error),
               errorStack: typeof error?.stack === "string" ? error.stack.split("\n").slice(0, 6).join("\n") : undefined,
             };
-            onDiagnostics?.(next);
+            window.setTimeout(() => onDiagnostics?.(next), 0);
             return next;
           });
           setStatus("error");
