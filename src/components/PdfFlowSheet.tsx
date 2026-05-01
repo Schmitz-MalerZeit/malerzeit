@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { PdfPreviewRenderer, type PdfDiagnostics } from "@/components/PdfPreviewRenderer";
 import { toast } from "sonner";
 import {
@@ -19,6 +20,14 @@ export interface PdfFlowState {
   phase: PdfFlowPhase;
   /** "Build PDF" / "Upload" / "Signed URL …" — what is happening right now */
   step?: string;
+  /** 0..100 — overall progress for the current phase */
+  progress?: number;
+  /** bytes already transferred (upload phase) */
+  loadedBytes?: number;
+  /** total bytes to transfer (upload phase) */
+  totalBytes?: number;
+  /** estimated remaining seconds for the current phase */
+  etaSeconds?: number;
   /** human-readable error if phase === "error" */
   errorMessage?: string;
   /** technical detail (stack, http status, …) shown in the details panel */
@@ -31,6 +40,22 @@ export interface PdfFlowState {
   whatsappText?: string;
   whatsappPhone?: string | null;
 }
+
+const fmtBytes = (b?: number) => {
+  if (b == null || !isFinite(b)) return "";
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / 1024 / 1024).toFixed(2)} MB`;
+};
+
+const fmtEta = (s?: number) => {
+  if (s == null || !isFinite(s) || s <= 0) return "";
+  if (s < 1) return "weniger als 1 s";
+  if (s < 60) return `ca. ${Math.ceil(s)} s`;
+  const m = Math.floor(s / 60);
+  const r = Math.ceil(s % 60);
+  return `ca. ${m} min ${r} s`;
+};
 
 interface PdfFlowSheetProps {
   open: boolean;
