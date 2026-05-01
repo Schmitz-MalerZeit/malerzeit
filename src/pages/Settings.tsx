@@ -278,35 +278,6 @@ export default function Settings() {
           </div>
 
           <div className="space-y-1.5 pt-2 border-t border-border">
-            <Label htmlFor="email_tpl">E-Mail-Vorlage</Label>
-            <Textarea
-              id="email_tpl" rows={9}
-              value={s.email_template}
-              onChange={(e) => setS({ ...s, email_template: e.target.value })}
-              placeholder={DEFAULT_EMAIL_TEMPLATE}
-              className="font-mono text-xs leading-relaxed"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Wird beim Versenden per E-Mail verwendet. Verfügbare Platzhalter:{" "}
-              <code className="text-[10px]">{"{kunde}"}</code>,{" "}
-              <code className="text-[10px]">{"{anrede}"}</code>,{" "}
-              <code className="text-[10px]">{"{leistungen}"}</code>,{" "}
-              <code className="text-[10px]">{"{preis}"}</code>,{" "}
-              <code className="text-[10px]">{"{netto}"}</code>,{" "}
-              <code className="text-[10px]">{"{mwst}"}</code>,{" "}
-              <code className="text-[10px]">{"{firma}"}</code>,{" "}
-              <code className="text-[10px]">{"{unterschrift}"}</code>.
-              Eine eigene Grußformel/Signatur ist nicht nötig – die kommt aus deinem E-Mail-Programm.
-            </p>
-            <Button
-              type="button" variant="ghost" size="sm" className="h-8 text-xs"
-              onClick={() => setS({ ...s, email_template: DEFAULT_EMAIL_TEMPLATE })}
-            >
-              Auf Standard zurücksetzen
-            </Button>
-          </div>
-
-          <div className="space-y-1.5">
             <Label htmlFor="wa_tpl">WhatsApp-Vorlage</Label>
             <Textarea
               id="wa_tpl" rows={9}
@@ -317,7 +288,15 @@ export default function Settings() {
             />
             <p className="text-[11px] text-muted-foreground">
               Wird beim Versenden per WhatsApp verwendet. Bitte in der Sie-Form formulieren.
-              Gleiche Platzhalter wie bei der E-Mail-Vorlage.
+              Verfügbare Platzhalter:{" "}
+              <code className="text-[10px]">{"{kunde}"}</code>,{" "}
+              <code className="text-[10px]">{"{anrede}"}</code>,{" "}
+              <code className="text-[10px]">{"{leistungen}"}</code>,{" "}
+              <code className="text-[10px]">{"{preis}"}</code>,{" "}
+              <code className="text-[10px]">{"{netto}"}</code>,{" "}
+              <code className="text-[10px]">{"{mwst}"}</code>,{" "}
+              <code className="text-[10px]">{"{firma}"}</code>,{" "}
+              <code className="text-[10px]">{"{unterschrift}"}</code>.
             </p>
             <Button
               type="button" variant="ghost" size="sm" className="h-8 text-xs"
