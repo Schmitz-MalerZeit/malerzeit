@@ -13,10 +13,10 @@ interface Props {
   contextLine?: string;
 }
 
-const PACKAGES = [
+const PACKAGES: Array<{ priceId: string; pdfs: number; price: string; perPdf: string; recommended?: boolean }> = [
   { priceId: "addon_10_pdfs", pdfs: 10, price: "9,90 €", perPdf: "0,99 €/PDF" },
   { priceId: "addon_20_pdfs", pdfs: 20, price: "17,90 €", perPdf: "0,90 €/PDF", recommended: true },
-] as const;
+];
 
 export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) {
   const { user } = useAuth();
