@@ -237,6 +237,15 @@ export default function Quotes() {
           ))}
         </div>
       )}
+      <PdfFlowSheet
+        open={pdfFlowOpen}
+        state={pdfFlow}
+        onOpenChange={(o) => {
+          setPdfFlowOpen(o);
+          if (!o && pdfFlow.phase === "error") setPdfFlow({ phase: "idle" });
+        }}
+        onRetry={() => { if (lastQuote) void openSavedPdf(lastQuote); }}
+      />
     </AppShell>
   );
 }
