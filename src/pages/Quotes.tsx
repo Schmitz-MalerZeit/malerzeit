@@ -7,6 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canExportCsv, getTier } from "@/lib/planFeatures";
 import { toast } from "sonner";
+import { openPendingPdfActionWindow, showPdfActionWindow } from "@/lib/pdfActionWindow";
+import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText } from "@/lib/quoteText";
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
@@ -118,6 +120,15 @@ export default function Quotes() {
     URL.revokeObjectURL(url);
   };
 
+  const normalizePhoneForWa = (raw: string): string | null => {
+    if (!raw) return null;
+    let digits = raw.replace(/[^\d+]/g, "");
+    if (digits.startsWith("+")) digits = digits.slice(1);
+    else if (digits.startsWith("00")) digits = digits.slice(2);
+    else if (digits.startsWith("0")) digits = "49" + digits.slice(1);
+    return /^\d{8,15}$/.test(digits) ? digits : null;
+  };
+
   const exportCsv = () => {
     if (!items || items.length === 0) { toast.info("Keine Daten zum Exportieren"); return; }
     const { ok, incomplete } = validateForExport(items);
@@ -144,15 +155,25 @@ export default function Quotes() {
       toast.info("Für diesen älteren Vorschlag wurde noch keine PDF-Datei gespeichert.");
       return;
     }
-    const pendingWindow = window.open("", "_blank", "noopener,noreferrer");
+    const pendingWindow = openPendingPdfActionWindow();
     setOpeningId(q.id);
     try {
       const { data, error } = await supabase.storage
         .from("quote-pdfs")
         .createSignedUrl(q.pdf_storage_path, 60 * 10);
       if (error || !data?.signedUrl) throw error || new Error("PDF konnte nicht geöffnet werden");
-      if (pendingWindow && !pendingWindow.closed) pendingWindow.location.replace(data.signedUrl);
-      else window.location.href = data.signedUrl;
+      const fileName = q.pdf_filename || `Preisorientierung_${new Date(q.created_at).toISOString().slice(0, 10)}.pdf`;
+      const subject = `Unverbindliche Preisorientierung${q.customer_name ? " – " + q.customer_name : ""}`;
+      const emailBody = `${ensureCustomerPriceOrientationText(q.customer_text || "Anbei erhalten Sie unsere unverbindliche Preisorientierung.")}\n\nDie PDF-Datei heißt: ${fileName}\nBitte hängen Sie die heruntergeladene PDF an, falls Ihr Gerät sie nicht automatisch übernimmt.`;
+      const whatsappText = `${ensureWhatsappPriceOrientationText(q.whatsapp_text || "Anbei unsere unverbindliche Preisorientierung/Schätzung.")}\n\nPDF-Datei: ${fileName}`;
+      showPdfActionWindow(pendingWindow, {
+        url: data.signedUrl,
+        fileName,
+        subject,
+        emailBody,
+        whatsappText,
+        whatsappPhone: normalizePhoneForWa(q.customer_phone || ""),
+      });
     } catch (e: any) {
       if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
       toast.error(e.message || "PDF konnte nicht geöffnet werden");
