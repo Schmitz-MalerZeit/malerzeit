@@ -779,7 +779,7 @@ export default function QuoteResult() {
               <div className="flex-1">
                 <h3 className="font-semibold text-sm mb-1">PDF-Download im Profi-Tarif</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Im Starter erhältst du den Kunden- und WhatsApp-Text zum Kopieren – perfekt für eine schnelle Antwort.
+                  Im Starter erhältst du den Kundentext zum Kopieren – perfekt für eine schnelle Antwort.
                   Mit <strong className="text-foreground">Profi</strong> bekommst du zusätzlich ein professionelles PDF mit deinem Logo und deinen Firmenfarben.
                 </p>
               </div>
