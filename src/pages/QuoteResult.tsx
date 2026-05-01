@@ -16,14 +16,6 @@ const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", curren
 
 const blobToObjectUrl = (blob: Blob): string => URL.createObjectURL(blob);
 
-const blobToDataUrl = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error || new Error("PDF konnte nicht gelesen werden"));
-    reader.readAsDataURL(blob);
-  });
-
 export default function QuoteResult() {
   const nav = useNavigate();
   const [data, setData] = useState<any>(null);
@@ -424,6 +416,14 @@ export default function QuoteResult() {
     return { path: inserted.pdf_storage_path || path, quoteId: inserted.id };
   };
 
+  const createSignedPdfUrl = async (path: string): Promise<string> => {
+    const { data, error } = await supabase.storage
+      .from("quote-pdfs")
+      .createSignedUrl(path, 60 * 60);
+    if (error || !data?.signedUrl) throw error || new Error("PDF-Link konnte nicht erstellt werden");
+    return data.signedUrl;
+  };
+
   const showGeneratedPdfWindow = (win: Window | null, url: string, fileName: string) => {
     const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
     const emailBody = `${customerDisplay}\n\nDie PDF-Datei heißt: ${fileName}\nBitte hängen Sie die heruntergeladene PDF an, falls Ihr Gerät sie nicht automatisch übernimmt.`;
@@ -474,8 +474,9 @@ export default function QuoteResult() {
           }
           setPdfQuotaConsumed(true);
         }
-        await ensureSavedQuoteWithPdf(previewBlob, fileName);
-        showGeneratedPdfWindow(pendingWindow, await blobToDataUrl(previewBlob), fileName);
+        const savedPdf = await ensureSavedQuoteWithPdf(previewBlob, fileName);
+        const actionUrl = savedPdf?.path ? await createSignedPdfUrl(savedPdf.path) : previewBlobUrl;
+        showGeneratedPdfWindow(pendingWindow, actionUrl, fileName);
         setLastFilename(fileName);
         return;
       }
@@ -491,8 +492,9 @@ export default function QuoteResult() {
       setPreviewBlob(blob);
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
       await cachePdfInSession(blob);                // persist across reloads
-      await ensureSavedQuoteWithPdf(blob, fileName);
-      showGeneratedPdfWindow(pendingWindow, await blobToDataUrl(blob), fileName);
+      const savedPdf = await ensureSavedQuoteWithPdf(blob, fileName);
+      const actionUrl = savedPdf?.path ? await createSignedPdfUrl(savedPdf.path) : url;
+      showGeneratedPdfWindow(pendingWindow, actionUrl, fileName);
       setLastFilename(fileName);
     } catch (e: any) {
       if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
