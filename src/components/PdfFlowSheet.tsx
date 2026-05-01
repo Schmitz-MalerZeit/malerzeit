@@ -113,8 +113,9 @@ export function PdfFlowSheet({
   const waUrl = useMemo(() => {
     if (!state.whatsappText) return "";
     const base = state.whatsappPhone ? `https://wa.me/${state.whatsappPhone}` : "https://wa.me/";
-    return `${base}?text=${encodeURIComponent(state.whatsappText)}`;
-  }, [state.whatsappText, state.whatsappPhone]);
+    const text = downloadUrl ? `${state.whatsappText}\n\nPDF herunterladen: ${downloadUrl}` : state.whatsappText;
+    return `${base}?text=${encodeURIComponent(text)}`;
+  }, [downloadUrl, state.whatsappText, state.whatsappPhone]);
 
   const sharePdf = async () => {
     const url = downloadUrl || state.url;
@@ -140,7 +141,8 @@ export function PdfFlowSheet({
 
   const sendMail = () => {
     if (!state.subject || !state.emailBody) return;
-    const body = `${state.emailBody}\n\nHinweis: Bitte die PDF nach dem Download als Anhang hinzufügen.`;
+    const linkLine = downloadUrl ? `\n\nPDF herunterladen: ${downloadUrl}` : "";
+    const body = `${state.emailBody}${linkLine}\n\nHinweis: Falls kein Anhang möglich ist, kann die PDF über den Link geöffnet und gespeichert werden.`;
     window.location.href = `mailto:?subject=${encodeURIComponent(state.subject)}&body=${encodeURIComponent(body)}`;
   };
 
@@ -212,7 +214,7 @@ export function PdfFlowSheet({
             </Button>
             {fallbackUrl && (
               <Button asChild variant="secondary" className="h-11">
-                <a href={fallbackDownloadUrl} download={fallbackFileName || "Preisorientierung.pdf"} rel="noopener">
+                <a href={fallbackDownloadUrl} download={fallbackFileName || "Preisorientierung.pdf"} target="_blank" rel="noopener noreferrer">
                   <FileDown className="h-4 w-4 mr-2" /> Letzte gespeicherte PDF laden
                 </a>
               </Button>
@@ -254,7 +256,7 @@ export function PdfFlowSheet({
 
           <div className="grid grid-cols-2 gap-2">
             <Button asChild className="h-11">
-              <a href={downloadUrl} download={state.fileName || "Preisorientierung.pdf"} rel="noopener">
+              <a href={downloadUrl} download={state.fileName || "Preisorientierung.pdf"} target="_blank" rel="noopener noreferrer">
                 <Download className="h-4 w-4 mr-2" /> Download
               </a>
             </Button>
