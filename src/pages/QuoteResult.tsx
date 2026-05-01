@@ -828,14 +828,23 @@ export default function QuoteResult() {
           </Button>
         )}
 
-        {pdfAllowed && whatsappAllowed && (
+        {pdfAllowed && (
           <Button
             onClick={sendWhatsappDirect}
             disabled={busy}
             variant="outline"
             className="w-full h-12 border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><MessageCircle className="h-4 w-4 mr-2" /> Per WhatsApp senden</>}
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+              <>
+                <MessageCircle className="h-4 w-4 mr-2" /> Per WhatsApp senden
+                {!whatsappAllowed && (
+                  <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide rounded-full bg-primary/10 text-primary px-2 py-0.5">
+                    Profi
+                  </span>
+                )}
+              </>
+            )}
           </Button>
         )}
 
