@@ -13,7 +13,7 @@ import { renderMessageTemplate, DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLAT
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 import { AddonPurchaseDialog } from "@/components/AddonPurchaseDialog";
 import { useSubscription } from "@/hooks/useSubscription";
-import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
+import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
@@ -41,6 +41,7 @@ export default function QuoteResult() {
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
   const logoAllowed = canUseLogoInPdf(tier);
+  const whatsappAllowed = canSendViaWhatsapp(tier);
 
   // Revoke blob URL on unmount (only the in-memory URL; the base64 cache stays in sessionStorage)
   useEffect(() => {
@@ -481,9 +482,13 @@ export default function QuoteResult() {
     // E-Mail- und WhatsApp-Texte nutzen den Inhalt der PDF, ABER:
     //  - keine Schluss-Grußformel/Signatur (Mail-/WA-Apps haben eigene Signaturen)
     //  - Brutto-Preis fett hervorgehoben
+    // WhatsApp-Versand ist ein Profi-/Exklusiv-Feature: im Starter wird
+    // `whatsappText` bewusst leer gelassen, damit das Sheet keinen WA-Button zeigt.
     const grossFormatted = fmt(p.gross_amount);
     const emailBody = buildEmailMessageBody(customerDisplay, { grossFormatted });
-    const whatsappText = buildWhatsappMessageBody(whatsappDisplay, { grossFormatted });
+    const whatsappText = whatsappAllowed
+      ? buildWhatsappMessageBody(whatsappDisplay, { grossFormatted })
+      : "";
     return { subject, emailBody, whatsappText };
   };
 
@@ -687,10 +692,10 @@ export default function QuoteResult() {
 
   const headerTitle = data.customer?.name?.trim() || "Preisorientierung";
 
-  // Telefonnummer für WhatsApp normalisieren.
+  // Telefonnummer für WhatsApp normalisieren – nur ab Profi/Exklusiv aktiv.
 
   const customerPhone = (data.customer?.phone || "").trim();
-  const waPhone = normalizePhoneForWa(customerPhone);
+  const waPhone = whatsappAllowed ? normalizePhoneForWa(customerPhone) : null;
 
   return (
     <AppShell title={headerTitle}>
@@ -768,26 +773,48 @@ export default function QuoteResult() {
           </div>
         </div>
 
-        {pdfAllowed ? (
+        {pdfAllowed && (
           <Button onClick={downloadPDF} disabled={busy} className="w-full h-12 gradient-primary text-primary-foreground border-0">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FileDown className="h-4 w-4 mr-2" /> PDF jetzt erstellen</>}
           </Button>
-        ) : (
+        )}
+
+        {pdfAllowed && tier === "starter" && (
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Sparkles className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-sm mb-1">Mehr Wirkung mit Profi</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Dein PDF erscheint im Starter sauber mit deinen Firmen- und Adressdaten.
+                  Mit <strong className="text-foreground">Profi</strong> kommen dein eigenes Logo & deine Firmenfarben in den Briefkopf –
+                  und du kannst die PDF mit einem Tipp direkt per WhatsApp an den Kunden senden.
+                </p>
+              </div>
+            </div>
+            <Button onClick={() => nav("/pricing")} variant="outline" className="w-full h-10">
+              Auf Profi upgraden
+            </Button>
+          </div>
+        )}
+
+        {!pdfAllowed && (
           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3">
             <div className="flex items-start gap-3">
               <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Lock className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-sm mb-1">PDF-Download im Profi-Tarif</h3>
+                <h3 className="font-semibold text-sm mb-1">PDF-Download im Starter-Tarif</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Im Starter erhältst du den Kundentext zum Kopieren – perfekt für eine schnelle Antwort.
-                  Mit <strong className="text-foreground">Profi</strong> bekommst du zusätzlich ein professionelles PDF mit deinem Logo und deinen Firmenfarben.
+                  Wähle einen Tarif, um PDF-Angebote zu erstellen und herunterzuladen.
                 </p>
               </div>
             </div>
             <Button onClick={() => nav("/pricing")} className="w-full h-11 gradient-primary text-primary-foreground border-0">
-              <Sparkles className="h-4 w-4 mr-2" /> Auf Profi upgraden
+              <Sparkles className="h-4 w-4 mr-2" /> Tarif wählen
             </Button>
           </div>
         )}

@@ -183,13 +183,15 @@ export default function PdfActionView() {
             <Share2 className="h-4 w-4 mr-2" />Teilen
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className={options.whatsappText ? "grid grid-cols-2 gap-2" : "grid grid-cols-1 gap-2"}>
           <Button type="button" variant="outline" onClick={sendMail} disabled={busy} className="h-11 min-w-0">
             <Mail className="h-4 w-4 mr-2" />E-Mail
           </Button>
-          <Button type="button" variant="outline" onClick={sendWhatsapp} disabled={busy} className="h-11 min-w-0">
-            <MessageCircle className="h-4 w-4 mr-2" />WhatsApp
-          </Button>
+          {options.whatsappText && (
+            <Button type="button" variant="outline" onClick={sendWhatsapp} disabled={busy} className="h-11 min-w-0">
+              <MessageCircle className="h-4 w-4 mr-2" />WhatsApp
+            </Button>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Button type="button" variant="secondary" onClick={downloadStoredPdf} className="h-11 min-w-0" title="Bereits gespeicherte PDF direkt herunterladen">

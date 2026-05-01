@@ -13,6 +13,8 @@ import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText,
 import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
 import { ensureWhatsappSignature } from "@/lib/messageTemplate";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
+import { useSubscription } from "@/hooks/useSubscription";
+import { canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
@@ -27,6 +29,8 @@ export default function Quotes() {
   const [profile, setProfile] = useState<any | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const subState = useSubscription();
+  const waAllowed = canSendViaWhatsapp(getTier(subState));
 
   const deleteQuote = async (q: any) => {
     setDeleting(true);
@@ -74,8 +78,8 @@ export default function Quotes() {
       },
     );
     const emailBody = buildEmailMessageBody(baseEmail, { grossFormatted });
-    const whatsappText = buildWhatsappMessageBody(baseWa, { grossFormatted });
-    const whatsappPhone = normalizePhoneForWa(q.customer_phone || "");
+    const whatsappText = waAllowed ? buildWhatsappMessageBody(baseWa, { grossFormatted }) : "";
+    const whatsappPhone = waAllowed ? normalizePhoneForWa(q.customer_phone || "") : null;
 
     setLastQuote(q);
     setPdfFlow({

@@ -435,7 +435,7 @@ export function PdfFlowSheet({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className={state.whatsappText ? "grid grid-cols-2 gap-2" : "grid grid-cols-1 gap-2"}>
             {isIOS ? (
               <Button asChild className="h-11">
                 <a href={downloadUrl || state.url} download={state.fileName || "Preisorientierung.pdf"} target="_blank" rel="noopener noreferrer">
@@ -447,9 +447,11 @@ export function PdfFlowSheet({
                 <Download className="h-4 w-4 mr-2" /> Download
               </Button>
             )}
-            <Button variant="outline" onClick={sendWhatsapp} className="h-11">
-              <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
-            </Button>
+            {state.whatsappText && (
+              <Button variant="outline" onClick={sendWhatsapp} className="h-11">
+                <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
+              </Button>
+            )}
           </div>
 
           <div className="rounded-md border border-border overflow-hidden h-[40vh] min-h-[260px]">
