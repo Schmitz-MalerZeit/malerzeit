@@ -116,28 +116,32 @@ export default function QuoteResult() {
   const ai = data.ai;
   const p = ai.pricing;
 
-  // Baue WhatsApp-Text deterministisch zusammen: Anrede mit Kundenname,
-  // kurzer Umfang (Leistungen), Brutto-Preis, Schlusssatz, Grußformel mit
-  // zeichnungsberechtigter Person. Wenn der Nutzer den Text manuell editiert
-  // hat, wird der editierte Text beibehalten.
-  const composeWhatsapp = (): string => {
-    const customerName = (data.customer?.name || "").trim();
-    const greeting = customerName ? `Hallo ${customerName},` : "Hallo,";
-    const intro = "vielen Dank für deine Anfrage. Hier eine unverbindliche Preisorientierung für die geplanten Arbeiten:";
-    const items = (ai.line_items || [])
-      .filter((s: string) => s && s.trim())
-      .map((s: string) => `• ${s.trim()}`)
-      .join("\n");
-    const price = `Gesamtpreis (brutto): ${fmt(p.gross_amount)}`;
-    const closing = (settings?.closing_text || "Sofern sich diese Preisorientierung in deinem Rahmen bewegt, erstellen wir dir gerne ein verbindliches schriftliches Angebot.").trim();
-    const sigName = (profile?.signatory_name || profile?.contact_person || profile?.company_name || "").trim();
-    const signature = sigName ? `Viele Grüße\n${sigName}` : "Viele Grüße";
-    return [greeting, "", intro, "", items, "", price, "", closing, "", signature]
-      .filter((l) => l !== undefined)
-      .join("\n");
+  // Variablen für Nachrichten-Vorlagen
+  const templateVars = {
+    customerName: data.customer?.name || "",
+    lineItems: ai.line_items || [],
+    grossFormatted: fmt(p.gross_amount),
+    netFormatted: fmt(p.net_amount),
+    vatFormatted: fmt(p.vat_amount),
+    companyName: profile?.company_name || "",
+    signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name || "",
+    validityDays: settings?.quote_validity_days ?? 14,
   };
 
-  const customerDisplay = ensureCustomerPriceOrientationText(ai.customer_text || "");
+  // WhatsApp-Text: editierte Version > Vorlage aus Settings (Sie-Form)
+  const composeWhatsapp = (): string => {
+    const tpl = settings?.whatsapp_template || DEFAULT_WHATSAPP_TEMPLATE;
+    return renderMessageTemplate(tpl, templateVars);
+  };
+
+  // E-Mail-Text: editierter Kundentext aus AI > Vorlage aus Settings (Sie-Form)
+  const composeEmail = (): string => {
+    if (ai.customer_text && ai.customer_text.trim()) return ai.customer_text;
+    const tpl = settings?.email_template || DEFAULT_EMAIL_TEMPLATE;
+    return renderMessageTemplate(tpl, templateVars);
+  };
+
+  const customerDisplay = ensureCustomerPriceOrientationText(composeEmail());
   const whatsappDisplay = ensureWhatsappPriceOrientationText(ai.whatsapp_edited ? (ai.whatsapp_text || "") : composeWhatsapp());
 
   const copyText = async () => {
