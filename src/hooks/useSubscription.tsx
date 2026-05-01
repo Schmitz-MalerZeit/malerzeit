@@ -26,6 +26,13 @@ const PDF_LIMIT_BY_PRICE: Record<string, number> = {
 
 const TRIAL_LIMIT = 3;
 
+const currentLocalMonthStart = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}-01`;
+};
+
 export function useSubscription(): SubscriptionState {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -39,8 +46,7 @@ export function useSubscription(): SubscriptionState {
     setLoading(true);
     const env = getPaddleEnvironment();
 
-    const periodStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-      .toISOString().slice(0, 10);
+    const periodStart = currentLocalMonthStart();
 
     const [{ data: subRow }, { data: usage }, { data: lifetime }, { data: addons }] = await Promise.all([
       supabase.from("subscriptions").select("*")
