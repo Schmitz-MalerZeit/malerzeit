@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pdf_addons: {
+        Row: {
+          created_at: string
+          environment: string
+          id: string
+          paddle_transaction_id: string | null
+          pdfs_added: number
+          period_start: string
+          price_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          environment?: string
+          id?: string
+          paddle_transaction_id?: string | null
+          pdfs_added: number
+          period_start: string
+          price_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          id?: string
+          paddle_transaction_id?: string | null
+          pdfs_added?: number
+          period_start?: string
+          price_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pdf_usage: {
         Row: {
           count: number
@@ -321,7 +354,17 @@ export type Database = {
     Functions: {
       consume_pdf_quota: { Args: never; Returns: Json }
       get_pdf_limit: { Args: { price_id: string }; Returns: number }
+      get_quota_status: { Args: never; Returns: Json }
       get_trial_status: { Args: never; Returns: Json }
+      grant_pdf_addon: {
+        Args: {
+          p_environment: string
+          p_paddle_transaction_id: string
+          p_price_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
