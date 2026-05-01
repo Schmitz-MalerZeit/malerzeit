@@ -29,6 +29,9 @@ export default function QuoteResult() {
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
   const [lastFilename, setLastFilename] = useState<string>("");
   const [lastSavedPdfPath, setLastSavedPdfPath] = useState<string | null>(null);
+  const [pdfFlowOpen, setPdfFlowOpen] = useState(false);
+  const [pdfFlow, setPdfFlow] = useState<PdfFlowState>({ phase: "idle" });
+  const [lastSignedPdfUrl, setLastSignedPdfUrl] = useState<string | null>(null);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
