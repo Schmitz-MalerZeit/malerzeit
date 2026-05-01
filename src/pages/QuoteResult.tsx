@@ -855,52 +855,6 @@ export default function QuoteResult() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={shareOpen} onOpenChange={setShareOpen}>
-        <AlertDialogContent className="text-center">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-center">PDF an deinen Kunden senden?</AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
-              Das PDF wurde heruntergeladen. Du kannst es jetzt direkt an{" "}
-              {data.customer?.name ? <strong>{data.customer.name}</strong> : "deinen Kunden"} senden.
-              Das PDF musst du nach dem Öffnen aus deinem Download-Ordner anhängen.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="grid gap-2 pt-2">
-            <Button
-              type="button"
-              onClick={sendViaEmail}
-              disabled={!customerEmail}
-              className="min-h-12 h-auto w-full justify-center whitespace-normal text-center py-2 px-3 leading-snug"
-              variant="outline"
-            >
-              <Mail className="h-4 w-4 mr-2 shrink-0" />
-              <span className="break-words">
-                {customerEmail ? `Per E-Mail an ${customerEmail}` : "Per E-Mail senden (keine E-Mail-Adresse hinterlegt)"}
-              </span>
-            </Button>
-            <Button
-              type="button"
-              onClick={sendViaWhatsapp}
-              disabled={!waPhone}
-              className="min-h-12 h-auto w-full justify-center whitespace-normal text-center py-2 px-3 leading-snug"
-              variant="outline"
-            >
-              <MessageCircle className="h-4 w-4 mr-2 shrink-0" />
-              <span className="break-words">
-                {waPhone
-                  ? `Per WhatsApp an ${customerPhone}`
-                  : customerPhone
-                    ? "WhatsApp – Telefonnummer ungültig"
-                    : "Per WhatsApp senden (keine Handynummer hinterlegt)"}
-              </span>
-            </Button>
-          </div>
-          <AlertDialogFooter className="sm:justify-center">
-            <AlertDialogCancel className="w-full sm:w-auto">Schließen</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-4xl w-[95vw] h-[90vh] max-h-[90dvh] flex flex-col p-0 gap-0 overflow-hidden">
           <DialogHeader className="px-5 pt-5 pb-3 border-b border-border text-center">
