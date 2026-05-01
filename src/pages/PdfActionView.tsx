@@ -55,7 +55,7 @@ export default function PdfActionView() {
 
   const downloadPdf = async () => {
     if (!options) return;
-    const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !(window as any).MSStream;
+    const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !("MSStream" in window);
     const reservedTab = isIOS ? window.open("about:blank", "_blank", "noopener,noreferrer") : null;
     setBusy(true);
     try {
@@ -64,8 +64,8 @@ export default function PdfActionView() {
         const file = new File([blob], options.fileName, { type: blob.type || "application/pdf" });
         if (navigator.canShare?.({ files: [file] })) {
           try {
-            reservedTab?.close();
             await navigator.share({ files: [file], title: options.fileName });
+            reservedTab?.close();
             return;
           } catch {
             // Nutzer-Abbruch oder blockiertes Share-Sheet: unten öffnen wir die PDF direkt.
@@ -86,12 +86,12 @@ export default function PdfActionView() {
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(objectUrl), 15000);
-    } catch (error: any) {
+    } catch (error) {
       if (reservedTab && options) {
         reservedTab.location.href = options.url;
         return;
       }
-      toast.error(error.message || "Download fehlgeschlagen");
+      toast.error(error instanceof Error ? error.message : "Download fehlgeschlagen");
     } finally {
       setBusy(false);
     }
@@ -140,8 +140,8 @@ export default function PdfActionView() {
       }
       toast.info("Direktes Teilen wird auf diesem Gerät nicht unterstützt. Bitte Download nutzen und die PDF anhängen.");
       return false;
-    } catch (error: any) {
-      toast.error(error.message || "Teilen fehlgeschlagen");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Teilen fehlgeschlagen");
       return false;
     } finally {
       setBusy(false);
