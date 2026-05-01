@@ -75,6 +75,9 @@ export default function QuoteResult() {
     }
     setPreviewBlob(null);
     setPdfQuotaConsumed(false);
+    // Mark as dirty: after edits the user can save again (UPDATE if a row
+    // already exists, INSERT otherwise).
+    setSaved(false);
   };
 
   const updateLineItem = (index: number, value: string) => {
