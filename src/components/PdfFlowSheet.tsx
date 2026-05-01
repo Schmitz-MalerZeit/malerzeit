@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { PdfPreviewRenderer, type PdfDiagnostics } from "@/components/PdfPreviewRenderer";
 import { toast } from "sonner";
 import {
@@ -19,6 +20,14 @@ export interface PdfFlowState {
   phase: PdfFlowPhase;
   /** "Build PDF" / "Upload" / "Signed URL …" — what is happening right now */
   step?: string;
+  /** 0..100 — overall progress for the current phase */
+  progress?: number;
+  /** bytes already transferred (upload phase) */
+  loadedBytes?: number;
+  /** total bytes to transfer (upload phase) */
+  totalBytes?: number;
+  /** estimated remaining seconds for the current phase */
+  etaSeconds?: number;
   /** human-readable error if phase === "error" */
   errorMessage?: string;
   /** technical detail (stack, http status, …) shown in the details panel */
@@ -31,6 +40,22 @@ export interface PdfFlowState {
   whatsappText?: string;
   whatsappPhone?: string | null;
 }
+
+const fmtBytes = (b?: number) => {
+  if (b == null || !isFinite(b)) return "";
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / 1024 / 1024).toFixed(2)} MB`;
+};
+
+const fmtEta = (s?: number) => {
+  if (s == null || !isFinite(s) || s <= 0) return "";
+  if (s < 1) return "weniger als 1 s";
+  if (s < 60) return `ca. ${Math.ceil(s)} s`;
+  const m = Math.floor(s / 60);
+  const r = Math.ceil(s % 60);
+  return `ca. ${m} min ${r} s`;
+};
 
 interface PdfFlowSheetProps {
   open: boolean;
@@ -130,14 +155,36 @@ export function PdfFlowSheet({
 
   const renderBody = () => {
     if (state.phase === "building" || state.phase === "uploading") {
+      const pct = typeof state.progress === "number"
+        ? Math.max(0, Math.min(100, Math.round(state.progress)))
+        : undefined;
+      const showBytes = state.phase === "uploading" && (state.loadedBytes != null || state.totalBytes != null);
+      const eta = fmtEta(state.etaSeconds);
       return (
-        <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+        <div className="flex flex-col items-center justify-center gap-5 py-10 text-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <div>
+          <div className="w-full max-w-sm">
             <p className="text-base font-semibold">{phaseLabel[state.phase]}</p>
             {state.step && (
               <p className="mt-1 text-sm text-muted-foreground">{state.step}</p>
             )}
+
+            <div className="mt-4 space-y-1.5">
+              <Progress value={pct ?? 0} className="h-2" />
+              <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
+                <span>{pct != null ? `${pct}%` : "…"}</span>
+                <span>
+                  {showBytes && state.totalBytes
+                    ? `${fmtBytes(state.loadedBytes ?? 0)} / ${fmtBytes(state.totalBytes)}`
+                    : showBytes
+                      ? fmtBytes(state.loadedBytes)
+                      : ""}
+                </span>
+              </div>
+              {eta && (
+                <p className="text-[11px] text-muted-foreground">Verbleibend: {eta}</p>
+              )}
+            </div>
           </div>
         </div>
       );
