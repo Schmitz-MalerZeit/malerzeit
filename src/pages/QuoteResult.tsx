@@ -368,16 +368,44 @@ export default function QuoteResult() {
     return `Preisorientierung_${date}.pdf`;
   };
 
-  const ensureSavedQuoteWithPdf = async (blob: Blob, fileName: string): Promise<{ path: string; quoteId: string } | null> => {
+  const ensureSavedQuoteWithPdf = async (
+    blob: Blob,
+    fileName: string,
+    onUploadProgress?: (loaded: number, total: number) => void,
+  ): Promise<{ path: string; quoteId: string } | null> => {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) throw new Error("Nicht angemeldet");
 
     const safeName = fileName.replace(/[^A-Za-z0-9._-]+/g, "_");
     const path = `${u.user.id}/${Date.now()}_${safeName}`;
-    const { error: uploadError } = await supabase.storage
-      .from("quote-pdfs")
-      .upload(path, blob, { contentType: "application/pdf", upsert: true });
-    if (uploadError) throw uploadError;
+
+    // Direct PUT to the storage REST endpoint so we can read upload progress
+    // (the supabase-js client does not surface progress events).
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/quote-pdfs/${encodeURI(path)}`;
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("Authorization", `Bearer ${token ?? ""}`);
+      xhr.setRequestHeader("apikey", import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string);
+      xhr.setRequestHeader("Content-Type", "application/pdf");
+      xhr.setRequestHeader("x-upsert", "true");
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) onUploadProgress?.(ev.loaded, ev.total);
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          onUploadProgress?.(blob.size, blob.size);
+          resolve();
+        } else {
+          reject(new Error(`Upload fehlgeschlagen (HTTP ${xhr.status}): ${xhr.responseText?.slice(0, 200) || ""}`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Netzwerkfehler beim Upload"));
+      xhr.onabort = () => reject(new Error("Upload abgebrochen"));
+      xhr.send(blob);
+    });
 
     const payload = {
       user_id: u.user.id,
