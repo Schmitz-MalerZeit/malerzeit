@@ -244,8 +244,11 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
           onChange={(e) => setPageInput(e.target.value.replace(/[^0-9]/g, ""))}
           onBlur={submitPageInput}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitPageInput(); } }}
-          className="h-8 w-10 rounded border border-border bg-background text-center text-xs tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          className={`h-8 w-10 rounded border bg-background text-center text-xs tabular-nums text-foreground focus:outline-none focus:ring-1 ${pageInputError ? "border-destructive ring-destructive focus:ring-destructive" : "border-border focus:ring-ring"}`}
           aria-label="Seitenzahl"
+          aria-invalid={pageInputError ? true : undefined}
+          aria-errormessage={pageInputError ? "page-input-error" : undefined}
+          title={pageInputError ?? undefined}
           disabled={status !== "ready"}
         />
         <span className="px-1 text-xs tabular-nums text-muted-foreground">
