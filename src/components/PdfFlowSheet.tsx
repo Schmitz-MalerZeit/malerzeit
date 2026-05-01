@@ -160,6 +160,57 @@ export function PdfFlowSheet({
     return `${base}?text=${encodeURIComponent(state.whatsappText)}`;
   }, [state.whatsappText, state.whatsappPhone]);
 
+  /** „Download" – speichert die PDF als echte Datei (Blob) statt einen Link
+   * zur Storage-URL zu öffnen. Wichtig: Wenn wir einen `<a href={signedUrl}>`
+   * verwenden, öffnet iOS Safari die PDF in einem Tab. Klickt der Nutzer dort
+   * auf „Teilen → WhatsApp", verschickt Safari die **URL**, nicht die Datei –
+   * genau das verursacht den langen Storage-Link in WhatsApp. */
+  const downloadPdfAsBlob = async () => {
+    const fileName = state.fileName || "Preisorientierung.pdf";
+    // iOS Safari: Web Share mit Datei ist hier der zuverlässigste Weg, weil
+    // Blob-Download via <a download> dort oft ignoriert wird.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    if (isIOS && canShareFile && pdfFile) {
+      try {
+        await (navigator as any).share({ files: [pdfFile], title: fileName });
+        return;
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        // weiter zum Blob-Fallback
+      }
+    }
+    let blob = state.pdfBlob || fetchedBlob;
+    if (!blob && state.url) {
+      try {
+        const r = await fetch(state.url);
+        if (r.ok) blob = await r.blob();
+      } catch (e) { console.warn("Download-Fetch fehlgeschlagen:", e); }
+    }
+    if (blob) {
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = fileName;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+      return;
+    }
+    // Letzter Fallback: signierte URL als Anhang öffnen.
+    if (downloadUrl) {
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = fileName;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
   /** „Teilen" – immer mit Datei-Anhang, wenn das Gerät es unterstützt. */
   const sharePdf = async () => {
     if (canShareFile && pdfFile) {
