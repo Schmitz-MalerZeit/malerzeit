@@ -188,6 +188,7 @@ export default function QuoteResult() {
         phone: profile?.phone,
         email: profile?.email,
         website: profile?.website,
+        vatId: profile?.vat_id,
         logoDataUrl,
         logoNaturalWidth: logoSize?.width,
         logoNaturalHeight: logoSize?.height,
