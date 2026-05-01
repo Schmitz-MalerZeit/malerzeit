@@ -154,6 +154,11 @@ export type Database = {
           id: string
           line_items: Json
           net_amount: number
+          pdf_created_at: string | null
+          pdf_filename: string | null
+          pdf_mime_type: string | null
+          pdf_size_bytes: number | null
+          pdf_storage_path: string | null
           title: string
           updated_at: string
           user_id: string
@@ -177,6 +182,11 @@ export type Database = {
           id?: string
           line_items?: Json
           net_amount?: number
+          pdf_created_at?: string | null
+          pdf_filename?: string | null
+          pdf_mime_type?: string | null
+          pdf_size_bytes?: number | null
+          pdf_storage_path?: string | null
           title?: string
           updated_at?: string
           user_id: string
@@ -200,6 +210,11 @@ export type Database = {
           id?: string
           line_items?: Json
           net_amount?: number
+          pdf_created_at?: string | null
+          pdf_filename?: string | null
+          pdf_mime_type?: string | null
+          pdf_size_bytes?: number | null
+          pdf_storage_path?: string | null
           title?: string
           updated_at?: string
           user_id?: string
