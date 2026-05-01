@@ -11,6 +11,7 @@ import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText,
 import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
 import { renderMessageTemplate, DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE, ensureWhatsappSignature } from "@/lib/messageTemplate";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
+import { AddonPurchaseDialog } from "@/components/AddonPurchaseDialog";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 
@@ -34,6 +35,8 @@ export default function QuoteResult() {
   const [pdfFlowOpen, setPdfFlowOpen] = useState(false);
   const [pdfFlow, setPdfFlow] = useState<PdfFlowState>({ phase: "idle" });
   const [lastSignedPdfUrl, setLastSignedPdfUrl] = useState<string | null>(null);
+  const [addonDialogOpen, setAddonDialogOpen] = useState(false);
+  const [addonDialogContext, setAddonDialogContext] = useState<string | undefined>(undefined);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
@@ -226,9 +229,8 @@ export default function QuoteResult() {
           action: { label: "Tarife", onClick: () => nav("/pricing") },
         });
       } else if (res?.error === "limit_reached") {
-        toast.error(`Monatslimit erreicht (${res.used}/${res.limit}).`, {
-          action: { label: "Upgrade", onClick: () => nav("/pricing") },
-        });
+        setAddonDialogContext(`Du hast ${res.used} von ${res.limit} KI-Angeboten in diesem Monat genutzt.`);
+        setAddonDialogOpen(true);
       } else if (res?.error === "no_active_plan") {
         toast.error("Kein aktiver Tarif. Bitte wähle einen Plan.", {
           action: { label: "Tarife", onClick: () => nav("/pricing") },
@@ -824,6 +826,11 @@ export default function QuoteResult() {
         }}
         fallbackUrl={lastSignedPdfUrl}
         fallbackFileName={lastFilename || null}
+      />
+      <AddonPurchaseDialog
+        open={addonDialogOpen}
+        onOpenChange={setAddonDialogOpen}
+        contextLine={addonDialogContext}
       />
     </AppShell>
   );

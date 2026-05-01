@@ -6,6 +6,7 @@ import { Logo } from "@/components/Logo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/hooks/useSubscription";
+import { AddonPurchaseDialog } from "@/components/AddonPurchaseDialog";
 import { toast } from "sonner";
 
 const Tile = ({ icon: Icon, title, subtitle, onClick, primary }: any) => (
@@ -30,6 +31,7 @@ export default function Home() {
   const { t } = useTranslation();
   const sub = useSubscription();
   const [firstName, setFirstName] = useState<string>("");
+  const [addonOpen, setAddonOpen] = useState(false);
 
   useEffect(() => {
     supabase.from("profiles").select("contact_person").maybeSingle().then(({ data }) => {
@@ -97,9 +99,10 @@ export default function Home() {
         )}
 
         {!sub.loading && sub.subscription && sub.pdfLimit > 0 && (() => {
-          const left = Math.max(0, sub.pdfLimit - sub.pdfUsed);
-          const pct = Math.min(100, Math.round((sub.pdfUsed / sub.pdfLimit) * 100));
-          const low = left <= Math.max(3, Math.ceil(sub.pdfLimit * 0.1));
+          const effective = sub.effectiveLimit;
+          const left = Math.max(0, effective - sub.pdfUsed);
+          const pct = Math.min(100, Math.round((sub.pdfUsed / effective) * 100));
+          const warn = pct >= 80 && left > 0;
           const empty = left === 0;
           const now = new Date();
           const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0);
@@ -107,55 +110,74 @@ export default function Home() {
           const fmtDate = resetDate.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
           const fmtWeekday = resetDate.toLocaleDateString("de-DE", { weekday: "long" });
           return (
-            <button
-              onClick={() => nav("/billing")}
-              className={`w-full mb-4 rounded-2xl border p-4 text-left transition-base ${
+            <div
+              className={`w-full mb-4 rounded-2xl border p-4 transition-base ${
                 empty
-                  ? "border-orange-300 bg-orange-50 hover:bg-orange-100"
-                  : low
-                  ? "border-accent/40 bg-accent/5 hover:bg-accent/10"
-                  : "border-border bg-card hover:bg-secondary/50"
+                  ? "border-orange-300 bg-orange-50"
+                  : warn
+                  ? "border-amber-300 bg-amber-50"
+                  : "border-border bg-card"
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-semibold flex items-center gap-1.5">
-                  <Sparkles className={`h-3.5 w-3.5 ${empty ? "text-orange-700" : "text-accent"}`} />
-                  KI-Angebote diesen Monat
+              <button
+                type="button"
+                onClick={() => nav("/billing")}
+                className="w-full text-left"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold flex items-center gap-1.5">
+                    <Sparkles className={`h-3.5 w-3.5 ${empty ? "text-orange-700" : warn ? "text-amber-700" : "text-accent"}`} />
+                    KI-Angebote diesen Monat
+                  </div>
+                  <div className={`text-sm font-bold tabular-nums ${empty ? "text-orange-900" : warn ? "text-amber-900" : "text-foreground"}`}>
+                    {left} / {effective}
+                  </div>
                 </div>
-                <div className={`text-sm font-bold tabular-nums ${empty ? "text-orange-900" : "text-foreground"}`}>
-                  {left} / {sub.pdfLimit}
+                <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden mb-1.5">
+                  <div
+                    className={`h-full rounded-full transition-base ${
+                      empty ? "bg-orange-500" : warn ? "bg-amber-500" : "bg-primary"
+                    }`}
+                    style={{ width: `${pct}%` }}
+                  />
                 </div>
-              </div>
-              <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden mb-1.5">
-                <div
-                  className={`h-full rounded-full transition-base ${
-                    empty ? "bg-orange-500" : low ? "bg-accent" : "bg-primary"
+                <div className={`text-xs ${empty ? "text-orange-800" : warn ? "text-amber-800" : "text-muted-foreground"}`}>
+                  {empty
+                    ? "Kontingent aufgebraucht."
+                    : `${sub.pdfUsed} von ${effective} genutzt${sub.addonBonus > 0 ? ` (inkl. +${sub.addonBonus} Zusatz-PDFs)` : ""}.`}
+                </div>
+                <div className={`mt-2 pt-2 border-t text-xs flex items-start justify-between gap-3 ${
+                  empty ? "border-orange-200 text-orange-900" : warn ? "border-amber-200 text-amber-900" : "border-border/60 text-muted-foreground"
+                }`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium">
+                      {empty ? "Nächste Generierung verfügbar:" : "Reset am:"}
+                    </div>
+                    <div className="tabular-nums">
+                      {fmtWeekday}, {fmtDate} · 00:00 Uhr
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-bold tabular-nums text-sm">
+                      {daysLeft === 1 ? "morgen" : `in ${daysLeft} Tagen`}
+                    </div>
+                  </div>
+                </div>
+              </button>
+              {(warn || empty) && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setAddonOpen(true); }}
+                  className={`mt-3 w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition-base ${
+                    empty
+                      ? "bg-orange-600 text-white hover:bg-orange-700"
+                      : "bg-amber-600 text-white hover:bg-amber-700"
                   }`}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <div className={`text-xs ${empty ? "text-orange-800" : "text-muted-foreground"}`}>
-                {empty ? "Kontingent aufgebraucht." : `${sub.pdfUsed} von ${sub.pdfLimit} genutzt.`}
-              </div>
-              <div className={`mt-2 pt-2 border-t text-xs flex items-start justify-between gap-3 ${
-                empty ? "border-orange-200 text-orange-900" : "border-border/60 text-muted-foreground"
-              }`}>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium">
-                    {empty ? "Nächste Generierung verfügbar:" : "Reset am:"}
-                  </div>
-                  <div className="tabular-nums">
-                    {fmtWeekday}, {fmtDate} · 00:00 Uhr
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="font-bold tabular-nums text-sm">
-                    {daysLeft === 1 ? "morgen" : `in ${daysLeft} Tagen`}
-                  </div>
-                  {empty && <div className="text-[10px]">oder Tarif anpassen →</div>}
-                </div>
-              </div>
-            </button>
+                >
+                  + PDFs nachladen (ab 9,90 €)
+                </button>
+              )}
+            </div>
           );
         })()}
 
@@ -168,6 +190,7 @@ export default function Home() {
           <Tile icon={Scale} title={t("home.ctaLegal")} subtitle={t("home.ctaLegalSub")} onClick={() => nav("/legal")} />
         </div>
       </main>
+      <AddonPurchaseDialog open={addonOpen} onOpenChange={setAddonOpen} />
     </div>
   );
 }
