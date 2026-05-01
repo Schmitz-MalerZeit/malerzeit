@@ -34,8 +34,8 @@ export default function Home() {
   const [addonOpen, setAddonOpen] = useState(false);
 
   useEffect(() => {
-    supabase.from("profiles").select("contact_person").maybeSingle().then(({ data }) => {
-      const full = (data?.contact_person || "").trim();
+    supabase.from("profiles").select("contact_person, signatory_name").maybeSingle().then(({ data }) => {
+      const full = ((data?.signatory_name || "").trim() || (data?.contact_person || "").trim());
       if (full) setFirstName(full.split(/\s+/)[0]);
     });
   }, []);
