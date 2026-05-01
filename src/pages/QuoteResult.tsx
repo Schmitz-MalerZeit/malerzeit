@@ -711,13 +711,24 @@ export default function QuoteResult() {
     await runPdfFlow();
   };
 
-  const sendWhatsappDirect = async () => {
-    if (!guardPdfAccess()) return;
+  const sendWhatsappDirect = () => {
     if (!whatsappAllowed) {
       setWhatsappUpgradeOpen(true);
       return;
     }
-    await runPdfFlow(true);
+    // Kein PDF erzeugen – nur den vorbereiteten WhatsApp-Text öffnen.
+    // Brutto-Preis fett im Text wie im PdfFlowSheet.
+    const grossFormatted = fmt(p.gross_amount);
+    const text = buildWhatsappMessageBody(whatsappDisplay, { grossFormatted });
+    const base = waPhone ? `https://wa.me/${waPhone}` : "https://wa.me/";
+    const waUrl = `${base}?text=${encodeURIComponent(text)}`;
+    const a = document.createElement("a");
+    a.href = waUrl;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
 
