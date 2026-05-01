@@ -18,8 +18,8 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pagesRef = useRef<HTMLDivElement | null>(null);
   const pageElementsRef = useRef<HTMLCanvasElement[]>([]);
-  const objectUrlRef = useRef<string | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [zoom, setZoom] = useState(1);
   const [numPages, setNumPages] = useState(0);
