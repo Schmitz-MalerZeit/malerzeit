@@ -18,6 +18,7 @@ export default function PdfActionView() {
   const nav = useNavigate();
   const [options, setOptions] = useState<PdfActionOptions | null>(null);
   const [busy, setBusy] = useState(false);
+  const [diag, setDiag] = useState<PdfDiagnostics | null>(null);
 
   useEffect(() => {
     // Try token-scoped payload first (set by the opener), then fall back to
