@@ -82,4 +82,8 @@ vielen Dank für Ihre Anfrage. Hier eine unverbindliche Preisorientierung für d
 
 Gesamtpreis (brutto): {preis}
 
-Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.`;
+Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.
+
+Mit freundlichen Grüßen
+{unterschrift}
+{firma}`;
