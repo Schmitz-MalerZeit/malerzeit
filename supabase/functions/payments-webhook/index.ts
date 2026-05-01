@@ -57,6 +57,33 @@ async function handleSubscriptionCanceled(data: any, env: PaddleEnv) {
   }).eq('paddle_subscription_id', data.id).eq('environment', env);
 }
 
+const ADDON_PRICE_IDS = new Set(['addon_10_pdfs', 'addon_20_pdfs']);
+
+async function handleTransactionCompleted(data: any, env: PaddleEnv) {
+  const { id: transactionId, customData, items } = data;
+  const userId = customData?.userId;
+  if (!userId) {
+    console.warn('Transaction without userId in customData', { transactionId });
+    return;
+  }
+  // Add-On-Käufe sind Einmal-Transaktionen ohne subscription_id mit unserem Add-On-Preis
+  for (const item of items ?? []) {
+    const priceId = item.price?.importMeta?.externalId;
+    if (!priceId || !ADDON_PRICE_IDS.has(priceId)) continue;
+    const { data: result, error } = await getSupabase().rpc('grant_pdf_addon', {
+      p_user_id: userId,
+      p_price_id: priceId,
+      p_paddle_transaction_id: transactionId,
+      p_environment: env,
+    });
+    if (error) {
+      console.error('grant_pdf_addon failed', { error, transactionId, priceId });
+    } else {
+      console.log('Add-On granted', { userId, priceId, transactionId, result });
+    }
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
   const url = new URL(req.url);
