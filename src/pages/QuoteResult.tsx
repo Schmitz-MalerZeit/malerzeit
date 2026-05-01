@@ -496,7 +496,7 @@ export default function QuoteResult() {
 
   const downloadPDF = async () => {
     if (!guardPdfAccess()) return;
-    const pendingWindow = isMobileBrowser() ? openPendingPreviewWindow() : null;
+    const pendingWindow = openPendingPreviewWindow();
     setBusy(true);
     try {
       const fileName = filename();
@@ -511,12 +511,9 @@ export default function QuoteResult() {
           setPdfQuotaConsumed(true);
         }
         await ensureSavedQuoteWithPdf(previewBlob, fileName);
-        await savePdfBlob(previewBlob, previewBlobUrl, fileName, pendingWindow);
+        showGeneratedPdfWindow(pendingWindow, previewBlobUrl, fileName);
         setPreviewFailed(false);
         setLastFilename(fileName);
-        // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
-        // den Browser-Download nicht abbricht (insb. iOS Safari).
-        setTimeout(() => setShareOpen(true), 800);
         return;
       }
       const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
@@ -532,12 +529,9 @@ export default function QuoteResult() {
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
       await cachePdfInSession(blob);                // persist across reloads
       await ensureSavedQuoteWithPdf(blob, fileName);
-      await savePdfBlob(blob, url, fileName, pendingWindow);
+      showGeneratedPdfWindow(pendingWindow, url, fileName);
       setPreviewFailed(false);
       setLastFilename(fileName);
-      // Share-Dialog erst nach dem Download öffnen, damit ein Modal-Overlay
-      // den Browser-Download nicht abbricht (insb. iOS Safari).
-      setTimeout(() => setShareOpen(true), 800);
     } catch (e: any) {
       if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
       toast.error(e.message || "PDF-Fehler");
