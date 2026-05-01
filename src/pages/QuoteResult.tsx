@@ -128,10 +128,11 @@ export default function QuoteResult() {
       .join("\n");
   };
 
-  const whatsappDisplay = ai.whatsapp_edited ? (ai.whatsapp_text || "") : composeWhatsapp();
+  const customerDisplay = ensureCustomerPriceOrientationText(ai.customer_text || "");
+  const whatsappDisplay = ensureWhatsappPriceOrientationText(ai.whatsapp_edited ? (ai.whatsapp_text || "") : composeWhatsapp());
 
   const copyText = async () => {
-    await navigator.clipboard.writeText(ai.customer_text);
+    await navigator.clipboard.writeText(customerDisplay);
     toast.success("Kundentext kopiert");
   };
   const copyWA = async () => {
