@@ -243,6 +243,17 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.text(fmt(d.gross), valueX, y + 31, { align: "right" });
   y += 46;
 
+  // ───────── Unverbindlichkeits-Hinweis (direkt unter dem Preisblock) ─────────
+  if (y > pageH - 70) { doc.addPage(); y = margin; }
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(9.5);
+  doc.setTextColor(90, 90, 90);
+  const disclaimer =
+    "Dieser Preis stellt eine unverbindliche Kostenschätzung dar und dient ausschließlich zur ersten Orientierung.";
+  const disclaimerLines = doc.splitTextToSize(disclaimer, pageW - margin * 2);
+  doc.text(disclaimerLines, margin, y);
+  y += disclaimerLines.length * 4.5 + 4;
+
   // ───────── Gültigkeit ─────────
   if (y > pageH - 60) { doc.addPage(); y = margin; }
   const validityDays = d.validityDays && d.validityDays > 0 ? d.validityDays : 14;
