@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Star, RefreshCw } from "lucide-react";
+import { DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/messageTemplate";
 
 const TEST_USER_ID = "4f497125-b2e8-46af-a6ef-477dbe7a8a0c";
 
