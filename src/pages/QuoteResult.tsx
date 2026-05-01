@@ -673,6 +673,17 @@ export default function QuoteResult() {
     await runPdfFlow();
   };
 
+  const sendWhatsappDirect = async () => {
+    if (!guardPdfAccess()) return;
+    if (!whatsappAllowed) {
+      toast.error("WhatsApp-Versand ist ab dem Profi-Tarif verfügbar.", {
+        action: { label: "Tarife ansehen", onClick: () => nav("/pricing") },
+      });
+      return;
+    }
+    await runPdfFlow(true);
+  };
+
 
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
   // und den Busy-Spinner – wird beim Auto-Speichern nach PDF-Erstellung genutzt.
