@@ -190,6 +190,7 @@ export default function Home() {
           <Tile icon={Scale} title={t("home.ctaLegal")} subtitle={t("home.ctaLegalSub")} onClick={() => nav("/legal")} />
         </div>
       </main>
+      <AddonPurchaseDialog open={addonOpen} onOpenChange={setAddonOpen} />
     </div>
   );
 }
