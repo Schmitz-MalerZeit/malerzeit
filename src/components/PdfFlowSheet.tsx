@@ -67,6 +67,10 @@ interface PdfFlowSheetProps {
   /** Optional fallback: previously saved PDF that can still be downloaded */
   fallbackUrl?: string | null;
   fallbackFileName?: string | null;
+  /** Wird aufgerufen, NACHDEM eine Versand-Aktion (WhatsApp / Mail / Teilen)
+   * ausgelöst wurde – damit die Hostseite z. B. zur Liste der gespeicherten
+   * Vorschläge wechseln kann, bevor der Nutzer von WhatsApp zurückkommt. */
+  onAfterShareAction?: () => void;
 }
 
 const phaseLabel: Record<PdfFlowPhase, string> = {
