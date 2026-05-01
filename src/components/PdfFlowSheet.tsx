@@ -220,14 +220,14 @@ export function PdfFlowSheet({
   const sharePdf = async () => {
     if (canShareFile && pdfFile) {
       try {
-        await (navigator as any).share({
+        await navigator.share({
           files: [pdfFile],
           title: state.subject || state.fileName,
           text: state.emailBody || state.subject || "",
         });
         return;
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
         console.warn("File-Share fehlgeschlagen, Fallback:", e);
       }
     }
@@ -260,7 +260,7 @@ export function PdfFlowSheet({
   const sendWhatsapp = async () => {
     if (canShareFile && pdfFile) {
       try {
-        await (navigator as any).share({
+        await navigator.share({
           files: [pdfFile],
           title: state.fileName || state.subject,
         });
@@ -269,8 +269,8 @@ export function PdfFlowSheet({
         });
         onAfterShareAction?.();
         return;
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
         console.warn("WhatsApp File-Share fehlgeschlagen, Fallback wa.me:", e);
       }
     }
@@ -309,7 +309,7 @@ export function PdfFlowSheet({
   const sendMail = async () => {
     if (canShareFile && pdfFile) {
       try {
-        await (navigator as any).share({
+        await navigator.share({
           files: [pdfFile],
           title: state.subject || state.fileName,
           text: state.emailBody || state.subject || "",
@@ -318,8 +318,8 @@ export function PdfFlowSheet({
           description: "Die PDF wird dann als echter Anhang mitgeschickt.",
         });
         return;
-      } catch (e: any) {
-        if (e?.name === "AbortError") return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
         console.warn("Mail File-Share fehlgeschlagen, Fallback mailto:", e);
       }
     }
