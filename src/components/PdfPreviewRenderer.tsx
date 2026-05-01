@@ -40,7 +40,32 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
   }, []);
 
   useEffect(() => {
-    if (!url || !containerWidth || !pagesRef.current) return;
+    if (!url) {
+      setPdfData(null);
+      return;
+    }
+
+    let cancelled = false;
+    setStatus("loading");
+    setPdfData(null);
+    fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error(`PDF konnte nicht geladen werden (${response.status})`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        if (!cancelled) setPdfData(new Uint8Array(buffer));
+      })
+      .catch((error) => {
+        console.error("PDF preview load failed", error);
+        if (!cancelled) setStatus("error");
+      });
+
+    return () => { cancelled = true; };
+  }, [url]);
+
+  useEffect(() => {
+    if (!pdfData || !containerWidth || !pagesRef.current) return;
 
     let cancelled = false;
     let pdfDocument: PDFDocumentProxy | null = null;
@@ -52,14 +77,7 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
       pageElementsRef.current = [];
 
       try {
-        let documentSource = url;
-        if (url.startsWith("data:application/pdf")) {
-          const response = await fetch(url);
-          const blob = await response.blob();
-          documentSource = URL.createObjectURL(blob);
-          objectUrlRef.current = documentSource;
-        }
-        const loadingTask = getDocument(documentSource);
+        const loadingTask = getDocument({ data: new Uint8Array(pdfData) });
         pdfDocument = await loadingTask.promise;
         setNumPages(pdfDocument.numPages);
         const availableWidth = Math.max(240, containerWidth - 28);
@@ -108,12 +126,8 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
       pagesNode.replaceChildren();
       pageElementsRef.current = [];
       pdfDocument?.destroy();
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
     };
-  }, [url, containerWidth, zoom]);
+  }, [pdfData, containerWidth, zoom]);
 
   // Track current page during scroll
   useEffect(() => {
