@@ -202,7 +202,13 @@ export default function QuoteResult() {
 
   const consumeQuota = async (): Promise<boolean> => {
     const { data, error } = await supabase.rpc("consume_pdf_quota");
-    if (error) { toast.error("Limit-Prüfung fehlgeschlagen: " + error.message); return false; }
+    if (error) {
+      console.error("consume_pdf_quota RPC error", error);
+      const detail = [error.message, (error as any).details, (error as any).hint, (error as any).code]
+        .filter(Boolean).join(" · ");
+      toast.error("Limit-Prüfung fehlgeschlagen", { description: detail || "Unbekannter Datenbank-Fehler" });
+      return false;
+    }
     const res = data as { ok: boolean; error?: string; limit?: number; used?: number; mode?: string };
     if (!res?.ok) {
       if (res?.error === "trial_exhausted") {
