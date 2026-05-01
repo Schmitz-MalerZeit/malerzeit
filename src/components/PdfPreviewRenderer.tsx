@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Minus, Plus, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Minus, Plus, RefreshCw } from "lucide-react";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import type { PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";
 import pdfWorkerSrc from "pdfjs-dist/build/pdf.worker.min.js?url";
@@ -16,9 +16,13 @@ const MAX_ZOOM = 4;
 export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pagesRef = useRef<HTMLDivElement | null>(null);
+  const pageElementsRef = useRef<HTMLCanvasElement[]>([]);
   const [containerWidth, setContainerWidth] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [zoom, setZoom] = useState(1);
+  const [numPages, setNumPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageInput, setPageInput] = useState("1");
 
   useEffect(() => {
     const node = containerRef.current;
@@ -42,10 +46,12 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
     const renderPdf = async () => {
       setStatus("loading");
       pagesNode.replaceChildren();
+      pageElementsRef.current = [];
 
       try {
         const loadingTask = getDocument(url);
         pdfDocument = await loadingTask.promise;
+        setNumPages(pdfDocument.numPages);
         const availableWidth = Math.max(240, containerWidth - 28);
         const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -67,12 +73,14 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
           canvas.style.width = `${viewport.width}px`;
           canvas.style.height = `${viewport.height}px`;
           canvas.className = "mx-auto block rounded-sm bg-background shadow-md";
+          canvas.dataset.pageNumber = String(pageNumber);
 
           context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
           await page.render({ canvasContext: context, viewport }).promise;
 
           if (cancelled) return;
           pagesNode.appendChild(canvas);
+          pageElementsRef.current.push(canvas);
           page.cleanup();
         }
 
@@ -88,9 +96,43 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
     return () => {
       cancelled = true;
       pagesNode.replaceChildren();
+      pageElementsRef.current = [];
       pdfDocument?.destroy();
     };
   }, [url, containerWidth, zoom]);
+
+  // Track current page during scroll
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node || status !== "ready") return;
+    const onScroll = () => {
+      const els = pageElementsRef.current;
+      if (!els.length) return;
+      const containerTop = node.getBoundingClientRect().top;
+      let active = 1;
+      for (const el of els) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top - containerTop <= node.clientHeight / 3) {
+          active = Number(el.dataset.pageNumber || "1");
+        } else break;
+      }
+      setCurrentPage(active);
+      setPageInput(String(active));
+    };
+    node.addEventListener("scroll", onScroll, { passive: true });
+    return () => node.removeEventListener("scroll", onScroll);
+  }, [status, numPages]);
+
+  const goToPage = useCallback((page: number) => {
+    const target = Math.min(Math.max(1, page), numPages || 1);
+    const el = pageElementsRef.current[target - 1];
+    const node = containerRef.current;
+    if (el && node) {
+      node.scrollTo({ top: el.offsetTop - 12, behavior: "smooth" });
+      setCurrentPage(target);
+      setPageInput(String(target));
+    }
+  }, [numPages]);
 
   const clampZoom = (value: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
   const zoomIn = useCallback(() => setZoom((z) => clampZoom(+(z + 0.25).toFixed(2))), []);
@@ -145,8 +187,52 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
     };
   }, [zoom]);
 
+  const submitPageInput = () => {
+    const n = parseInt(pageInput, 10);
+    if (!Number.isNaN(n)) goToPage(n);
+    else setPageInput(String(currentPage));
+  };
+
   return (
     <div className="relative h-full flex flex-col bg-muted">
+      {/* Page navigation */}
+      <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-md border border-border bg-background/90 p-1 shadow-sm backdrop-blur">
+        <button
+          type="button"
+          onClick={() => goToPage(currentPage - 1)}
+          disabled={currentPage <= 1 || status !== "ready"}
+          className="inline-flex h-8 w-8 items-center justify-center rounded text-foreground hover:bg-muted disabled:opacity-40"
+          aria-label="Vorherige Seite"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={pageInput}
+          onChange={(e) => setPageInput(e.target.value.replace(/[^0-9]/g, ""))}
+          onBlur={submitPageInput}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitPageInput(); } }}
+          className="h-8 w-10 rounded border border-border bg-background text-center text-xs tabular-nums text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          aria-label="Seitenzahl"
+          disabled={status !== "ready"}
+        />
+        <span className="px-1 text-xs tabular-nums text-muted-foreground">
+          / {numPages || "–"}
+        </span>
+        <button
+          type="button"
+          onClick={() => goToPage(currentPage + 1)}
+          disabled={currentPage >= numPages || status !== "ready"}
+          className="inline-flex h-8 w-8 items-center justify-center rounded text-foreground hover:bg-muted disabled:opacity-40"
+          aria-label="Nächste Seite"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Zoom controls */}
       <div className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-md border border-border bg-background/90 p-1 shadow-sm backdrop-blur">
         <button
           type="button"
@@ -179,6 +265,7 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
           <RefreshCw className="h-4 w-4" />
         </button>
       </div>
+
       <div ref={containerRef} className="relative h-full overflow-auto p-3 touch-pan-x touch-pan-y">
         {status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center bg-muted">
@@ -190,7 +277,7 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
             Die PDF-Vorschau konnte auf diesem Gerät nicht gerendert werden.
           </div>
         )}
-        <div ref={pagesRef} className="space-y-3" aria-hidden={status !== "ready"} />
+        <div ref={pagesRef} className="space-y-3 pt-12" aria-hidden={status !== "ready"} />
       </div>
     </div>
   );
