@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2, Mail, MessageCircle } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
@@ -33,8 +33,6 @@ export default function QuoteResult() {
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
   // Bestätigungs-Dialog vor PDF-Erstellung (zählt aufs Kontingent).
   const [confirmAction, setConfirmAction] = useState<null | "preview" | "download">(null);
-  // Dialog nach erfolgreichem PDF-Download: Versand per E-Mail / WhatsApp anbieten.
-  const [shareOpen, setShareOpen] = useState(false);
   const [lastFilename, setLastFilename] = useState<string>("");
   const [lastSavedPdfPath, setLastSavedPdfPath] = useState<string | null>(null);
   // Inline-PDF-Vorschau (Dialog mit iframe) – funktioniert ohne Popup-Blocker.
