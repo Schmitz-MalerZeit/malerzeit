@@ -15,6 +15,9 @@ import Quotes from "./pages/Quotes";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Legal from "./pages/Legal";
+import Terms from "./pages/Terms";
+import Refund from "./pages/Refund";
+import Privacy from "./pages/Privacy";
 import Pricing from "./pages/Pricing";
 import Billing from "./pages/Billing";
 import PdfActionView from "./pages/PdfActionView";
@@ -32,6 +35,9 @@ const App = () => (
           <PaymentTestModeBanner />
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/refund" element={<Refund />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="/" element={<Index />} />
             <Route path="/pricing" element={<RequireAuth><Pricing /></RequireAuth>} />
             <Route path="/billing" element={<RequireAuth><Billing /></RequireAuth>} />
