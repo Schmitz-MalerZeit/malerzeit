@@ -412,20 +412,72 @@ export default function QuoteResult() {
     a.remove();
   };
 
+  const openPdfForSaving = (url: string): void => {
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) window.location.href = url;
+  };
+
+  const ensureSavedQuoteWithPdf = async (blob: Blob, fileName: string): Promise<{ path: string; quoteId: string } | null> => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) throw new Error("Nicht angemeldet");
+
+    const safeName = fileName.replace(/[^A-Za-z0-9._-]+/g, "_");
+    const path = `${u.user.id}/${Date.now()}_${safeName}`;
+    const { error: uploadError } = await supabase.storage
+      .from("quote-pdfs")
+      .upload(path, blob, { contentType: "application/pdf", upsert: true });
+    if (uploadError) throw uploadError;
+
+    const payload = {
+      user_id: u.user.id,
+      description: data.description,
+      line_items: ai.line_items,
+      customer_text: ai.customer_text,
+      whatsapp_text: whatsappDisplay,
+      net_amount: p.net_amount,
+      vat_amount: p.vat_amount,
+      gross_amount: p.gross_amount,
+      vat_rate: p.vat_rate,
+      estimated_hours: ai.estimated_hours,
+      estimated_material: ai.estimated_material_cost,
+      customer_name: data.customer?.name || null,
+      customer_address: data.customer?.address || null,
+      customer_postal_code: data.customer?.postal_code || null,
+      customer_city: data.customer?.city || null,
+      customer_phone: data.customer?.phone || null,
+      customer_email: data.customer?.email || null,
+      pdf_storage_path: path,
+      pdf_filename: fileName,
+      pdf_created_at: new Date().toISOString(),
+      pdf_size_bytes: blob.size,
+      pdf_mime_type: "application/pdf",
+    };
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("quotes")
+      .insert(payload)
+      .select("id, pdf_storage_path")
+      .single();
+    if (insertError) throw insertError;
+
+    setSaved(true);
+    setLastSavedPdfPath(path);
+    return { path: inserted.pdf_storage_path || path, quoteId: inserted.id };
+  };
+
+  const openSavedPdf = async (path: string): Promise<void> => {
+    const { data, error } = await supabase.storage.from("quote-pdfs").createSignedUrl(path, 60 * 10);
+    if (error || !data?.signedUrl) throw error || new Error("PDF konnte nicht geöffnet werden");
+    openPdfForSaving(data.signedUrl);
+  };
+
   // Mobile-safe "save the PDF" flow:
   // 1) Try native share (iOS/Android can save to Files / Drive directly)
   // 2) Otherwise, open the PDF in a new tab so the OS preview offers "Save to Files"
   // 3) On desktop, the standard download attribute works fine.
   const savePdfBlob = async (blob: Blob, url: string, fileName: string): Promise<void> => {
     if (isMobileBrowser()) {
-      const shared = await tryNativeShare(blob, fileName);
-      if (shared) return;
-      // Fallback: open in new tab. iOS Safari then shows the PDF with a share button.
-      const win = window.open(url, "_blank");
-      if (!win) {
-        // Popup blocked → last-resort same-tab navigation
-        window.location.href = url;
-      }
+      openPdfForSaving(url);
       return;
     }
     triggerBlobDownload(url, fileName);
