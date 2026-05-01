@@ -11,6 +11,7 @@ export interface QuotePDFData {
     phone?: string;
     email?: string;
     website?: string;
+    vatId?: string;
     logoDataUrl?: string;
     /** Natürliche Bildmaße – für proportionale Skalierung im PDF. */
     logoNaturalWidth?: number;
@@ -327,6 +328,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     d.company.email,
     d.company.phone,
     d.company.contact,
+    d.company.vatId ? `USt-IdNr.: ${d.company.vatId}` : undefined,
   ].filter(Boolean) as string[];
   contactLines.forEach((ln, i) => doc.text(ln, cx, footerY + 3.5 + i * 3.2));
 
