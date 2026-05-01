@@ -625,9 +625,39 @@ export default function QuoteResult() {
         pdfBlob: blob,
       });
 
-      // Direkt-Versand via WhatsApp: PDF lokal herunterladen, dann wa.me öffnen
-      // (mit Telefonnummer + vorbereitetem Anschreibe-Text inkl. Kundenanrede).
+      // Direkt-Versand via WhatsApp: identisches Verhalten wie der WhatsApp-Button
+      // im PdfFlowSheet (gespeicherte Vorschläge) – echter Datei-Anhang via Web
+      // Share API, sonst wa.me-Fallback mit lokalem Download.
       if (autoShareWhatsapp && meta.whatsappText) {
+        const file = (() => {
+          try {
+            return new File([blob], fileName, { type: blob.type || "application/pdf" });
+          } catch { return null; }
+        })();
+        const canShareFile = !!file
+          && typeof navigator.canShare === "function"
+          && navigator.canShare({ files: [file] });
+
+        if (canShareFile && file) {
+          try {
+            await navigator.share({ files: [file], title: fileName });
+            toast.message("Wähle WhatsApp im Teilen-Menü", {
+              description: "Die PDF wird dann als Datei mitgeschickt.",
+            });
+            setPdfFlowOpen(false);
+            setPdfFlow({ phase: "idle" });
+            nav("/quotes");
+            return;
+          } catch (err) {
+            if (!(err instanceof DOMException && err.name === "AbortError")) {
+              console.warn("WhatsApp File-Share fehlgeschlagen, Fallback wa.me:", err);
+            } else {
+              return;
+            }
+          }
+        }
+
+        // Fallback: PDF lokal herunterladen + wa.me öffnen
         try {
           const dlUrl = (() => {
             try {
@@ -646,11 +676,11 @@ export default function QuoteResult() {
         } catch (err) {
           console.warn("PDF-Vorab-Download fehlgeschlagen:", err);
         }
-        const base = waPhone ? `https://wa.me/${waPhone}` : "https://wa.me/";
-        const waUrl = `${base}?text=${encodeURIComponent(meta.whatsappText)}`;
         toast.message("PDF wurde heruntergeladen", {
           description: "WhatsApp öffnet sich – hänge die PDF aus dem Download-Ordner an.",
         });
+        const base = waPhone ? `https://wa.me/${waPhone}` : "https://wa.me/";
+        const waUrl = `${base}?text=${encodeURIComponent(meta.whatsappText)}`;
         const waA = document.createElement("a");
         waA.href = waUrl;
         waA.target = "_blank";
@@ -658,6 +688,9 @@ export default function QuoteResult() {
         document.body.appendChild(waA);
         waA.click();
         document.body.removeChild(waA);
+        setPdfFlowOpen(false);
+        setPdfFlow({ phase: "idle" });
+        nav("/quotes");
       }
     } catch (e: any) {
       window.clearInterval(buildTimer);
