@@ -9,16 +9,18 @@ GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
 interface PdfPreviewRendererProps {
   url: string | null;
+  onLoadPdfData?: (data: Uint8Array) => void;
 }
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 4;
 
-export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
+export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pagesRef = useRef<HTMLDivElement | null>(null);
   const pageElementsRef = useRef<HTMLCanvasElement[]>([]);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [zoom, setZoom] = useState(1);
   const [numPages, setNumPages] = useState(0);
@@ -39,7 +41,35 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
   }, []);
 
   useEffect(() => {
-    if (!url || !containerWidth || !pagesRef.current) return;
+    if (!url) {
+      setPdfData(null);
+      return;
+    }
+
+    let cancelled = false;
+    setStatus("loading");
+    setPdfData(null);
+    fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error(`PDF konnte nicht geladen werden (${response.status})`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        if (cancelled) return;
+        const bytes = new Uint8Array(buffer);
+        setPdfData(bytes);
+        onLoadPdfData?.(bytes);
+      })
+      .catch((error) => {
+        console.error("PDF preview load failed", error);
+        if (!cancelled) setStatus("error");
+      });
+
+    return () => { cancelled = true; };
+  }, [url, onLoadPdfData]);
+
+  useEffect(() => {
+    if (!pdfData || !containerWidth || !pagesRef.current) return;
 
     let cancelled = false;
     let pdfDocument: PDFDocumentProxy | null = null;
@@ -51,7 +81,7 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
       pageElementsRef.current = [];
 
       try {
-        const loadingTask = getDocument(url);
+        const loadingTask = getDocument({ data: new Uint8Array(pdfData) });
         pdfDocument = await loadingTask.promise;
         setNumPages(pdfDocument.numPages);
         const availableWidth = Math.max(240, containerWidth - 28);
@@ -101,7 +131,7 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
       pageElementsRef.current = [];
       pdfDocument?.destroy();
     };
-  }, [url, containerWidth, zoom]);
+  }, [pdfData, containerWidth, zoom]);
 
   // Track current page during scroll
   useEffect(() => {

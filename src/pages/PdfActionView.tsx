@@ -29,15 +29,20 @@ export default function PdfActionView() {
       "pdfActionOptions",
     ].filter(Boolean) as string[];
     for (const key of keys) {
-      const raw = sessionStorage.getItem(key);
+      const raw = key.startsWith("pdfActionOptions:")
+        ? localStorage.getItem(key)
+        : sessionStorage.getItem(key);
       if (!raw) continue;
       try {
-        setOptions(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        setOptions(parsed);
+        sessionStorage.setItem("pdfActionOptions", JSON.stringify(parsed));
         // Cleanup the one-shot token entry, keep "latest" for reloads.
-        if (key.startsWith("pdfActionOptions:")) sessionStorage.removeItem(key);
+        if (key.startsWith("pdfActionOptions:")) localStorage.removeItem(key);
         return;
       } catch {
-        sessionStorage.removeItem(key);
+        if (key.startsWith("pdfActionOptions:")) localStorage.removeItem(key);
+        else sessionStorage.removeItem(key);
       }
     }
   }, []);
@@ -91,12 +96,14 @@ export default function PdfActionView() {
     window.open(options.url, "_blank", "noopener,noreferrer");
   };
 
-  const emailStoredPdf = () => {
+  const emailStoredPdf = async () => {
     if (!options) return;
+    toast.info("Teilen-Fenster geöffnet – bitte Mail auswählen, damit die PDF als Anhang übernommen wird.");
+    if (await sharePdf()) return;
     const note = "Hinweis: Die gespeicherte PDF ist auf Ihrem Gerät verfügbar – bitte vor dem Senden als Anhang hinzufügen.";
     const body = `${options.emailBody}\n\n${note}`;
     window.location.href = `mailto:?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(body)}`;
-    toast.info("E-Mail-Programm geöffnet. Bitte gespeicherte PDF als Anhang hinzufügen.");
+    toast.info("Direkter PDF-Anhang wird auf diesem Gerät nicht unterstützt. Bitte PDF manuell anhängen.");
   };
 
   const sharePdf = async () => {

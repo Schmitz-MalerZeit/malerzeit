@@ -36,9 +36,9 @@ export const openPendingPdfActionWindow = (): Window | null => {
  *   2. After `location.replace(...)` the document is replaced and any storage
  *      written before is gone.
  *
- * Instead we always persist into the *current* tab's sessionStorage (same
- * origin as the destination) and pass a short token via the URL hash. The
- * destination route reads the payload from sessionStorage on mount.
+ * Instead we persist into localStorage under a short one-shot token and pass
+ * that token via the URL hash. localStorage is shared across same-origin tabs;
+ * sessionStorage is only a fallback for same-tab/reload cases.
  */
 export const showPdfActionWindow = (
   win: Window | null,
@@ -48,7 +48,7 @@ export const showPdfActionWindow = (
   // (we navigate to window.location.origin) so it can read it back.
   const token = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   try {
-    sessionStorage.setItem(`pdfActionOptions:${token}`, JSON.stringify(options));
+    localStorage.setItem(`pdfActionOptions:${token}`, JSON.stringify(options));
     // Keep a "latest" copy as fallback for same-tab navigation.
     sessionStorage.setItem("pdfActionOptions", JSON.stringify(options));
   } catch (e) {
