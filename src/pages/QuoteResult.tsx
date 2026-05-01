@@ -857,7 +857,7 @@ export default function QuoteResult() {
         {previewBlobUrl && !previewFailed && (
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-3">
             <p className="text-sm text-muted-foreground">
-              {lastSavedPdfPath ? "PDF ist gespeichert und kann erneut geöffnet werden." : "Vorschau ist bereit. Mit „PDF erstellen" wird die Datei gespeichert."}
+              {lastSavedPdfPath ? "PDF ist gespeichert und kann erneut geöffnet werden." : "Vorschau ist bereit. Mit PDF erstellen wird die Datei gespeichert."}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button
