@@ -720,6 +720,18 @@ export default function QuoteResult() {
           {saved ? <><Check className="h-4 w-4 mr-2" /> Gespeichert</> : <><Save className="h-4 w-4 mr-2" /> Vorschlag speichern</>}
         </Button>
       </div>
+
+      <PdfFlowSheet
+        open={pdfFlowOpen}
+        state={pdfFlow}
+        onOpenChange={(o) => {
+          setPdfFlowOpen(o);
+          if (!o && pdfFlow.phase === "error") setPdfFlow({ phase: "idle" });
+        }}
+        onRetry={() => { void runPdfFlow(); }}
+        fallbackUrl={lastSignedPdfUrl}
+        fallbackFileName={lastFilename || null}
+      />
     </AppShell>
   );
 }
