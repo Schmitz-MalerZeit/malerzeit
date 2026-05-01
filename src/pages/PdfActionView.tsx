@@ -187,9 +187,31 @@ export default function PdfActionView() {
             <MailPlus className="h-4 w-4 mr-2" />Gespeicherte PDF per E-Mail
           </Button>
         </div>
+        {diag && (
+          <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+            <span className="rounded border border-border bg-muted px-1.5 py-0.5">Quelle: {diag.urlKind}</span>
+            {diag.httpStatus !== undefined && (
+              <span className={`rounded border px-1.5 py-0.5 ${diag.httpStatus >= 400 ? "border-destructive/50 bg-destructive/10 text-destructive" : "border-border bg-muted"}`}>
+                HTTP {diag.httpStatus}
+              </span>
+            )}
+            {typeof diag.fetchMs === "number" && (
+              <span className="rounded border border-border bg-muted px-1.5 py-0.5">Fetch {diag.fetchMs} ms</span>
+            )}
+            {typeof diag.receivedBytes === "number" && (
+              <span className="rounded border border-border bg-muted px-1.5 py-0.5">{Math.round(diag.receivedBytes / 1024)} KB</span>
+            )}
+            {typeof diag.numPages === "number" && (
+              <span className="rounded border border-border bg-muted px-1.5 py-0.5">{diag.numPages} Seiten</span>
+            )}
+            {diag.errorPhase && (
+              <span className="rounded border border-destructive/50 bg-destructive/10 px-1.5 py-0.5 text-destructive">Fehler: {diag.errorPhase}</span>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex-1 min-h-0">
-        <PdfPreviewRenderer url={options.url} />
+        <PdfPreviewRenderer url={options.url} onDiagnostics={setDiag} />
       </div>
     </div>
   );
