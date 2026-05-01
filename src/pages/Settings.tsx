@@ -53,6 +53,8 @@ export default function Settings() {
         vat_rate: Number(settings.vat_rate),
         quote_validity_days: Number((settings as any).quote_validity_days ?? 14),
         closing_text: (settings as any).closing_text ?? "Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.",
+        email_template: (settings as any).email_template ?? DEFAULT_EMAIL_TEMPLATE,
+        whatsapp_template: (settings as any).whatsapp_template ?? DEFAULT_WHATSAPP_TEMPLATE,
       });
       setRates((hr || []).map((r: any) => ({
         id: r.id, label: r.label, rate: Number(r.rate),
