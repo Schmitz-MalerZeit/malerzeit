@@ -258,21 +258,57 @@ export default function Quotes() {
               {Array.isArray(q.line_items) && q.line_items.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-2">{q.line_items.length} Leistungspositionen</p>
               )}
-              <Button
-                type="button"
-                variant={q.pdf_storage_path ? "outline" : "secondary"}
-                onClick={() => openSavedPdf(q)}
-                disabled={openingId === q.id}
-                className="mt-3 h-10 w-full"
-              >
-                {openingId === q.id
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF öffnen" : "Noch kein PDF gespeichert"}</>}
-              </Button>
+              <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                <Button
+                  type="button"
+                  variant={q.pdf_storage_path ? "outline" : "secondary"}
+                  onClick={() => openSavedPdf(q)}
+                  disabled={openingId === q.id}
+                  className="h-10 w-full"
+                >
+                  {openingId === q.id
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF öffnen" : "Noch kein PDF gespeichert"}</>}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDeleteCandidate(q)}
+                  className="h-10 w-10 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  aria-label="Vorschlag löschen"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!deleteCandidate} onOpenChange={(o) => { if (!o && !deleting) setDeleteCandidate(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vorschlag wirklich löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteCandidate?.customer_name
+                ? `„${deleteCandidate.customer_name}" wird unwiderruflich gelöscht`
+                : "Dieser Vorschlag wird unwiderruflich gelöscht"}
+              {deleteCandidate?.pdf_storage_path ? " – inklusive der gespeicherten PDF-Datei." : "."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (deleteCandidate) void deleteQuote(deleteCandidate); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ja, löschen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <PdfFlowSheet
         open={pdfFlowOpen}
         state={pdfFlow}
