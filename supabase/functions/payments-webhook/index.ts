@@ -94,6 +94,7 @@ Deno.serve(async (req) => {
       case EventName.SubscriptionCreated:  await handleSubscriptionCreated(event.data, env); break;
       case EventName.SubscriptionUpdated:  await handleSubscriptionUpdated(event.data, env); break;
       case EventName.SubscriptionCanceled: await handleSubscriptionCanceled(event.data, env); break;
+      case EventName.TransactionCompleted: await handleTransactionCompleted(event.data, env); break;
       default: console.log('Unhandled event:', event.eventType);
     }
     return new Response(JSON.stringify({ received: true }), {
