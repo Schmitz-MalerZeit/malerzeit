@@ -455,9 +455,8 @@ export default function QuoteResult() {
     return data.signedUrl;
   };
 
-  const [pdfFlowOpen, setPdfFlowOpen] = useState(false);
-  const [pdfFlow, setPdfFlow] = useState<PdfFlowState>({ phase: "idle" });
-  const [lastSignedPdfUrl, setLastSignedPdfUrl] = useState<string | null>(null);
+
+
 
   const buildPdfFlowMeta = (fileName: string) => {
     const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
