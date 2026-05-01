@@ -828,6 +828,14 @@ export default function QuoteResult() {
           }
         }}
         onRetry={() => { void runPdfFlow(); }}
+        onAfterShareAction={() => {
+          // Sheet sofort schließen + zur Liste der gespeicherten Vorschläge.
+          // Damit landet der Nutzer beim Zurückkommen aus WhatsApp/Mail NICHT
+          // wieder im PDF-Vorschau-Sheet, sondern in der Übersicht.
+          setPdfFlowOpen(false);
+          setPdfFlow({ phase: "idle" });
+          nav("/quotes");
+        }}
         fallbackUrl={lastSignedPdfUrl}
         fallbackFileName={lastFilename || null}
       />
