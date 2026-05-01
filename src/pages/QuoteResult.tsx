@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2 } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2, MessageCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
@@ -516,7 +516,7 @@ export default function QuoteResult() {
     return false;
   };
 
-  const runPdfFlow = async () => {
+  const runPdfFlow = async (autoShareWhatsapp = false) => {
     // Open sheet immediately with "building" state — never a black screen.
     const fileName = filename();
     const meta = buildPdfFlowMeta(fileName);
@@ -619,6 +619,41 @@ export default function QuoteResult() {
         whatsappPhone: waPhone,
         pdfBlob: blob,
       });
+
+      // Direkt-Versand via WhatsApp: PDF lokal herunterladen, dann wa.me öffnen
+      // (mit Telefonnummer + vorbereitetem Anschreibe-Text inkl. Kundenanrede).
+      if (autoShareWhatsapp && meta.whatsappText) {
+        try {
+          const dlUrl = (() => {
+            try {
+              const u = new URL(signedUrl);
+              u.searchParams.set("download", fileName);
+              return u.toString();
+            } catch { return signedUrl; }
+          })();
+          const a = document.createElement("a");
+          a.href = dlUrl;
+          a.download = fileName;
+          a.rel = "noopener";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } catch (err) {
+          console.warn("PDF-Vorab-Download fehlgeschlagen:", err);
+        }
+        const base = waPhone ? `https://wa.me/${waPhone}` : "https://wa.me/";
+        const waUrl = `${base}?text=${encodeURIComponent(meta.whatsappText)}`;
+        toast.message("PDF wurde heruntergeladen", {
+          description: "WhatsApp öffnet sich – hänge die PDF aus dem Download-Ordner an.",
+        });
+        const waA = document.createElement("a");
+        waA.href = waUrl;
+        waA.target = "_blank";
+        waA.rel = "noopener noreferrer";
+        document.body.appendChild(waA);
+        waA.click();
+        document.body.removeChild(waA);
+      }
     } catch (e: any) {
       window.clearInterval(buildTimer);
       console.error("PDF flow failed", e);
@@ -636,6 +671,17 @@ export default function QuoteResult() {
   const downloadPDF = async () => {
     if (!guardPdfAccess()) return;
     await runPdfFlow();
+  };
+
+  const sendWhatsappDirect = async () => {
+    if (!guardPdfAccess()) return;
+    if (!whatsappAllowed) {
+      toast.error("WhatsApp-Versand ist ab dem Profi-Tarif verfügbar.", {
+        action: { label: "Tarife ansehen", onClick: () => nav("/pricing") },
+      });
+      return;
+    }
+    await runPdfFlow(true);
   };
 
 
@@ -776,6 +822,17 @@ export default function QuoteResult() {
         {pdfAllowed && (
           <Button onClick={downloadPDF} disabled={busy} className="w-full h-12 gradient-primary text-primary-foreground border-0">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FileDown className="h-4 w-4 mr-2" /> PDF jetzt erstellen</>}
+          </Button>
+        )}
+
+        {pdfAllowed && whatsappAllowed && (
+          <Button
+            onClick={sendWhatsappDirect}
+            disabled={busy}
+            variant="outline"
+            className="w-full h-12 border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><MessageCircle className="h-4 w-4 mr-2" /> Per WhatsApp senden</>}
           </Button>
         )}
 
