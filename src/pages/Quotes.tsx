@@ -91,10 +91,18 @@ export default function Quotes() {
         .from("quote-pdfs")
         .createSignedUrl(q.pdf_storage_path, 60 * 60);
       if (error || !data?.signedUrl) throw error || new Error("PDF konnte nicht geöffnet werden");
+      setPdfFlow((prev) => ({
+        ...prev,
+        step: "PDF-Datei laden …",
+        progress: 75,
+      }));
+      const response = await fetch(data.signedUrl);
+      if (!response.ok) throw new Error(`PDF-Datei konnte nicht geladen werden (${response.status})`);
+      const pdfBlob = await response.blob();
       setPdfFlow({
         phase: "ready",
         url: data.signedUrl,
-        fileName, subject, emailBody, whatsappText, whatsappPhone,
+        fileName, subject, emailBody, whatsappText, whatsappPhone, pdfBlob,
       });
     } catch (e: any) {
       setPdfFlow((prev) => ({
