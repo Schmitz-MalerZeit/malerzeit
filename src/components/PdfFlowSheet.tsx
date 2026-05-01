@@ -211,16 +211,10 @@ export function PdfFlowSheet({
               <RefreshCw className="h-4 w-4 mr-2" /> Erneut versuchen
             </Button>
             {fallbackUrl && (
-              <Button variant="secondary" className="h-11" onClick={() => {
-                const a = document.createElement("a");
-                a.href = fallbackUrl;
-                a.download = fallbackFileName || "Preisorientierung.pdf";
-                a.rel = "noopener";
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-              }}>
-                <FileDown className="h-4 w-4 mr-2" /> Letzte gespeicherte PDF laden
+              <Button asChild variant="secondary" className="h-11">
+                <a href={fallbackDownloadUrl} download={fallbackFileName || "Preisorientierung.pdf"} rel="noopener">
+                  <FileDown className="h-4 w-4 mr-2" /> Letzte gespeicherte PDF laden
+                </a>
               </Button>
             )}
             <Button variant="ghost" className="h-9" onClick={() => onOpenChange(false)}>
@@ -259,8 +253,10 @@ export function PdfFlowSheet({
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={downloadPdf} className="h-11">
-              <Download className="h-4 w-4 mr-2" /> Download
+            <Button asChild className="h-11">
+              <a href={downloadUrl} download={state.fileName || "Preisorientierung.pdf"} rel="noopener">
+                <Download className="h-4 w-4 mr-2" /> Download
+              </a>
             </Button>
             <Button variant="outline" onClick={sharePdf} className="h-11">
               <Share2 className="h-4 w-4 mr-2" /> Teilen
