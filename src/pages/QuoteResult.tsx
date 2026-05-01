@@ -857,7 +857,7 @@ export default function QuoteResult() {
         {previewBlobUrl && !previewFailed && (
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-3">
             <p className="text-sm text-muted-foreground">
-              PDF ist erstellt und bereit zur Vorschau oder zum Download.
+              {lastSavedPdfPath ? "PDF ist gespeichert und kann erneut geöffnet werden." : "Vorschau ist bereit. Mit „PDF erstellen" wird die Datei gespeichert."}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <Button
@@ -874,7 +874,7 @@ export default function QuoteResult() {
                 disabled={busy}
                 className="h-11 gradient-primary text-primary-foreground border-0"
               >
-                <FileDown className="h-4 w-4 mr-2" /> PDF laden
+                <FileDown className="h-4 w-4 mr-2" /> PDF erstellen
               </Button>
             </div>
           </div>
