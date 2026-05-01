@@ -5,8 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { PdfPreviewRenderer, type PdfDiagnostics } from "@/components/PdfPreviewRenderer";
 import { toast } from "sonner";
 import {
-  AlertCircle, CheckCircle2, Download, ExternalLink, FileDown, Loader2, Mail,
-  MessageCircle, RefreshCw, Share2, X,
+  AlertCircle, CheckCircle2, Download, ExternalLink, FileDown, Loader2,
+  MessageCircle, RefreshCw, X,
 } from "lucide-react";
 
 export type PdfFlowPhase =
