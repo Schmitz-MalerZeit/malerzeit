@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2, Mail, MessageCircle, ExternalLink } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2, Mail, MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
@@ -446,12 +446,6 @@ export default function QuoteResult() {
     setSavedQuoteId(inserted.id);
     setLastSavedPdfPath(path);
     return { path: inserted.pdf_storage_path || path, quoteId: inserted.id };
-  };
-
-  const openSavedPdf = async (path: string): Promise<void> => {
-    const { data, error } = await supabase.storage.from("quote-pdfs").createSignedUrl(path, 60 * 10);
-    if (error || !data?.signedUrl) throw error || new Error("PDF konnte nicht geöffnet werden");
-    openPdfForSaving(data.signedUrl);
   };
 
   // Mobile-safe "save the PDF" flow:
