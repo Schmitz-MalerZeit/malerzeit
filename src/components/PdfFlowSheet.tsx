@@ -205,6 +205,7 @@ export function PdfFlowSheet({
         toast.message("Wähle WhatsApp im Teilen-Menü", {
           description: "Die PDF wird dann als Datei mitgeschickt.",
         });
+        onAfterShareAction?.();
         return;
       } catch (e: any) {
         if (e?.name === "AbortError") return;
