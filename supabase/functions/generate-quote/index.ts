@@ -160,6 +160,9 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
     const vat = Math.round(net * (body.vatRate / 100) * 100) / 100;
     const gross = Math.round((net + vat) * 100) / 100;
 
+    parsed.customer_text = ensurePriceOrientationNotice(parsed.customer_text, "customer");
+    parsed.whatsapp_text = ensurePriceOrientationNotice(parsed.whatsapp_text, "whatsapp");
+
     return new Response(JSON.stringify({
       ...parsed,
       pricing: {
