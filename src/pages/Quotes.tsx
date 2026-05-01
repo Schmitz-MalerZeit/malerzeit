@@ -13,6 +13,8 @@ import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText,
 import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
 import { ensureWhatsappSignature } from "@/lib/messageTemplate";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
+import { useSubscription } from "@/hooks/useSubscription";
+import { canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
