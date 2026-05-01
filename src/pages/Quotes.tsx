@@ -12,6 +12,14 @@ import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText,
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
+const blobToDataUrl = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error || new Error("PDF konnte nicht gelesen werden"));
+    reader.readAsDataURL(blob);
+  });
+
 function toCsv(rows: any[]): string {
   const head = [
     "Angebot-ID","Datum","Kunde","Straße","PLZ","Ort","Telefon","E-Mail",
@@ -156,14 +164,14 @@ export default function Quotes() {
         .createSignedUrl(q.pdf_storage_path, 60 * 60); // 1h
       if (error || !data?.signedUrl) throw error || new Error("PDF konnte nicht geöffnet werden");
 
-      // Materialize into a same-tab Blob URL so the action window doesn't
-      // depend on the (expiring) signed URL for previewing/zooming/sharing.
+      // Materialize into a data URL. Blob URLs are scoped to the creating
+      // window and cannot be fetched reliably from the new action tab.
       let previewUrl = data.signedUrl;
       try {
         const res = await fetch(data.signedUrl);
         if (res.ok) {
           const blob = await res.blob();
-          previewUrl = URL.createObjectURL(blob);
+          previewUrl = await blobToDataUrl(blob);
         }
       } catch (fetchErr) {
         console.warn("PDF-Blob konnte nicht geladen werden, falle zurück auf signierte URL", fetchErr);
