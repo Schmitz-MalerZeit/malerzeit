@@ -229,9 +229,8 @@ export default function QuoteResult() {
           action: { label: "Tarife", onClick: () => nav("/pricing") },
         });
       } else if (res?.error === "limit_reached") {
-        toast.error(`Monatslimit erreicht (${res.used}/${res.limit}).`, {
-          action: { label: "Upgrade", onClick: () => nav("/pricing") },
-        });
+        setAddonDialogContext(`Du hast ${res.used} von ${res.limit} KI-Angeboten in diesem Monat genutzt.`);
+        setAddonDialogOpen(true);
       } else if (res?.error === "no_active_plan") {
         toast.error("Kein aktiver Tarif. Bitte wähle einen Plan.", {
           action: { label: "Tarife", onClick: () => nav("/pricing") },
