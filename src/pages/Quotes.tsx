@@ -152,8 +152,8 @@ export default function Quotes() {
     }
     const fileName = q.pdf_filename || `Preisorientierung_${new Date(q.created_at).toISOString().slice(0, 10)}.pdf`;
     const subject = `Unverbindliche Preisorientierung${q.customer_name ? " – " + q.customer_name : ""}`;
-    const emailBody = `${ensureCustomerPriceOrientationText(q.customer_text || "Anbei erhalten Sie unsere unverbindliche Preisorientierung.")}\n\nDie PDF-Datei heißt: ${fileName}\nBitte hängen Sie die heruntergeladene PDF an, falls Ihr Gerät sie nicht automatisch übernimmt.`;
-    const whatsappText = `${ensureWhatsappPriceOrientationText(q.whatsapp_text || "Anbei unsere unverbindliche Preisorientierung/Schätzung.")}\n\nPDF-Datei: ${fileName}`;
+    const emailBody = ensureCustomerPriceOrientationText(q.customer_text || "Anbei erhalten Sie unsere unverbindliche Preisorientierung.");
+    const whatsappText = ensureWhatsappPriceOrientationText(q.whatsapp_text || "Anbei unsere unverbindliche Preisorientierung/Schätzung.");
     const whatsappPhone = normalizePhoneForWa(q.customer_phone || "");
 
     setLastQuote(q);
