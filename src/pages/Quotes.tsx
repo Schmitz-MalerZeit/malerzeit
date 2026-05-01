@@ -82,6 +82,9 @@ export default function Quotes() {
   const nav = useNavigate();
   const [items, setItems] = useState<any[] | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [pdfFlowOpen, setPdfFlowOpen] = useState(false);
+  const [pdfFlow, setPdfFlow] = useState<PdfFlowState>({ phase: "idle" });
+  const [lastQuote, setLastQuote] = useState<any | null>(null);
   const sub = useSubscription();
   const tier = getTier(sub);
   const csvAllowed = canExportCsv(tier);
