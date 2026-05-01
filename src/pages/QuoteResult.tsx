@@ -424,28 +424,29 @@ export default function QuoteResult() {
     return data.signedUrl;
   };
 
-  const showGeneratedPdfWindow = (win: Window | null, url: string, fileName: string) => {
+  const [pdfFlowOpen, setPdfFlowOpen] = useState(false);
+  const [pdfFlow, setPdfFlow] = useState<PdfFlowState>({ phase: "idle" });
+  const [lastSignedPdfUrl, setLastSignedPdfUrl] = useState<string | null>(null);
+
+  const buildPdfFlowMeta = (fileName: string) => {
     const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
     const emailBody = `${customerDisplay}\n\nDie PDF-Datei heißt: ${fileName}\nBitte hängen Sie die heruntergeladene PDF an, falls Ihr Gerät sie nicht automatisch übernimmt.`;
-    const waText = `${whatsappDisplay}\n\nPDF-Datei: ${fileName}`;
-    showPdfActionWindow(win, { url, fileName, subject, emailBody, whatsappText: waText, whatsappPhone: waPhone });
+    const whatsappText = `${whatsappDisplay}\n\nPDF-Datei: ${fileName}`;
+    return { subject, emailBody, whatsappText };
   };
 
   // Cache the freshly built PDF in sessionStorage so it survives a reload
-  // (avoids re-building and re-consuming quota).
   const cachePdfInSession = async (blob: Blob) => {
     try {
       const buf = await blob.arrayBuffer();
       const bytes = new Uint8Array(buf);
       let bin = "";
-      // Chunked to avoid call-stack overflows on large PDFs
       const CHUNK = 0x8000;
       for (let i = 0; i < bytes.length; i += CHUNK) {
         bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
       }
       sessionStorage.setItem("currentQuotePdf", btoa(bin));
     } catch (e) {
-      // sessionStorage quota (~5MB) — caching is best-effort, no user-visible failure
       console.warn("could not cache PDF in session", e);
     }
   };
@@ -458,52 +459,86 @@ export default function QuoteResult() {
     return false;
   };
 
-  const downloadPDF = async () => {
-    if (!guardPdfAccess()) return;
-    const pendingWindow = openPendingPdfActionWindow();
+  const runPdfFlow = async () => {
+    // Open sheet immediately with "building" state — never a black screen.
+    const fileName = filename();
+    const meta = buildPdfFlowMeta(fileName);
+    setPdfFlow({
+      phase: "building",
+      step: "PDF wird zusammengebaut …",
+      fileName,
+      ...meta,
+      whatsappPhone: waPhone,
+    });
+    setPdfFlowOpen(true);
     setBusy(true);
+
     try {
-      const fileName = filename();
-      // Reuse the preview blob if it has already been built (no extra quota cost)
-      if (previewBlob && previewBlobUrl) {
-        if (!pdfQuotaConsumed) {
-          const ok = await consumeQuota();
-          if (!ok) {
-            if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
-            return;
-          }
-          setPdfQuotaConsumed(true);
+      // 1) Build (or reuse) the PDF blob
+      let blob: Blob | null = previewBlob;
+      if (!blob) {
+        setPdfFlow((s) => ({ ...s, step: "PDF wird erstellt …" }));
+        const pdf = await buildPDF();
+        // 2) Quota only consumed once we have a buildable PDF
+        const ok = await consumeQuota();
+        if (!ok) {
+          // Quota errors already toast; close sheet quietly.
+          setPdfFlowOpen(false);
+          setPdfFlow({ phase: "idle" });
+          return;
         }
-        const savedPdf = await ensureSavedQuoteWithPdf(previewBlob, fileName);
-        if (!savedPdf?.path) throw new Error("PDF konnte nicht gespeichert werden");
-        const actionUrl = await createSignedPdfUrl(savedPdf.path);
-        showGeneratedPdfWindow(pendingWindow, actionUrl, fileName);
-        setLastFilename(fileName);
-        return;
+        setPdfQuotaConsumed(true);
+        blob = pdf.output("blob");
+        const url = blobToObjectUrl(blob);
+        setPreviewBlob(blob);
+        setPreviewBlobUrl(url);
+        await cachePdfInSession(blob);
+      } else if (!pdfQuotaConsumed) {
+        const ok = await consumeQuota();
+        if (!ok) {
+          setPdfFlowOpen(false);
+          setPdfFlow({ phase: "idle" });
+          return;
+        }
+        setPdfQuotaConsumed(true);
       }
-      const pdf = await buildPDF();                 // 1) build first (no cost if it fails)
-      const ok = await consumeQuota();              // 2) atomically consume quota
-      if (!ok) {
-        if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
-        return;
-      }
-      setPdfQuotaConsumed(true);
-      const blob = pdf.output("blob");
-      const url = blobToObjectUrl(blob);
-      setPreviewBlob(blob);
-      setPreviewBlobUrl(url);                       // make it reusable for preview / retry
-      await cachePdfInSession(blob);                // persist across reloads
+
+      // 3) Upload + persist quote row
+      setPdfFlow((s) => ({ ...s, phase: "uploading", step: "PDF wird gespeichert …" }));
       const savedPdf = await ensureSavedQuoteWithPdf(blob, fileName);
       if (!savedPdf?.path) throw new Error("PDF konnte nicht gespeichert werden");
-      const actionUrl = await createSignedPdfUrl(savedPdf.path);
-      showGeneratedPdfWindow(pendingWindow, actionUrl, fileName);
+
+      // 4) Sign URL for preview + sharing
+      setPdfFlow((s) => ({ ...s, step: "Sicheren Link erstellen …" }));
+      const signedUrl = await createSignedPdfUrl(savedPdf.path);
+      setLastSignedPdfUrl(signedUrl);
       setLastFilename(fileName);
+
+      setPdfFlow({
+        phase: "ready",
+        url: signedUrl,
+        fileName,
+        ...meta,
+        whatsappPhone: waPhone,
+      });
     } catch (e: any) {
-      if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
-      toast.error(e.message || "PDF-Fehler");
+      console.error("PDF flow failed", e);
+      setPdfFlow((prev) => ({
+        ...prev,
+        phase: "error",
+        errorMessage: e?.message || "Unbekannter Fehler beim Erstellen der PDF.",
+        errorDetail: typeof e?.stack === "string" ? e.stack.split("\n").slice(0, 8).join("\n") : String(e),
+      }));
+    } finally {
+      setBusy(false);
     }
-    finally { setBusy(false); }
   };
+
+  const downloadPDF = async () => {
+    if (!guardPdfAccess()) return;
+    await runPdfFlow();
+  };
+
 
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
   // und den Busy-Spinner – wird beim Auto-Speichern nach PDF-Erstellung genutzt.
