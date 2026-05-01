@@ -464,10 +464,13 @@ export default function QuoteResult() {
 
 
 
-  const buildPdfFlowMeta = (fileName: string) => {
+  const buildPdfFlowMeta = (_fileName: string) => {
     const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
-    const emailBody = `${customerDisplay}\n\nDie PDF-Datei heißt: ${fileName}\nBitte hängen Sie die heruntergeladene PDF an, falls Ihr Gerät sie nicht automatisch übernimmt.`;
-    const whatsappText = `${whatsappDisplay}\n\nPDF-Datei: ${fileName}`;
+    // E-Mail- und WhatsApp-Texte sind identisch zum Inhalt der PDF (inkl. Preis).
+    // Keine Hinweise auf Dateiname oder Download-Link – die PDF wird als echte
+    // Datei über die Share-/Anhangsfunktion mitgegeben.
+    const emailBody = customerDisplay;
+    const whatsappText = whatsappDisplay;
     return { subject, emailBody, whatsappText };
   };
 
