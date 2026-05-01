@@ -208,10 +208,28 @@ export function PdfFlowSheet({
       }
     }
     if (!waUrl) return;
-    toast.message("Anhang manuell hinzufügen", {
-      description: "WhatsApp wird mit dem Nachrichtentext geöffnet. Hänge die PDF aus dem Download-Ordner an.",
+    // Lade die PDF lokal herunter, damit sie in WhatsApp angehängt werden kann.
+    if (downloadUrl) {
+      try {
+        const dl = document.createElement("a");
+        dl.href = downloadUrl;
+        dl.download = state.fileName || "Preisorientierung.pdf";
+        dl.rel = "noopener";
+        document.body.appendChild(dl);
+        dl.click();
+        document.body.removeChild(dl);
+      } catch { /* ignore */ }
+    }
+    toast.message("PDF wurde heruntergeladen", {
+      description: "WhatsApp öffnet sich – hänge die PDF aus dem Download-Ordner an.",
     });
-    window.open(waUrl, "_blank", "noopener,noreferrer");
+    const a = document.createElement("a");
+    a.href = waUrl;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   /**
