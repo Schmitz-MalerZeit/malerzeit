@@ -383,24 +383,6 @@ export default function QuoteResult() {
     return isIOS || isAndroid;
   };
 
-  // Try to share the PDF as a real file via the native Share Sheet (iOS/Android).
-  // Returns true on success, false if the API is unavailable or the user cancels.
-  const tryNativeShare = async (blob: Blob, fileName: string): Promise<boolean> => {
-    try {
-      const nav: any = navigator;
-      if (typeof nav.canShare !== "function") return false;
-      const file = new File([blob], fileName, { type: "application/pdf" });
-      if (!nav.canShare({ files: [file] })) return false;
-      await nav.share({ files: [file], title: fileName });
-      return true;
-    } catch (e: any) {
-      // AbortError = user cancelled; treat as "handled" so we don't fall back
-      if (e?.name === "AbortError") return true;
-      console.warn("native share failed", e);
-      return false;
-    }
-  };
-
   const triggerBlobDownload = (url: string, fileName = filename()) => {
     const a = document.createElement("a");
     a.href = url;
@@ -475,11 +457,16 @@ export default function QuoteResult() {
   // 1) Try native share (iOS/Android can save to Files / Drive directly)
   // 2) Otherwise, open the PDF in a new tab so the OS preview offers "Save to Files"
   // 3) On desktop, the standard download attribute works fine.
-  const savePdfBlob = async (blob: Blob, url: string, fileName: string): Promise<void> => {
+  const savePdfBlob = async (_blob: Blob, url: string, fileName: string, pendingWindow?: Window | null): Promise<void> => {
     if (isMobileBrowser()) {
-      openPdfForSaving(url);
+      if (pendingWindow && !pendingWindow.closed) {
+        pendingWindow.location.replace(url);
+      } else {
+        openPdfForSaving(url);
+      }
       return;
     }
+    if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
     triggerBlobDownload(url, fileName);
   };
 
