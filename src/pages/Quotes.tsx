@@ -78,8 +78,8 @@ export default function Quotes() {
       },
     );
     const emailBody = buildEmailMessageBody(baseEmail, { grossFormatted });
-    const whatsappText = buildWhatsappMessageBody(baseWa, { grossFormatted });
-    const whatsappPhone = normalizePhoneForWa(q.customer_phone || "");
+    const whatsappText = waAllowed ? buildWhatsappMessageBody(baseWa, { grossFormatted }) : "";
+    const whatsappPhone = waAllowed ? normalizePhoneForWa(q.customer_phone || "") : null;
 
     setLastQuote(q);
     setPdfFlow({
