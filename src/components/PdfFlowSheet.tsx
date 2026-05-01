@@ -82,6 +82,8 @@ export function PdfFlowSheet({
 }: PdfFlowSheetProps) {
   const [diag, setDiag] = useState<PdfDiagnostics | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [fetchedBlob, setFetchedBlob] = useState<Blob | null>(null);
+  const [fetchingBlob, setFetchingBlob] = useState(false);
 
   const toAttachmentUrl = (url: string, fileName?: string | null) => {
     if (!url || url.startsWith("blob:")) return url;
@@ -99,8 +101,27 @@ export function PdfFlowSheet({
     if (!open) {
       setDiag(null);
       setShowDetails(false);
+      setFetchedBlob(null);
+      setFetchingBlob(false);
     }
   }, [open]);
+
+  // Falls keine frische Blob-Quelle vorhanden ist (z. B. PDF aus „Gespeicherte
+  // Vorschläge"), holen wir die Datei einmal von der signierten URL, damit
+  // alle Share-Pfade einen echten File-Anhang versenden können.
+  useEffect(() => {
+    if (state.phase !== "ready") return;
+    if (state.pdfBlob || fetchedBlob || fetchingBlob) return;
+    if (!state.url || state.url.startsWith("blob:")) return;
+    let cancelled = false;
+    setFetchingBlob(true);
+    fetch(state.url)
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((b) => { if (!cancelled) setFetchedBlob(b); })
+      .catch((e) => console.warn("Konnte PDF nicht für Anhang vorladen:", e))
+      .finally(() => { if (!cancelled) setFetchingBlob(false); });
+    return () => { cancelled = true; };
+  }, [state.phase, state.url, state.pdfBlob, fetchedBlob, fetchingBlob]);
 
   const downloadUrl = useMemo(
     () => state.url ? toAttachmentUrl(state.url, state.fileName) : "",
@@ -112,45 +133,110 @@ export function PdfFlowSheet({
     [fallbackUrl, fallbackFileName],
   );
 
+  const pdfFile = useMemo<File | null>(() => {
+    const blob = state.pdfBlob || fetchedBlob;
+    if (!blob) return null;
+    const name = state.fileName || "Preisorientierung.pdf";
+    try {
+      return new File([blob], name, { type: blob.type || "application/pdf" });
+    } catch {
+      return null;
+    }
+  }, [state.pdfBlob, fetchedBlob, state.fileName]);
+
+  const canShareFile = useMemo(() => {
+    if (!pdfFile) return false;
+    const navAny = navigator as any;
+    return typeof navAny.canShare === "function" && navAny.canShare({ files: [pdfFile] });
+  }, [pdfFile]);
+
   const waUrl = useMemo(() => {
     if (!state.whatsappText) return "";
     const base = state.whatsappPhone ? `https://wa.me/${state.whatsappPhone}` : "https://wa.me/";
-    const text = downloadUrl ? `${state.whatsappText}\n\nPDF herunterladen: ${downloadUrl}` : state.whatsappText;
-    return `${base}?text=${encodeURIComponent(text)}`;
-  }, [downloadUrl, state.whatsappText, state.whatsappPhone]);
+    return `${base}?text=${encodeURIComponent(state.whatsappText)}`;
+  }, [state.whatsappText, state.whatsappPhone]);
 
+  /** „Teilen" – immer mit Datei-Anhang, wenn das Gerät es unterstützt. */
   const sharePdf = async () => {
+    if (canShareFile && pdfFile) {
+      try {
+        await (navigator as any).share({
+          files: [pdfFile],
+          title: state.subject || state.fileName,
+          text: state.emailBody || state.subject || "",
+        });
+        return;
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        console.warn("File-Share fehlgeschlagen, Fallback:", e);
+      }
+    }
+    // Fallback: nur Link/Text teilen
     const url = downloadUrl || state.url;
-    if (!url) return;
-
-    if (navigator.share) {
+    if (navigator.share && url) {
       try {
         await navigator.share({ title: state.subject || state.fileName, text: state.subject, url });
         return;
-      } catch {
-        /* user cancelled */
+      } catch { return; }
+    }
+    if (url) {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("PDF-Link kopiert");
         return;
+      } catch { /* ignore */ }
+    }
+    toast.error("Teilen ist auf diesem Gerät nicht verfügbar.");
+  };
+
+  /** WhatsApp – versucht zuerst echten Datei-Anhang via Share-Sheet. */
+  const sendWhatsapp = async () => {
+    if (canShareFile && pdfFile) {
+      try {
+        await (navigator as any).share({
+          files: [pdfFile],
+          title: state.subject || state.fileName,
+          text: state.whatsappText || state.subject || "",
+        });
+        toast.message("Wähle WhatsApp im Teilen-Menü", {
+          description: "Die PDF wird dann als Datei mitgeschickt.",
+        });
+        return;
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        console.warn("WhatsApp File-Share fehlgeschlagen, Fallback wa.me:", e);
       }
     }
-
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success("PDF-Link kopiert");
-    } catch {
-      toast.error("Teilen ist auf diesem Gerät nicht verfügbar.");
-    }
-  };
-
-  const sendMail = () => {
-    if (!state.subject || !state.emailBody) return;
-    const linkLine = downloadUrl ? `\n\nPDF herunterladen: ${downloadUrl}` : "";
-    const body = `${state.emailBody}${linkLine}\n\nHinweis: Falls kein Anhang möglich ist, kann die PDF über den Link geöffnet und gespeichert werden.`;
-    window.location.href = `mailto:?subject=${encodeURIComponent(state.subject)}&body=${encodeURIComponent(body)}`;
-  };
-
-  const sendWhatsapp = () => {
     if (!waUrl) return;
+    toast.message("Anhang manuell hinzufügen", {
+      description: "WhatsApp wird mit dem Nachrichtentext geöffnet. Hänge die PDF aus dem Download-Ordner an.",
+    });
     window.open(waUrl, "_blank", "noopener,noreferrer");
+  };
+
+  /** E-Mail – echter Datei-Anhang via Share-Sheet, sonst mailto: ohne Link. */
+  const sendMail = async () => {
+    if (canShareFile && pdfFile) {
+      try {
+        await (navigator as any).share({
+          files: [pdfFile],
+          title: state.subject || state.fileName,
+          text: state.emailBody || state.subject || "",
+        });
+        toast.message("Wähle deine E-Mail-App im Teilen-Menü", {
+          description: "Die PDF wird dann als echter Anhang mitgeschickt.",
+        });
+        return;
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        console.warn("Mail File-Share fehlgeschlagen, Fallback mailto:", e);
+      }
+    }
+    if (!state.subject || !state.emailBody) return;
+    toast.message("Anhang manuell hinzufügen", {
+      description: "Dein Gerät unterstützt keinen Datei-Anhang aus dem Browser. Hänge die PDF aus dem Download-Ordner an.",
+    });
+    window.location.href = `mailto:?subject=${encodeURIComponent(state.subject)}&body=${encodeURIComponent(state.emailBody)}`;
   };
 
   const openInBrowser = () => {
