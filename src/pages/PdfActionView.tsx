@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, ExternalLink, FileDown, Loader2, Mail, MessageCircle, Share2 } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileDown, Loader2, Mail, MailPlus, MessageCircle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PdfPreviewRenderer } from "@/components/PdfPreviewRenderer";
 import { toast } from "sonner";
@@ -73,6 +73,14 @@ export default function PdfActionView() {
   const openStoredPdf = () => {
     if (!options) return;
     window.open(options.url, "_blank", "noopener,noreferrer");
+  };
+
+  const emailStoredPdf = () => {
+    if (!options) return;
+    const note = "Hinweis: Die gespeicherte PDF ist auf Ihrem Gerät verfügbar – bitte vor dem Senden als Anhang hinzufügen.";
+    const body = `${options.emailBody}\n\n${note}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(body)}`;
+    toast.info("E-Mail-Programm geöffnet. Bitte gespeicherte PDF als Anhang hinzufügen.");
   };
 
   const sharePdf = async () => {
@@ -148,6 +156,11 @@ export default function PdfActionView() {
           </Button>
           <Button type="button" variant="secondary" onClick={openStoredPdf} className="h-11 min-w-0" title="Gespeicherte PDF im neuen Tab öffnen">
             <ExternalLink className="h-4 w-4 mr-2" />Im Browser öffnen
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 gap-2">
+          <Button type="button" variant="secondary" onClick={emailStoredPdf} className="h-11 min-w-0" title="Gespeicherte PDF per E-Mail versenden (ohne Neuerstellung)">
+            <MailPlus className="h-4 w-4 mr-2" />Gespeicherte PDF per E-Mail
           </Button>
         </div>
       </div>
