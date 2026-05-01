@@ -7,14 +7,10 @@ import { toast } from "sonner";
 import { Copy, FileDown, Save, Loader2, Check, RotateCw, Eye, Lock, Sparkles, Pencil, Plus, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
+import { openPendingPdfActionWindow, showPdfActionWindow } from "@/lib/pdfActionWindow";
+import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText } from "@/lib/quoteText";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
-import { PdfPreviewRenderer } from "@/components/PdfPreviewRenderer";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
@@ -30,12 +26,8 @@ export default function QuoteResult() {
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
-  // Bestätigungs-Dialog vor PDF-Erstellung (zählt aufs Kontingent).
-  const [confirmAction, setConfirmAction] = useState<null | "preview" | "download">(null);
   const [lastFilename, setLastFilename] = useState<string>("");
   const [lastSavedPdfPath, setLastSavedPdfPath] = useState<string | null>(null);
-  // Inline-PDF-Vorschau (Dialog mit iframe) – funktioniert ohne Popup-Blocker.
-  const [previewOpen, setPreviewOpen] = useState(false);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
