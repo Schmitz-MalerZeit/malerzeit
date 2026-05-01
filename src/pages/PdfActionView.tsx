@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Loader2, Mail, MessageCircle, Share2 } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileDown, Loader2, Mail, MessageCircle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PdfPreviewRenderer } from "@/components/PdfPreviewRenderer";
 import { toast } from "sonner";
@@ -57,6 +57,22 @@ export default function PdfActionView() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const downloadStoredPdf = () => {
+    if (!options) return;
+    const link = document.createElement("a");
+    link.href = options.url;
+    link.download = options.fileName;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  const openStoredPdf = () => {
+    if (!options) return;
+    window.open(options.url, "_blank", "noopener,noreferrer");
   };
 
   const sharePdf = async () => {
@@ -124,6 +140,14 @@ export default function PdfActionView() {
           </Button>
           <Button type="button" variant="outline" onClick={sendWhatsapp} disabled={busy} className="h-11 min-w-0">
             <MessageCircle className="h-4 w-4 mr-2" />WhatsApp
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Button type="button" variant="secondary" onClick={downloadStoredPdf} className="h-11 min-w-0" title="Bereits gespeicherte PDF direkt herunterladen">
+            <FileDown className="h-4 w-4 mr-2" />Gespeicherte PDF
+          </Button>
+          <Button type="button" variant="secondary" onClick={openStoredPdf} className="h-11 min-w-0" title="Gespeicherte PDF im neuen Tab öffnen">
+            <ExternalLink className="h-4 w-4 mr-2" />Im Browser öffnen
           </Button>
         </div>
       </div>
