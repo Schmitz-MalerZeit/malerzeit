@@ -14,6 +14,16 @@ import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
+const blobToObjectUrl = (blob: Blob): string => URL.createObjectURL(blob);
+
+const blobToDataUrl = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error || new Error("PDF konnte nicht gelesen werden"));
+    reader.readAsDataURL(blob);
+  });
+
 export default function QuoteResult() {
   const nav = useNavigate();
   const [data, setData] = useState<any>(null);
@@ -52,7 +62,7 @@ export default function QuoteResult() {
         const bytes = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
         const blob = new Blob([bytes], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
+        const url = blobToObjectUrl(blob);
         setPreviewBlob(blob);
         setPreviewBlobUrl(url);
         setPdfQuotaConsumed(true);
@@ -465,7 +475,7 @@ export default function QuoteResult() {
           setPdfQuotaConsumed(true);
         }
         await ensureSavedQuoteWithPdf(previewBlob, fileName);
-        showGeneratedPdfWindow(pendingWindow, previewBlobUrl, fileName);
+        showGeneratedPdfWindow(pendingWindow, await blobToDataUrl(previewBlob), fileName);
         setLastFilename(fileName);
         return;
       }
@@ -477,12 +487,12 @@ export default function QuoteResult() {
       }
       setPdfQuotaConsumed(true);
       const blob = pdf.output("blob");
-      const url = URL.createObjectURL(blob);
+      const url = blobToObjectUrl(blob);
       setPreviewBlob(blob);
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
       await cachePdfInSession(blob);                // persist across reloads
       await ensureSavedQuoteWithPdf(blob, fileName);
-      showGeneratedPdfWindow(pendingWindow, url, fileName);
+      showGeneratedPdfWindow(pendingWindow, await blobToDataUrl(blob), fileName);
       setLastFilename(fileName);
     } catch (e: any) {
       if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
