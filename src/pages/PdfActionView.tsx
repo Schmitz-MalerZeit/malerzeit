@@ -21,29 +21,21 @@ export default function PdfActionView() {
   const [diag, setDiag] = useState<PdfDiagnostics | null>(null);
 
   useEffect(() => {
-    // Try token-scoped payload first (set by the opener), then fall back to
-    // the "latest" copy for same-tab navigation.
+    // Only trust the token-scoped payload from the opener. A stale session
+    // fallback can contain a dead blob: URL and leads to the black PDF screen.
     const hash = window.location.hash || "";
     const tokenMatch = hash.match(/token=([A-Za-z0-9-]+)/);
-    const keys = [
-      tokenMatch ? `pdfActionOptions:${tokenMatch[1]}` : null,
-      "pdfActionOptions",
-    ].filter(Boolean) as string[];
+    const keys = [tokenMatch ? `pdfActionOptions:${tokenMatch[1]}` : null].filter(Boolean) as string[];
     for (const key of keys) {
-      const raw = key.startsWith("pdfActionOptions:")
-        ? localStorage.getItem(key)
-        : sessionStorage.getItem(key);
+      const raw = localStorage.getItem(key);
       if (!raw) continue;
       try {
         const parsed = JSON.parse(raw);
         setOptions(parsed);
-        sessionStorage.setItem("pdfActionOptions", JSON.stringify(parsed));
-        // Cleanup the one-shot token entry, keep "latest" for reloads.
-        if (key.startsWith("pdfActionOptions:")) localStorage.removeItem(key);
+        localStorage.removeItem(key);
         return;
       } catch {
-        if (key.startsWith("pdfActionOptions:")) localStorage.removeItem(key);
-        else sessionStorage.removeItem(key);
+        localStorage.removeItem(key);
       }
     }
   }, []);
@@ -103,7 +95,7 @@ export default function PdfActionView() {
     if (await sharePdf()) return;
     const note = "Hinweis: Die gespeicherte PDF ist auf Ihrem Gerät verfügbar – bitte vor dem Senden als Anhang hinzufügen.";
     const body = `${options.emailBody}\n\n${note}`;
-    window.location.href = `mailto:?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(body)}`;
+    window.open(`mailto:?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(body)}`, "_blank", "noopener,noreferrer");
     toast.info("Direkter PDF-Anhang wird auf diesem Gerät nicht unterstützt. Bitte PDF manuell anhängen.");
   };
 
@@ -129,25 +121,27 @@ export default function PdfActionView() {
 
   const sendMail = async () => {
     if (!options) return;
-    if (await sharePdf()) return;
-    window.location.href = `mailto:?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(options.emailBody)}`;
+    const body = `${options.emailBody}\n\nHinweis: Bitte die PDF nach dem Download als Anhang hinzufügen.`;
+    window.open(`mailto:?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(body)}`, "_blank", "noopener,noreferrer");
   };
 
-  const sendWhatsapp = async () => {
+  const sendWhatsapp = () => {
     if (!options) return;
-    if (await sharePdf()) return;
-    window.location.href = waUrl;
+    window.open(waUrl, "_blank", "noopener,noreferrer");
   };
 
   const goBack = () => {
-    if (window.history.length > 1) nav(-1);
-    else window.close();
+    window.close();
+    window.setTimeout(() => nav("/quotes", { replace: true }), 80);
   };
 
   if (!options) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6 text-center text-muted-foreground">
-        Keine PDF-Daten gefunden.
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6 text-center text-muted-foreground">
+        <p>Keine PDF-Daten gefunden.</p>
+        <Button type="button" variant="outline" onClick={goBack} className="h-11">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Zurück
+        </Button>
       </div>
     );
   }

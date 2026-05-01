@@ -475,7 +475,8 @@ export default function QuoteResult() {
           setPdfQuotaConsumed(true);
         }
         const savedPdf = await ensureSavedQuoteWithPdf(previewBlob, fileName);
-        const actionUrl = savedPdf?.path ? await createSignedPdfUrl(savedPdf.path) : previewBlobUrl;
+        if (!savedPdf?.path) throw new Error("PDF konnte nicht gespeichert werden");
+        const actionUrl = await createSignedPdfUrl(savedPdf.path);
         showGeneratedPdfWindow(pendingWindow, actionUrl, fileName);
         setLastFilename(fileName);
         return;
@@ -493,7 +494,8 @@ export default function QuoteResult() {
       setPreviewBlobUrl(url);                       // make it reusable for preview / retry
       await cachePdfInSession(blob);                // persist across reloads
       const savedPdf = await ensureSavedQuoteWithPdf(blob, fileName);
-      const actionUrl = savedPdf?.path ? await createSignedPdfUrl(savedPdf.path) : url;
+      if (!savedPdf?.path) throw new Error("PDF konnte nicht gespeichert werden");
+      const actionUrl = await createSignedPdfUrl(savedPdf.path);
       showGeneratedPdfWindow(pendingWindow, actionUrl, fileName);
       setLastFilename(fileName);
     } catch (e: any) {

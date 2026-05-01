@@ -44,13 +44,12 @@ export const showPdfActionWindow = (
   win: Window | null,
   options: PdfActionWindowOptions,
 ) => {
-  // Persist payload in this tab's sessionStorage – the new tab is same-origin
-  // (we navigate to window.location.origin) so it can read it back.
+  // Persist payload in localStorage under a one-shot token. Do not keep a
+  // generic "latest" session fallback here: it can point at an old blob: URL,
+  // and blob URLs are not readable from the newly opened tab.
   const token = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   try {
     localStorage.setItem(`pdfActionOptions:${token}`, JSON.stringify(options));
-    // Keep a "latest" copy as fallback for same-tab navigation.
-    sessionStorage.setItem("pdfActionOptions", JSON.stringify(options));
   } catch (e) {
     console.warn("could not persist pdf action options", e);
   }
