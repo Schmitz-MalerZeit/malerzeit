@@ -91,6 +91,7 @@ export default function Quotes() {
   const [pdfFlowOpen, setPdfFlowOpen] = useState(false);
   const [pdfFlow, setPdfFlow] = useState<PdfFlowState>({ phase: "idle" });
   const [lastQuote, setLastQuote] = useState<any | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
   const sub = useSubscription();
@@ -121,6 +122,8 @@ export default function Quotes() {
   useEffect(() => {
     supabase.from("quotes").select("*").order("created_at", { ascending: false })
       .then(({ data }) => setItems(data || []));
+    supabase.from("profiles").select("*").maybeSingle()
+      .then(({ data }) => setProfile(data));
   }, []);
 
   const validateForExport = (rows: any[]): { ok: boolean; incomplete: { id: string; label: string; missing: string[] }[] } => {
@@ -185,7 +188,10 @@ export default function Quotes() {
     const baseEmail = ensureCustomerPriceOrientationText(q.customer_text || "Anbei erhalten Sie unsere unverbindliche Preisorientierung.");
     const baseWa = ensureWhatsappSignature(
       ensureWhatsappPriceOrientationText(q.whatsapp_text || "Anbei unsere unverbindliche Preisorientierung/Schätzung."),
-      { companyName: "", signatureName: "" },
+      {
+        companyName: profile?.company_name || "",
+        signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name || "",
+      },
     );
     const emailBody = buildEmailMessageBody(baseEmail, { grossFormatted });
     const whatsappText = buildWhatsappMessageBody(baseWa, { grossFormatted });
