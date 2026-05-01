@@ -6,7 +6,7 @@ import { PdfPreviewRenderer, type PdfDiagnostics } from "@/components/PdfPreview
 import { toast } from "sonner";
 import {
   AlertCircle, CheckCircle2, Download, FileDown, Loader2,
-  MessageCircle, RefreshCw, X,
+  MessageCircle, RefreshCw,
 } from "lucide-react";
 
 export type PdfFlowPhase =
@@ -487,23 +487,11 @@ export function PdfFlowSheet({
         side="bottom"
         className="h-[85dvh] max-h-[85dvh] flex flex-col p-0 gap-0 rounded-t-2xl"
       >
-        <SheetHeader className="px-4 pt-4 pb-2 border-b border-border text-left">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <SheetTitle className="text-base">PDF-Vorschlag</SheetTitle>
-              <SheetDescription className="text-xs">
-                {phaseLabel[state.phase]}
-              </SheetDescription>
-            </div>
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-              aria-label="Schließen"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+        <SheetHeader className="px-4 pt-4 pb-2 pr-12 border-b border-border text-left">
+          <SheetTitle className="text-base">PDF-Vorschlag</SheetTitle>
+          <SheetDescription className="text-xs">
+            {phaseLabel[state.phase]}
+          </SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
           {renderBody()}
