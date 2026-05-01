@@ -446,29 +446,25 @@ export default function QuoteResult() {
     return { path: inserted.pdf_storage_path || path, quoteId: inserted.id };
   };
 
-  // Mobile-safe "save the PDF" flow:
-  // 1) Try native share (iOS/Android can save to Files / Drive directly)
-  // 2) Otherwise, open the PDF in a new tab so the OS preview offers "Save to Files"
-  // 3) On desktop, the standard download attribute works fine.
-  const savePdfBlob = async (_blob: Blob, url: string, fileName: string, pendingWindow?: Window | null): Promise<void> => {
-    if (isMobileBrowser()) {
-      if (pendingWindow && !pendingWindow.closed) {
-        pendingWindow.location.replace(url);
-      } else {
-        openPdfForSaving(url);
-      }
-      return;
-    }
-    if (pendingWindow && !pendingWindow.closed) pendingWindow.close();
-    triggerBlobDownload(url, fileName);
-  };
-
   const openPendingPreviewWindow = () => {
     const win = window.open("", "_blank");
     if (!win) return null;
-    win.document.title = "PDF-Vorschau";
-    win.document.body.innerHTML = "<p style='font-family:system-ui,sans-serif;padding:24px'>PDF wird erstellt …</p>";
+    win.document.title = "PDF wird erstellt";
+    win.document.body.innerHTML = "<p style='font-family:system-ui,sans-serif;padding:24px'>PDF wird erstellt und gespeichert …</p>";
     return win;
+  };
+
+  const showGeneratedPdfWindow = (win: Window | null, url: string, fileName: string) => {
+    if (!win || win.closed) {
+      openPdfForSaving(url);
+      return;
+    }
+    const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
+    const emailBody = (ai.customer_text || "") + `\n\nPDF: ${fileName}`;
+    const waText = `${whatsappDisplay}\n\nPDF: ${fileName}`;
+    win.document.open();
+    win.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${fileName}</title><style>body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#f4f4f5;color:#111827}.bar{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:10px;background:#fff;border-bottom:1px solid #e5e7eb}button,a{appearance:none;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#111827;text-decoration:none;font:600 13px system-ui;padding:10px 8px;text-align:center}.primary{background:#111827;color:#fff;border-color:#111827}.hint{padding:8px 12px;font-size:12px;color:#6b7280;background:#fff}.pdf{width:100%;height:calc(100dvh - 106px);border:0}@media(max-width:560px){.bar{grid-template-columns:1fr 1fr}.pdf{height:calc(100dvh - 158px)}} </style></head><body><div class="bar"><a class="primary" href="${url}" download="${fileName}">Herunterladen</a><button id="share">Teilen</button><button id="mail">E-Mail</button><button id="wa">WhatsApp</button></div><div class="hint">Falls E-Mail oder WhatsApp die Datei auf diesem Gerät nicht direkt übernimmt, nutze „Teilen“ oder „Herunterladen“.</div><iframe class="pdf" src="${url}"></iframe><script>const url=${JSON.stringify(url)};const fileName=${JSON.stringify(fileName)};const subject=${JSON.stringify(subject)};const emailBody=${JSON.stringify(emailBody)};const waText=${JSON.stringify(waText)};async function shareFile(){try{const blob=await fetch(url).then(r=>r.blob());const file=new File([blob],fileName,{type:'application/pdf'});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:fileName,text:subject});return true}}catch(e){}return false}document.getElementById('share').onclick=async()=>{if(!(await shareFile())) alert('Direktes Teilen wird von diesem Gerät nicht unterstützt. Bitte Herunterladen nutzen.');};document.getElementById('mail').onclick=async()=>{if(await shareFile())return;location.href='mailto:${encodeURIComponent(customerEmail)}?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(emailBody)};document.getElementById('wa').onclick=async()=>{if(await shareFile())return;${waPhone ? `location.href='https://wa.me/${waPhone}?text='+encodeURIComponent(waText)` : "alert('Keine gültige WhatsApp-Nummer hinterlegt.')"};};</script></body></html>`);
+    win.document.close();
   };
 
   // Cache the freshly built PDF in sessionStorage so it survives a reload
