@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Minus, Plus, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Copy, Loader2, Minus, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import type { PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";
@@ -7,15 +7,48 @@ import pdfWorkerSrc from "pdfjs-dist/build/pdf.worker.min.js?url";
 
 GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
+export interface PdfDiagnostics {
+  url: string | null;
+  urlKind: "blob" | "data" | "https" | "http" | "other" | "none";
+  startedAt: string;
+  fetchMs?: number;
+  parseMs?: number;
+  renderMs?: number;
+  totalMs?: number;
+  httpStatus?: number;
+  httpStatusText?: string;
+  contentType?: string | null;
+  contentLength?: number | null;
+  receivedBytes?: number;
+  numPages?: number;
+  pdfHeader?: string;
+  workerSrc?: string;
+  errorPhase?: "fetch" | "parse" | "render";
+  errorName?: string;
+  errorMessage?: string;
+  errorStack?: string;
+  userAgent?: string;
+}
+
 interface PdfPreviewRendererProps {
   url: string | null;
   onLoadPdfData?: (data: Uint8Array) => void;
+  onDiagnostics?: (d: PdfDiagnostics) => void;
 }
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 4;
 
-export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererProps) {
+const classifyUrl = (u: string | null): PdfDiagnostics["urlKind"] => {
+  if (!u) return "none";
+  if (u.startsWith("blob:")) return "blob";
+  if (u.startsWith("data:")) return "data";
+  if (u.startsWith("https:")) return "https";
+  if (u.startsWith("http:")) return "http";
+  return "other";
+};
+
+export function PdfPreviewRenderer({ url, onLoadPdfData, onDiagnostics }: PdfPreviewRendererProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pagesRef = useRef<HTMLDivElement | null>(null);
   const pageElementsRef = useRef<HTMLCanvasElement[]>([]);
@@ -27,6 +60,16 @@ export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererPro
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInput, setPageInput] = useState("1");
   const [pageInputError, setPageInputError] = useState<string | null>(null);
+  const [diag, setDiag] = useState<PdfDiagnostics | null>(null);
+  const [diagOpen, setDiagOpen] = useState(false);
+
+  const pushDiag = useCallback((next: PdfDiagnostics) => {
+    setDiag(next);
+    onDiagnostics?.(next);
+    // Also log to the console so it appears in browser devtools.
+    // eslint-disable-next-line no-console
+    console[next.errorPhase ? "error" : "info"]("[PDF-Preview]", next);
+  }, [onDiagnostics]);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -47,26 +90,82 @@ export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererPro
     }
 
     let cancelled = false;
+    const startedAt = new Date().toISOString();
+    const t0 = performance.now();
+    const baseDiag: PdfDiagnostics = {
+      url,
+      urlKind: classifyUrl(url),
+      startedAt,
+      workerSrc: pdfWorkerSrc,
+      userAgent: navigator.userAgent,
+    };
     setStatus("loading");
     setPdfData(null);
+    setDiagOpen(false);
+    pushDiag(baseDiag);
+
     fetch(url)
-      .then((response) => {
-        if (!response.ok) throw new Error(`PDF konnte nicht geladen werden (${response.status})`);
-        return response.arrayBuffer();
+      .then(async (response) => {
+        const fetchMs = Math.round(performance.now() - t0);
+        const contentType = response.headers.get("content-type");
+        const lenHeader = response.headers.get("content-length");
+        const contentLength = lenHeader ? Number(lenHeader) : null;
+        const httpInfo: Partial<PdfDiagnostics> = {
+          fetchMs,
+          httpStatus: response.status,
+          httpStatusText: response.statusText,
+          contentType,
+          contentLength: Number.isFinite(contentLength) ? contentLength : null,
+        };
+        if (!response.ok) {
+          const err = new Error(`HTTP ${response.status} ${response.statusText}`.trim());
+          (err as any).__phase = "fetch";
+          (err as any).__http = httpInfo;
+          throw err;
+        }
+        const buffer = await response.arrayBuffer();
+        return { buffer, httpInfo };
       })
-      .then((buffer) => {
+      .then(({ buffer, httpInfo }) => {
         if (cancelled) return;
         const bytes = new Uint8Array(buffer);
+        const header = new TextDecoder("ascii", { fatal: false })
+          .decode(bytes.slice(0, 8))
+          .replace(/[^\x20-\x7E]/g, ".");
+        const next: PdfDiagnostics = {
+          ...baseDiag,
+          ...httpInfo,
+          receivedBytes: bytes.byteLength,
+          pdfHeader: header,
+        };
+        pushDiag(next);
+        if (!header.startsWith("%PDF-")) {
+          const err = new Error(`Antwort ist keine PDF-Datei (Header: "${header}")`);
+          (err as any).__phase = "parse";
+          throw err;
+        }
         setPdfData(bytes);
         onLoadPdfData?.(bytes);
       })
-      .catch((error) => {
-        console.error("PDF preview load failed", error);
-        if (!cancelled) setStatus("error");
+      .catch((error: any) => {
+        if (cancelled) return;
+        const phase: PdfDiagnostics["errorPhase"] = error?.__phase || "fetch";
+        const errDiag: PdfDiagnostics = {
+          ...baseDiag,
+          ...(error?.__http || {}),
+          totalMs: Math.round(performance.now() - t0),
+          errorPhase: phase,
+          errorName: error?.name || "Error",
+          errorMessage: error?.message || String(error),
+          errorStack: typeof error?.stack === "string" ? error.stack.split("\n").slice(0, 6).join("\n") : undefined,
+        };
+        pushDiag(errDiag);
+        setStatus("error");
+        setDiagOpen(true);
       });
 
     return () => { cancelled = true; };
-  }, [url, onLoadPdfData]);
+  }, [url, onLoadPdfData, pushDiag]);
 
   useEffect(() => {
     if (!pdfData || !containerWidth || !pagesRef.current) return;
@@ -74,6 +173,7 @@ export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererPro
     let cancelled = false;
     let pdfDocument: PDFDocumentProxy | null = null;
     const pagesNode = pagesRef.current;
+    const tParse0 = performance.now();
 
     const renderPdf = async () => {
       setStatus("loading");
@@ -83,7 +183,9 @@ export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererPro
       try {
         const loadingTask = getDocument({ data: new Uint8Array(pdfData) });
         pdfDocument = await loadingTask.promise;
+        const parseMs = Math.round(performance.now() - tParse0);
         setNumPages(pdfDocument.numPages);
+        const tRender0 = performance.now();
         const availableWidth = Math.max(240, containerWidth - 28);
         const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -116,10 +218,41 @@ export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererPro
           page.cleanup();
         }
 
-        if (!cancelled) setStatus("ready");
-      } catch (error) {
+        if (!cancelled) {
+          const renderMs = Math.round(performance.now() - tRender0);
+          setStatus("ready");
+          setDiag((prev) => {
+            const next: PdfDiagnostics = {
+              ...(prev || { url, urlKind: classifyUrl(url), startedAt: new Date().toISOString() }),
+              parseMs,
+              renderMs,
+              numPages: pdfDocument?.numPages,
+              totalMs: (prev?.fetchMs || 0) + parseMs + renderMs,
+            };
+            onDiagnostics?.(next);
+            // eslint-disable-next-line no-console
+            console.info("[PDF-Preview] render ok", next);
+            return next;
+          });
+        }
+      } catch (error: any) {
         console.error("PDF preview render failed", error);
-        if (!cancelled) setStatus("error");
+        if (!cancelled) {
+          setDiag((prev) => {
+            const phase: PdfDiagnostics["errorPhase"] = error?.__phase || "render";
+            const next: PdfDiagnostics = {
+              ...(prev || { url, urlKind: classifyUrl(url), startedAt: new Date().toISOString() }),
+              errorPhase: phase,
+              errorName: error?.name || "Error",
+              errorMessage: error?.message || String(error),
+              errorStack: typeof error?.stack === "string" ? error.stack.split("\n").slice(0, 6).join("\n") : undefined,
+            };
+            onDiagnostics?.(next);
+            return next;
+          });
+          setStatus("error");
+          setDiagOpen(true);
+        }
       }
     };
 
@@ -131,7 +264,7 @@ export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererPro
       pageElementsRef.current = [];
       pdfDocument?.destroy();
     };
-  }, [pdfData, containerWidth, zoom]);
+  }, [pdfData, containerWidth, zoom, onDiagnostics, url]);
 
   // Track current page during scroll
   useEffect(() => {
@@ -252,6 +385,19 @@ export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererPro
     if (pageInputError) setPageInputError(null);
   };
 
+  const copyDiagnostics = async () => {
+    if (!diag) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(diag, null, 2));
+      toast.success("Diagnose in die Zwischenablage kopiert.");
+    } catch {
+      toast.error("Konnte Diagnose nicht kopieren.");
+    }
+  };
+
+  const phaseLabel = (p?: PdfDiagnostics["errorPhase"]) =>
+    p === "fetch" ? "Laden (HTTP)" : p === "parse" ? "PDF einlesen" : p === "render" ? "Rendering" : "–";
+
   return (
     <div className="relative h-full flex flex-col bg-muted">
       {/* Page navigation */}
@@ -335,8 +481,46 @@ export function PdfPreviewRenderer({ url, onLoadPdfData }: PdfPreviewRendererPro
           </div>
         )}
         {status === "error" && (
-          <div className="flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
-            Die PDF-Vorschau konnte auf diesem Gerät nicht gerendert werden.
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-md border border-destructive/40 bg-background shadow-lg">
+              <div className="p-4 space-y-2">
+                <h3 className="text-sm font-semibold text-destructive">PDF-Vorschau fehlgeschlagen</h3>
+                <p className="text-xs text-muted-foreground">
+                  Phase: <span className="font-medium text-foreground">{phaseLabel(diag?.errorPhase)}</span>
+                  {diag?.httpStatus !== undefined && (
+                    <> · HTTP <span className="font-medium text-foreground">{diag.httpStatus} {diag.httpStatusText}</span></>
+                  )}
+                  {typeof diag?.fetchMs === "number" && (
+                    <> · Ladezeit <span className="font-medium text-foreground">{diag.fetchMs} ms</span></>
+                  )}
+                </p>
+                {diag?.errorMessage && (
+                  <p className="text-xs text-destructive break-words">{diag.errorMessage}</p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setDiagOpen((v) => !v)}
+                    className="inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-1 text-xs hover:bg-accent"
+                  >
+                    {diagOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    Details {diagOpen ? "verbergen" : "anzeigen"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={copyDiagnostics}
+                    className="inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-1 text-xs hover:bg-accent"
+                  >
+                    <Copy className="h-3 w-3" /> Diagnose kopieren
+                  </button>
+                </div>
+                {diagOpen && diag && (
+                  <pre className="mt-2 max-h-64 overflow-auto rounded bg-muted p-2 text-[10px] leading-relaxed text-foreground whitespace-pre-wrap break-all">
+{JSON.stringify(diag, null, 2)}
+                  </pre>
+                )}
+              </div>
+            </div>
           </div>
         )}
         <div ref={pagesRef} className="space-y-3 pt-12" aria-hidden={status !== "ready"} />
