@@ -467,11 +467,12 @@ export default function QuoteResult() {
 
   const buildPdfFlowMeta = (_fileName: string) => {
     const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
-    // E-Mail- und WhatsApp-Texte sind identisch zum Inhalt der PDF (inkl. Preis).
-    // Keine Hinweise auf Dateiname oder Download-Link – die PDF wird als echte
-    // Datei über die Share-/Anhangsfunktion mitgegeben.
-    const emailBody = customerDisplay;
-    const whatsappText = whatsappDisplay;
+    // E-Mail- und WhatsApp-Texte nutzen den Inhalt der PDF, ABER:
+    //  - keine Schluss-Grußformel/Signatur (Mail-/WA-Apps haben eigene Signaturen)
+    //  - Brutto-Preis fett hervorgehoben
+    const grossFormatted = fmt(p.gross_amount);
+    const emailBody = buildEmailMessageBody(customerDisplay, { grossFormatted });
+    const whatsappText = buildWhatsappMessageBody(whatsappDisplay, { grossFormatted });
     return { subject, emailBody, whatsappText };
   };
 
