@@ -34,7 +34,9 @@ export default function PdfActionView() {
         : sessionStorage.getItem(key);
       if (!raw) continue;
       try {
-        setOptions(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        setOptions(parsed);
+        sessionStorage.setItem("pdfActionOptions", JSON.stringify(parsed));
         // Cleanup the one-shot token entry, keep "latest" for reloads.
         if (key.startsWith("pdfActionOptions:")) localStorage.removeItem(key);
         return;
