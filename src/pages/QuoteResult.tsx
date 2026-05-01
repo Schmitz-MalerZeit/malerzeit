@@ -41,6 +41,7 @@ export default function QuoteResult() {
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
   const logoAllowed = canUseLogoInPdf(tier);
+  const whatsappAllowed = canSendViaWhatsapp(tier);
 
   // Revoke blob URL on unmount (only the in-memory URL; the base64 cache stays in sessionStorage)
   useEffect(() => {
