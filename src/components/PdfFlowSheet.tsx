@@ -39,6 +39,8 @@ export interface PdfFlowState {
   emailBody?: string;
   whatsappText?: string;
   whatsappPhone?: string | null;
+  /** Frischer PDF-Blob, falls vorhanden – wird für echte Datei-Anhänge via Web Share API verwendet. */
+  pdfBlob?: Blob | null;
 }
 
 const fmtBytes = (b?: number) => {
