@@ -121,26 +121,28 @@ export default function PdfActionView() {
 
   const sendMail = async () => {
     if (!options) return;
-    if (await sharePdf()) return;
-    window.open(`mailto:?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(options.emailBody)}`, "_blank", "noopener,noreferrer");
+    const body = `${options.emailBody}\n\nHinweis: Bitte die PDF nach dem Download als Anhang hinzufügen.`;
+    window.open(`mailto:?subject=${encodeURIComponent(options.subject)}&body=${encodeURIComponent(body)}`, "_blank", "noopener,noreferrer");
   };
 
-  const sendWhatsapp = async () => {
+  const sendWhatsapp = () => {
     if (!options) return;
-    if (await sharePdf()) return;
     window.open(waUrl, "_blank", "noopener,noreferrer");
   };
 
   const goBack = () => {
     if (window.history.length > 1) nav(-1);
-    else window.close();
+    else {
+      window.close();
+      window.setTimeout(() => nav("/quotes"), 80);
+    }
   };
 
   if (!options) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6 text-center text-muted-foreground">
         <p>Keine PDF-Daten gefunden.</p>
-        <Button type="button" variant="outline" onClick={() => nav(-1)} className="h-11">
+        <Button type="button" variant="outline" onClick={goBack} className="h-11">
           <ArrowLeft className="mr-2 h-4 w-4" /> Zurück
         </Button>
       </div>
