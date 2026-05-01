@@ -155,14 +155,36 @@ export function PdfFlowSheet({
 
   const renderBody = () => {
     if (state.phase === "building" || state.phase === "uploading") {
+      const pct = typeof state.progress === "number"
+        ? Math.max(0, Math.min(100, Math.round(state.progress)))
+        : undefined;
+      const showBytes = state.phase === "uploading" && (state.loadedBytes != null || state.totalBytes != null);
+      const eta = fmtEta(state.etaSeconds);
       return (
-        <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+        <div className="flex flex-col items-center justify-center gap-5 py-10 text-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <div>
+          <div className="w-full max-w-sm">
             <p className="text-base font-semibold">{phaseLabel[state.phase]}</p>
             {state.step && (
               <p className="mt-1 text-sm text-muted-foreground">{state.step}</p>
             )}
+
+            <div className="mt-4 space-y-1.5">
+              <Progress value={pct ?? 0} className="h-2" />
+              <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
+                <span>{pct != null ? `${pct}%` : "…"}</span>
+                <span>
+                  {showBytes && state.totalBytes
+                    ? `${fmtBytes(state.loadedBytes ?? 0)} / ${fmtBytes(state.totalBytes)}`
+                    : showBytes
+                      ? fmtBytes(state.loadedBytes)
+                      : ""}
+                </span>
+              </div>
+              {eta && (
+                <p className="text-[11px] text-muted-foreground">Verbleibend: {eta}</p>
+              )}
+            </div>
           </div>
         </div>
       );
