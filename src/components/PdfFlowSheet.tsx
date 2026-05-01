@@ -67,6 +67,10 @@ interface PdfFlowSheetProps {
   /** Optional fallback: previously saved PDF that can still be downloaded */
   fallbackUrl?: string | null;
   fallbackFileName?: string | null;
+  /** Wird aufgerufen, NACHDEM eine Versand-Aktion (WhatsApp / Mail / Teilen)
+   * ausgelöst wurde – damit die Hostseite z. B. zur Liste der gespeicherten
+   * Vorschläge wechseln kann, bevor der Nutzer von WhatsApp zurückkommt. */
+  onAfterShareAction?: () => void;
 }
 
 const phaseLabel: Record<PdfFlowPhase, string> = {
@@ -78,7 +82,7 @@ const phaseLabel: Record<PdfFlowPhase, string> = {
 };
 
 export function PdfFlowSheet({
-  open, state, onOpenChange, onRetry, fallbackUrl, fallbackFileName,
+  open, state, onOpenChange, onRetry, fallbackUrl, fallbackFileName, onAfterShareAction,
 }: PdfFlowSheetProps) {
   const [diag, setDiag] = useState<PdfDiagnostics | null>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -201,6 +205,7 @@ export function PdfFlowSheet({
         toast.message("Wähle WhatsApp im Teilen-Menü", {
           description: "Die PDF wird dann als Datei mitgeschickt.",
         });
+        onAfterShareAction?.();
         return;
       } catch (e: any) {
         if (e?.name === "AbortError") return;
@@ -230,6 +235,7 @@ export function PdfFlowSheet({
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    onAfterShareAction?.();
   };
 
   /**
