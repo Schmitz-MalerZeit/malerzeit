@@ -557,20 +557,6 @@ export default function QuoteResult() {
     finally { setBusy(false); }
   };
 
-  const openBlob = (url: string): boolean => {
-    const win = window.open(url, "_blank");
-    if (!win || win.closed || typeof win.closed === "undefined") {
-      setPreviewFailed(true);
-      toast.error("Vorschau konnte nicht geöffnet werden (evtl. Popup blockiert).", {
-        action: { label: "Erneut", onClick: () => retryPreview() },
-      });
-      return false;
-    }
-    try { win.opener = null; } catch { /* noop */ }
-    setPreviewFailed(false);
-    return true;
-  };
-
   const retryPreview = () => {
     previewPDF();
   };
