@@ -167,7 +167,7 @@ export default function PdfActionView() {
           <Button type="button" onClick={downloadPdf} disabled={busy} className="h-11 min-w-0">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Download className="h-4 w-4 mr-2" />Download</>}
           </Button>
-          <Button type="button" variant="outline" onClick={sharePdf} disabled={busy} className="h-11 min-w-0">
+          <Button type="button" variant="outline" onClick={() => sharePdf()} disabled={busy} className="h-11 min-w-0">
             <Share2 className="h-4 w-4 mr-2" />Teilen
           </Button>
         </div>
