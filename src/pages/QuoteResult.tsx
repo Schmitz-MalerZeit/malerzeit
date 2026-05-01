@@ -599,6 +599,7 @@ export default function QuoteResult() {
         fileName,
         ...meta,
         whatsappPhone: waPhone,
+        pdfBlob: blob,
       });
     } catch (e: any) {
       window.clearInterval(buildTimer);
