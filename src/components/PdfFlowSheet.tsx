@@ -169,16 +169,55 @@ export function PdfFlowSheet({
     const fileName = state.fileName || "Preisorientierung.pdf";
     // iOS Safari: Web Share mit Datei ist hier der zuverlässigste Weg, weil
     // Blob-Download via <a download> dort oft ignoriert wird.
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !(window as any).MSStream;
+    const reservedIosTab = isIOS ? window.open("", "_blank") : null;
+    const closeReservedIosTab = () => {
+      try { reservedIosTab?.close(); } catch { /* ignore */ }
+    };
+    const openUrlFallback = (url: string) => {
+      if (reservedIosTab) {
+        reservedIosTab.location.href = url;
+        return;
+      }
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+    const openBlobAsDataUrl = (blob: Blob) => {
+      if (!isIOS || typeof FileReader === "undefined") return false;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          openUrlFallback(reader.result);
+        } else if (downloadUrl) {
+          openUrlFallback(downloadUrl);
+        }
+      };
+      reader.onerror = () => {
+        if (downloadUrl) openUrlFallback(downloadUrl);
+        else closeReservedIosTab();
+      };
+      reader.readAsDataURL(blob);
+      return true;
+    };
     const shareFileOnIOS = async (file: File) => {
       const navAny = navigator as any;
       if (!isIOS || typeof navAny.share !== "function") return false;
       if (typeof navAny.canShare === "function" && !navAny.canShare({ files: [file] })) return false;
       try {
         await navAny.share({ files: [file], title: fileName });
+        closeReservedIosTab();
         return true;
       } catch (e: any) {
-        if (e?.name === "AbortError") return true;
+        if (e?.name === "AbortError") {
+          closeReservedIosTab();
+          return true;
+        }
         return false;
       }
     };
@@ -197,17 +236,7 @@ export function PdfFlowSheet({
         const freshFile = new File([blob], fileName, { type: blob.type || "application/pdf" });
         if (await shareFileOnIOS(freshFile)) return;
       } catch { /* File constructor not supported: continue with download fallback */ }
-      const canUseFileReaderFallback = isIOS && typeof FileReader !== "undefined";
-      if (canUseFileReaderFallback) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (typeof reader.result === "string") {
-            window.location.href = reader.result;
-          }
-        };
-        reader.readAsDataURL(blob);
-        return;
-      }
+      if (openBlobAsDataUrl(blob)) return;
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = objectUrl;
@@ -217,19 +246,16 @@ export function PdfFlowSheet({
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+      closeReservedIosTab();
       return;
     }
     // Letzter Fallback: signierte URL als Anhang öffnen.
     if (downloadUrl) {
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = fileName;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      openUrlFallback(downloadUrl);
+      return;
     }
+    closeReservedIosTab();
+    toast.error("PDF-Download nicht möglich. Bitte erneut öffnen.");
   };
 
   /** „Teilen" – immer mit Datei-Anhang, wenn das Gerät es unterstützt. */
