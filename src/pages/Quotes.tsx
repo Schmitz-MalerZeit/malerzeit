@@ -8,7 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { canExportCsv, getTier } from "@/lib/planFeatures";
 import { toast } from "sonner";
 import { openPendingPdfActionWindow, showPdfActionWindow } from "@/lib/pdfActionWindow";
-import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText } from "@/lib/quoteText";
+import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
 
 const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
@@ -120,14 +120,6 @@ export default function Quotes() {
     URL.revokeObjectURL(url);
   };
 
-  const normalizePhoneForWa = (raw: string): string | null => {
-    if (!raw) return null;
-    let digits = raw.replace(/[^\d+]/g, "");
-    if (digits.startsWith("+")) digits = digits.slice(1);
-    else if (digits.startsWith("00")) digits = digits.slice(2);
-    else if (digits.startsWith("0")) digits = "49" + digits.slice(1);
-    return /^\d{8,15}$/.test(digits) ? digits : null;
-  };
 
   const exportCsv = () => {
     if (!items || items.length === 0) { toast.info("Keine Daten zum Exportieren"); return; }

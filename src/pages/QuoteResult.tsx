@@ -8,7 +8,7 @@ import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Tra
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { openPendingPdfActionWindow, showPdfActionWindow } from "@/lib/pdfActionWindow";
-import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText } from "@/lib/quoteText";
+import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 
@@ -533,15 +533,7 @@ export default function QuoteResult() {
 
   const headerTitle = data.customer?.name?.trim() || "Preisorientierung";
 
-  // Telefonnummer für WhatsApp normalisieren: nur Ziffern, führende 0 → 49.
-  const normalizePhoneForWa = (raw: string): string | null => {
-    if (!raw) return null;
-    let digits = raw.replace(/[^\d+]/g, "");
-    if (digits.startsWith("+")) digits = digits.slice(1);
-    else if (digits.startsWith("00")) digits = digits.slice(2);
-    else if (digits.startsWith("0")) digits = "49" + digits.slice(1);
-    return /^\d{8,15}$/.test(digits) ? digits : null;
-  };
+  // Telefonnummer für WhatsApp normalisieren.
 
   const customerPhone = (data.customer?.phone || "").trim();
   const waPhone = normalizePhoneForWa(customerPhone);
