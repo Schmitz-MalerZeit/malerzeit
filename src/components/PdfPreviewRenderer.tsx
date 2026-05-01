@@ -18,6 +18,7 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pagesRef = useRef<HTMLDivElement | null>(null);
   const pageElementsRef = useRef<HTMLCanvasElement[]>([]);
+  const objectUrlRef = useRef<string | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [zoom, setZoom] = useState(1);
@@ -51,7 +52,14 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
       pageElementsRef.current = [];
 
       try {
-        const loadingTask = getDocument(url);
+        let documentSource = url;
+        if (url.startsWith("data:application/pdf")) {
+          const response = await fetch(url);
+          const blob = await response.blob();
+          documentSource = URL.createObjectURL(blob);
+          objectUrlRef.current = documentSource;
+        }
+        const loadingTask = getDocument(documentSource);
         pdfDocument = await loadingTask.promise;
         setNumPages(pdfDocument.numPages);
         const availableWidth = Math.max(240, containerWidth - 28);
@@ -100,6 +108,10 @@ export function PdfPreviewRenderer({ url }: PdfPreviewRendererProps) {
       pagesNode.replaceChildren();
       pageElementsRef.current = [];
       pdfDocument?.destroy();
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
     };
   }, [url, containerWidth, zoom]);
 
