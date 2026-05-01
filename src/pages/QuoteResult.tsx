@@ -764,24 +764,6 @@ export default function QuoteResult() {
               className="min-h-[120px] text-sm leading-relaxed resize-y"
             />
           </div>
-          <div className="border-t border-border pt-4">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-sm inline-flex items-center gap-1.5">
-                WhatsApp-Text
-                <span className="text-xs text-muted-foreground font-normal inline-flex items-center gap-1">
-                  <Pencil className="h-3 w-3" /> bearbeitbar
-                </span>
-              </h3>
-              <button onClick={copyWA} className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline">
-                <Copy className="h-3.5 w-3.5" /> Kopieren
-              </button>
-            </div>
-            <Textarea
-              value={whatsappDisplay}
-              onChange={(e) => updateWhatsappText(e.target.value)}
-              className="min-h-[160px] text-sm leading-relaxed resize-y"
-            />
-          </div>
         </div>
 
         {pdfAllowed ? (
