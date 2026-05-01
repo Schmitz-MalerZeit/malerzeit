@@ -482,9 +482,13 @@ export default function QuoteResult() {
     // E-Mail- und WhatsApp-Texte nutzen den Inhalt der PDF, ABER:
     //  - keine Schluss-Grußformel/Signatur (Mail-/WA-Apps haben eigene Signaturen)
     //  - Brutto-Preis fett hervorgehoben
+    // WhatsApp-Versand ist ein Profi-/Exklusiv-Feature: im Starter wird
+    // `whatsappText` bewusst leer gelassen, damit das Sheet keinen WA-Button zeigt.
     const grossFormatted = fmt(p.gross_amount);
     const emailBody = buildEmailMessageBody(customerDisplay, { grossFormatted });
-    const whatsappText = buildWhatsappMessageBody(whatsappDisplay, { grossFormatted });
+    const whatsappText = whatsappAllowed
+      ? buildWhatsappMessageBody(whatsappDisplay, { grossFormatted })
+      : "";
     return { subject, emailBody, whatsappText };
   };
 
