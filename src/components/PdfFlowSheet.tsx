@@ -437,7 +437,7 @@ export function PdfFlowSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[92dvh] max-h-[92dvh] flex flex-col p-0 gap-0 rounded-t-2xl"
+        className="h-[85dvh] max-h-[85dvh] flex flex-col p-0 gap-0 rounded-t-2xl"
       >
         <SheetHeader className="px-4 pt-4 pb-2 border-b border-border text-left">
           <div className="flex items-start justify-between gap-2">
