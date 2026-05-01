@@ -130,6 +130,11 @@ export default function Quotes() {
         <div className="space-y-3">
           {items.map((q) => (
             <div key={q.id} className="rounded-2xl bg-card border border-border p-4 shadow-soft">
+              {q.customer_name && (
+                <div className="text-sm font-semibold text-foreground mb-2 truncate">
+                  {q.customer_name}
+                </div>
+              )}
               <div className="flex justify-between items-start gap-3 mb-2">
                 <div className="text-xs text-muted-foreground">
                   {new Date(q.created_at).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
