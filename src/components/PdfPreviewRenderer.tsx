@@ -277,7 +277,12 @@ export function PdfPreviewRenderer({ url, onLoadPdfData, onDiagnostics }: PdfPre
       pageElementsRef.current = [];
       pdfDocument?.destroy();
     };
-  }, [pdfData, containerWidth, zoom, onDiagnostics, url]);
+    // Intentionally NOT depending on `containerWidth`: the ResizeObserver
+    // emits an initial 0 → real-width transition that would otherwise cancel
+    // the very first render and leave the spinner forever. We read the width
+    // once at render start (see `effectiveWidth` above) which is good enough
+    // for the initial layout. Zoom changes still trigger a clean re-render.
+  }, [pdfData, zoom, onDiagnostics, url]);
 
   // Track current page during scroll
   useEffect(() => {
