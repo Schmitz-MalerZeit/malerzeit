@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";
+import { isNativeApp } from "@/lib/platform";
 
 type Tier = {
   id: "starter" | "profi" | "profiplus";
@@ -196,15 +197,21 @@ export default function Pricing() {
                     );
                   })}
                 </ul>
-                <Button
-                  onClick={() => buy(tier)}
-                  disabled={loading || isCurrent}
-                  className={`w-full h-11 ${tier.highlight ? "gradient-primary text-primary-foreground border-0" : ""}`}
-                  variant={tier.highlight ? "default" : "outline"}
-                >
-                  {busyId === priceId ? <Loader2 className="h-4 w-4 animate-spin" /> :
-                    isCurrent ? "Aktueller Tarif" : "Tarif wählen"}
-                </Button>
+                {isNativeApp() ? (
+                  <div className="w-full h-11 rounded-md border border-border bg-muted/40 flex items-center justify-center text-xs text-muted-foreground px-3 text-center">
+                    {isCurrent ? "Aktueller Tarif" : "Verwaltung über die Web-Version"}
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => buy(tier)}
+                    disabled={loading || isCurrent}
+                    className={`w-full h-11 ${tier.highlight ? "gradient-primary text-primary-foreground border-0" : ""}`}
+                    variant={tier.highlight ? "default" : "outline"}
+                  >
+                    {busyId === priceId ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                      isCurrent ? "Aktueller Tarif" : "Tarif wählen"}
+                  </Button>
+                )}
               </div>
             );
           })}
