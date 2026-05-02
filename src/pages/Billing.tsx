@@ -70,8 +70,8 @@ export default function Billing() {
         next.add(t.id);
         return next;
       });
-      toast.error("Download fehlgeschlagen. Erneut versuchen oder im neuen Tab öffnen.", {
-        action: { label: "Im Tab öffnen", onClick: () => window.open(t.invoice_url!, "_blank", "noopener,noreferrer") },
+      toast.error(t("billing.downloadFailed"), {
+        action: { label: t("billing.openInTab"), onClick: () => window.open(tx.invoice_url!, "_blank", "noopener,noreferrer") },
       });
     } finally {
       setDownloadingId(null);
