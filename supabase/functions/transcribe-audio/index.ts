@@ -1,6 +1,8 @@
 // Speech-to-Text via Lovable AI Gateway (Gemini multimodal audio).
 // Body: { audio: string (base64, no data: prefix), mimeType: string }
 // Returns: { text: string }
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -13,10 +15,33 @@ const SYSTEM_PROMPT =
   "Korrigiere offensichtliche Erkennungsfehler still, behalte Fachbegriffe (Q3, Vlies, Spachtel, Dispersion, m², € etc.) bei. " +
   "Setze Satzzeichen und Absätze sinnvoll. Wenn nichts Verständliches gesagt wurde, gib einen leeren String zurück.";
 
+// Cap base64 audio at ~10 MB (~13.4M chars) to limit AI cost abuse
+const MAX_AUDIO_CHARS = 13_400_000;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Require authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: authErr } = await supabase.auth.getClaims(token);
+    if (authErr || !claims?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -24,6 +49,11 @@ Deno.serve(async (req) => {
     if (!audio || typeof audio !== "string") {
       return new Response(JSON.stringify({ error: "audio (base64) required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (audio.length > MAX_AUDIO_CHARS) {
+      return new Response(JSON.stringify({ error: "Audio zu groß (max ~10 MB)." }), {
+        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     const mt = (typeof mimeType === "string" && mimeType) || "audio/webm";
