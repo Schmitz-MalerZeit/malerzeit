@@ -58,7 +58,7 @@ const TIERS: Tier[] = [
       "Bis zu 200 KI-Angebote / Monat",
       "Alles aus Profi",
       "Höchste Volumen-Reserve – ideal bei vielen Anfragen pro Woche",
-      "Bevorzugter Support (Antwort < 24 h)",
+      "Bevorzugter Support (Antwort < 12 h)",
     ],
   },
 ];
