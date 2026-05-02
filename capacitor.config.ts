@@ -15,7 +15,7 @@ const config: CapacitorConfig = {
     backgroundColor: '#ffffff',
   },
   ios: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a3a6c',
     contentInset: 'always',
   },
   plugins: {
@@ -27,10 +27,14 @@ const config: CapacitorConfig = {
       androidScaleType: 'CENTER_CROP',
       splashFullScreen: true,
       splashImmersive: true,
+      // iOS verwendet das LaunchScreen-Storyboard, das von @capacitor/assets
+      // automatisch mit dem Splash-Bild und der Hintergrundfarbe generiert wird.
+      iosSpinnerStyle: 'small',
     },
     StatusBar: {
       style: 'DARK',
       backgroundColor: '#1a3a6c',
+      overlaysWebView: false,
     },
   },
 };
