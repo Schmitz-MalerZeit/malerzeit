@@ -137,6 +137,19 @@ export function PdfFlowSheet({
     [fallbackUrl, fallbackFileName],
   );
 
+  // Lokale Blob-URL für die Vorschau – vermeidet CORS-Probleme der signierten
+  // Storage-URL und stellt sicher, dass die Web-Vorschau zuverlässig lädt.
+  const [localBlobUrl, setLocalBlobUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const blob = state.pdfBlob || fetchedBlob;
+    if (!blob) { setLocalBlobUrl(null); return; }
+    const url = URL.createObjectURL(blob);
+    setLocalBlobUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [state.pdfBlob, fetchedBlob]);
+
+  const previewUrl = localBlobUrl ?? state.url ?? null;
+
   const pdfFile = useMemo<File | null>(() => {
     const blob = state.pdfBlob || fetchedBlob;
     if (!blob) return null;
@@ -455,7 +468,12 @@ export function PdfFlowSheet({
           </div>
 
           <div className="rounded-md border border-border overflow-hidden h-[40vh] min-h-[260px]">
-            <PdfPreviewRenderer url={state.url} onDiagnostics={setDiag} />
+            {/* Wichtig: Wir bevorzugen die lokale Blob-URL für die Vorschau.
+              * Die signierte Storage-URL liefert in der Web-App teilweise CORS-Header,
+              * die das Range-Fetch von pdf.js blockieren – dann lädt die Vorschau nie.
+              * Mit dem lokalen Blob (gleich nach dem Generieren oder einmalig nachgeladen)
+              * funktioniert die Vorschau zuverlässig in jedem Browser. */}
+            <PdfPreviewRenderer url={previewUrl} onDiagnostics={setDiag} />
           </div>
 
           <Button variant="ghost" className="h-10 mt-1" onClick={() => onOpenChange(false)}>
