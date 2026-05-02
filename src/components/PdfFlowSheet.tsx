@@ -137,6 +137,19 @@ export function PdfFlowSheet({
     [fallbackUrl, fallbackFileName],
   );
 
+  // Lokale Blob-URL für die Vorschau – vermeidet CORS-Probleme der signierten
+  // Storage-URL und stellt sicher, dass die Web-Vorschau zuverlässig lädt.
+  const [localBlobUrl, setLocalBlobUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const blob = state.pdfBlob || fetchedBlob;
+    if (!blob) { setLocalBlobUrl(null); return; }
+    const url = URL.createObjectURL(blob);
+    setLocalBlobUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [state.pdfBlob, fetchedBlob]);
+
+  const previewUrl = localBlobUrl ?? state.url ?? null;
+
   const pdfFile = useMemo<File | null>(() => {
     const blob = state.pdfBlob || fetchedBlob;
     if (!blob) return null;
