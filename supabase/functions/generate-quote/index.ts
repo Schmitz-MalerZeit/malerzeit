@@ -1,9 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const MAX_DESCRIPTION_CHARS = 6000;
+const MAX_ANSWER_CHARS = 2000;
+const MAX_HOURLY_RATES = 50;
 
 interface HourlyRate { label: string; rate: number; is_default?: boolean }
 interface Body {
@@ -64,9 +69,55 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Require authentication to prevent AI credit abuse
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: authErr } = await authClient.auth.getClaims(token);
+    if (authErr || !claims?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body: Body = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+
+    // Input size validation
+    if (typeof body.description !== "string" || body.description.length === 0) {
+      return new Response(JSON.stringify({ error: "Beschreibung erforderlich." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (body.description.length > MAX_DESCRIPTION_CHARS) {
+      return new Response(JSON.stringify({ error: `Beschreibung zu lang (max ${MAX_DESCRIPTION_CHARS} Zeichen).` }), {
+        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (body.answers && typeof body.answers === "object") {
+      for (const [k, v] of Object.entries(body.answers)) {
+        if (typeof v === "string" && v.length > MAX_ANSWER_CHARS) {
+          return new Response(JSON.stringify({ error: `Antwort zu lang: ${k}` }), {
+            status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+    if (Array.isArray(body.hourlyRates) && body.hourlyRates.length > MAX_HOURLY_RATES) {
+      return new Response(JSON.stringify({ error: "Zu viele Stundensätze." }), {
+        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const ratesList = (body.hourlyRates && body.hourlyRates.length > 0)
       ? body.hourlyRates.map(r => `- ${r.label}: ${r.rate} €/Std${r.is_default ? " (Standard)" : ""}`).join("\n")
