@@ -7,8 +7,8 @@ export interface SubscriptionState {
   loading: boolean;
   isActive: boolean;        // active subscription OR trial PDFs left
   inTrial: boolean;         // no paid plan and trial PDFs still available
-  trialPdfsLeft: number;    // remaining test PDFs (0..3)
-  trialPdfsLimit: number;   // total trial PDFs (= 3)
+  trialPdfsLeft: number;    // remaining test PDFs (0..2)
+  trialPdfsLimit: number;   // total trial PDFs (= 2)
   trialPdfsUsed: number;    // used trial PDFs (lifetime)
   subscription: any | null;
   pdfLimit: number;         // base monthly limit for paid plans, 0 in trial
@@ -24,7 +24,7 @@ const PDF_LIMIT_BY_PRICE: Record<string, number> = {
   profiplus_monthly: 200, profiplus_yearly: 200,
 };
 
-const TRIAL_LIMIT = 3;
+const TRIAL_LIMIT = 2;
 
 const currentLocalMonthStart = () => {
   const now = new Date();
