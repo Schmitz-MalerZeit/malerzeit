@@ -40,24 +40,24 @@ export default function Billing() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
 
-  const downloadInvoice = async (t: Tx) => {
-    if (!t.invoice_url) return;
-    setDownloadingId(t.id);
+  const downloadInvoice = async (tx: Tx) => {
+    if (!tx.invoice_url) return;
+    setDownloadingId(tx.id);
     // Clear previous failure marker for this row
     setFailedIds((prev) => {
-      if (!prev.has(t.id)) return prev;
+      if (!prev.has(tx.id)) return prev;
       const next = new Set(prev);
-      next.delete(t.id);
+      next.delete(tx.id);
       return next;
     });
     try {
-      const res = await fetch(t.invoice_url);
+      const res = await fetch(tx.invoice_url);
       if (!res.ok) throw new Error(String(res.status));
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Rechnung_${(t.billed_at ?? t.created_at).slice(0, 10)}_${t.id}.pdf`;
+      a.download = `Rechnung_${(tx.billed_at ?? tx.created_at).slice(0, 10)}_${tx.id}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -67,7 +67,7 @@ export default function Billing() {
       console.warn("invoice download failed", e);
       setFailedIds((prev) => {
         const next = new Set(prev);
-        next.add(t.id);
+        next.add(tx.id);
         return next;
       });
       toast.error(t("billing.downloadFailed"), {
