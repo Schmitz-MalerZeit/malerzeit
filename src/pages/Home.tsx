@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { useTranslation, Trans } from "react-i18next";
 import { FileText, FolderOpen, Settings as SettingsIcon, Scale, User as UserIcon, LogOut, Sparkles, CreditCard } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -28,7 +28,7 @@ const Tile = ({ icon: Icon, title, subtitle, onClick, primary }: any) => (
 
 export default function Home() {
   const nav = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const sub = useSubscription();
   const [firstName, setFirstName] = useState<string>("");
   const [addonOpen, setAddonOpen] = useState(false);
@@ -76,10 +76,14 @@ export default function Home() {
             className="w-full mb-4 rounded-2xl border border-accent/30 bg-accent/5 p-4 text-left hover:bg-accent/10 transition-base"
           >
             <div className="text-sm font-semibold mb-0.5 flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-accent" /> Kostenloser Test
+              <Sparkles className="h-3.5 w-3.5 text-accent" /> {t("home.trialBadge")}
             </div>
             <div className="text-xs text-muted-foreground">
-              Noch <strong>{sub.trialPdfsLeft} von {sub.trialPdfsLimit} Test-PDFs</strong> übrig – jetzt Tarif sichern →
+              <Trans
+                i18nKey="home.trialLeft"
+                values={{ left: sub.trialPdfsLeft, limit: sub.trialPdfsLimit }}
+                components={{ strong: <strong /> }}
+              />
             </div>
           </button>
         )}
@@ -90,10 +94,10 @@ export default function Home() {
             className="w-full mb-4 rounded-2xl border border-orange-300 bg-orange-50 p-4 text-left hover:bg-orange-100 transition-base"
           >
             <div className="text-sm font-semibold mb-0.5 text-orange-900">
-              Test-PDFs aufgebraucht
+              {t("home.trialUsedTitle")}
             </div>
             <div className="text-xs text-orange-800">
-              Du hast alle {sub.trialPdfsLimit} kostenlosen PDFs genutzt. Wähle einen Tarif, um weiter PDFs zu erstellen →
+              {t("home.trialUsedBody", { limit: sub.trialPdfsLimit })}
             </div>
           </button>
         )}
@@ -107,8 +111,9 @@ export default function Home() {
           const now = new Date();
           const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0);
           const daysLeft = Math.max(1, Math.ceil((resetDate.getTime() - now.getTime()) / 86_400_000));
-          const fmtDate = resetDate.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
-          const fmtWeekday = resetDate.toLocaleDateString("de-DE", { weekday: "long" });
+          const locale = (i18n.resolvedLanguage || "de") === "en" ? "en-US" : "de-DE";
+          const fmtDate = resetDate.toLocaleDateString(locale, { day: "2-digit", month: "long", year: "numeric" });
+          const fmtWeekday = resetDate.toLocaleDateString(locale, { weekday: "long" });
           return (
             <div
               className={`w-full mb-4 rounded-2xl border p-4 transition-base ${
@@ -127,7 +132,7 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-sm font-semibold flex items-center gap-1.5">
                     <Sparkles className={`h-3.5 w-3.5 ${empty ? "text-orange-700" : warn ? "text-amber-700" : "text-accent"}`} />
-                    KI-Angebote diesen Monat
+                    {t("home.quotaTitle")}
                   </div>
                   <div className={`text-sm font-bold tabular-nums ${empty ? "text-orange-900" : warn ? "text-amber-900" : "text-foreground"}`}>
                     {left} / {effective}
@@ -143,23 +148,25 @@ export default function Home() {
                 </div>
                 <div className={`text-xs ${empty ? "text-orange-800" : warn ? "text-amber-800" : "text-muted-foreground"}`}>
                   {empty
-                    ? "Kontingent aufgebraucht."
-                    : `${sub.pdfUsed} von ${effective} genutzt${sub.addonBonus > 0 ? ` (inkl. +${sub.addonBonus} Zusatz-PDFs)` : ""}.`}
+                    ? t("home.quotaEmpty")
+                    : sub.addonBonus > 0
+                      ? t("home.quotaUsedWithBonus", { used: sub.pdfUsed, limit: effective, bonus: sub.addonBonus })
+                      : t("home.quotaUsed", { used: sub.pdfUsed, limit: effective }) + "."}
                 </div>
                 <div className={`mt-2 pt-2 border-t text-xs flex items-start justify-between gap-3 ${
                   empty ? "border-orange-200 text-orange-900" : warn ? "border-amber-200 text-amber-900" : "border-border/60 text-muted-foreground"
                 }`}>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium">
-                      {empty ? "Nächste Generierung verfügbar:" : "Reset am:"}
+                      {empty ? t("home.quotaNextOn") : t("home.quotaResetOn")}
                     </div>
                     <div className="tabular-nums">
-                      {fmtWeekday}, {fmtDate} · 00:00 Uhr
+                      {fmtWeekday}, {fmtDate} · 00:00
                     </div>
                   </div>
                   <div className="text-right shrink-0">
                     <div className="font-bold tabular-nums text-sm">
-                      {daysLeft === 1 ? "morgen" : `in ${daysLeft} Tagen`}
+                      {daysLeft === 1 ? t("home.quotaTomorrow") : t("home.quotaInDays", { count: daysLeft })}
                     </div>
                   </div>
                 </div>
@@ -174,7 +181,7 @@ export default function Home() {
                       : "bg-amber-600 text-white hover:bg-amber-700"
                   }`}
                 >
-                  + PDFs nachladen (ab 9,90 €)
+                  {t("home.quotaTopupCta")}
                 </button>
               )}
             </div>
@@ -184,7 +191,7 @@ export default function Home() {
         <div className="space-y-3">
           <Tile primary icon={FileText} title={t("home.ctaNew")} subtitle={t("home.ctaNewSub")} onClick={() => nav("/quote/new")} />
           <Tile icon={FolderOpen} title={t("home.ctaQuotes")} subtitle={t("home.ctaQuotesSub")} onClick={() => nav("/quotes")} />
-          <Tile icon={CreditCard} title="Abo & Rechnungen" subtitle="Tarif verwalten, Nutzung & Zahlungsdaten" onClick={() => nav("/billing")} />
+          <Tile icon={CreditCard} title={t("home.ctaBilling")} subtitle={t("home.ctaBillingSub")} onClick={() => nav("/billing")} />
           <Tile icon={UserIcon} title={t("home.ctaProfile")} subtitle={t("home.ctaProfileSub")} onClick={() => nav("/profile")} />
           <Tile icon={SettingsIcon} title={t("home.ctaSettings")} subtitle={t("home.ctaSettingsSub")} onClick={() => nav("/settings")} />
           <Tile icon={Scale} title={t("home.ctaLegal")} subtitle={t("home.ctaLegalSub")} onClick={() => nav("/legal")} />
