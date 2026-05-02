@@ -113,25 +113,29 @@ export default function Billing() {
     finally { setPortalLoading(false); }
   };
 
-  if (sub.loading) return <AppShell title="Abo & Rechnungen"><div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div></AppShell>;
+  if (sub.loading) return <AppShell title={t("billing.title")}><div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div></AppShell>;
 
   const s = sub.subscription;
   const planName = s ? PLAN_NAMES[s.product_id] || s.product_id : null;
 
   return (
-    <AppShell title="Abo & Rechnungen">
+    <AppShell title={t("billing.title")}>
       <div className="space-y-5">
         {sub.inTrial && !s && (
           <div className="rounded-2xl border border-accent/30 bg-accent/5 p-5">
             <div className="flex items-center gap-2 font-semibold mb-2">
-              <Sparkles className="h-4 w-4 text-accent" /> Kostenloser Test
+              <Sparkles className="h-4 w-4 text-accent" /> {t("billing.trialTitle")}
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Du kannst <strong>{sub.trialPdfsLimit} PDFs gratis</strong> erstellen, um Maler-Angebot in Ruhe auszuprobieren.
+              <Trans
+                i18nKey="billing.trialIntro"
+                values={{ limit: sub.trialPdfsLimit }}
+                components={{ strong: <strong /> }}
+              />
             </p>
             <div className="mb-4">
               <div className="flex justify-between text-sm mb-1.5">
-                <span className="text-muted-foreground">Test-PDFs genutzt</span>
+                <span className="text-muted-foreground">{t("billing.trialUsedLabel")}</span>
                 <span className="font-medium">{sub.trialPdfsUsed} / {sub.trialPdfsLimit}</span>
               </div>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -139,11 +143,16 @@ export default function Billing() {
                   style={{ width: `${Math.min(100, (sub.trialPdfsUsed / Math.max(1, sub.trialPdfsLimit)) * 100)}%` }} />
               </div>
               <p className="text-xs text-muted-foreground mt-1.5">
-                Noch <strong>{sub.trialPdfsLeft}</strong> Test-PDF{sub.trialPdfsLeft === 1 ? "" : "s"} übrig
+                <Trans
+                  i18nKey="billing.trialLeft"
+                  count={sub.trialPdfsLeft}
+                  values={{ count: sub.trialPdfsLeft }}
+                  components={{ strong: <strong /> }}
+                />
               </p>
             </div>
             <Button onClick={() => nav("/pricing")} className="w-full h-11 gradient-primary text-primary-foreground border-0">
-              Tarif wählen
+              {t("billing.choosePlan")}
             </Button>
           </div>
         )}
@@ -151,13 +160,13 @@ export default function Billing() {
         {!sub.inTrial && !s && (
           <div className="rounded-2xl border border-orange-300 bg-orange-50 p-5">
             <div className="flex items-center gap-2 font-semibold mb-2 text-orange-900">
-              Test-PDFs aufgebraucht
+              {t("billing.trialUsedTitle")}
             </div>
             <p className="text-sm text-orange-800 mb-4">
-              Du hast alle {sub.trialPdfsLimit} kostenlosen Test-PDFs genutzt. Wähle einen Tarif, um weitere PDFs zu erstellen.
+              {t("billing.trialUsedBody", { limit: sub.trialPdfsLimit })}
             </p>
             <Button onClick={() => nav("/pricing")} className="w-full h-11 gradient-primary text-primary-foreground border-0">
-              Tarif wählen
+              {t("billing.choosePlan")}
             </Button>
           </div>
         )}
@@ -171,22 +180,26 @@ export default function Billing() {
                 s.status === "past_due" ? "bg-orange-100 text-orange-800" :
                 "bg-muted text-muted-foreground"
               }`}>
-                {s.status === "active" ? "Aktiv" : s.status === "trialing" ? "Test" :
-                 s.status === "past_due" ? "Zahlung offen" : s.status === "canceled" ? "Gekündigt" : s.status}
+                {s.status === "active" ? t("billing.statusActive") :
+                 s.status === "trialing" ? t("billing.statusTrialing") :
+                 s.status === "past_due" ? t("billing.statusPastDue") :
+                 s.status === "canceled" ? t("billing.statusCanceled") : s.status}
               </span>
             </div>
 
             {s.current_period_end && (
               <p className="text-sm text-muted-foreground">
-                {s.cancel_at_period_end || s.status === "canceled"
-                  ? <>Zugang aktiv bis <strong>{new Date(s.current_period_end).toLocaleDateString("de-DE")}</strong></>
-                  : <>Nächste Abbuchung: <strong>{new Date(s.current_period_end).toLocaleDateString("de-DE")}</strong></>}
+                <Trans
+                  i18nKey={s.cancel_at_period_end || s.status === "canceled" ? "billing.accessUntil" : "billing.nextCharge"}
+                  values={{ date: new Date(s.current_period_end).toLocaleDateString(locale) }}
+                  components={{ strong: <strong /> }}
+                />
               </p>
             )}
 
             <div className="pt-3 border-t border-border">
               <div className="flex justify-between text-sm mb-1.5">
-                <span className="text-muted-foreground">PDF-Nutzung diesen Monat</span>
+                <span className="text-muted-foreground">{t("billing.monthlyPdfUsage")}</span>
                 <span className="font-medium">{sub.pdfUsed} / {sub.pdfLimit}</span>
               </div>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -198,16 +211,16 @@ export default function Billing() {
             {s.status === "past_due" && (
               <div className="flex gap-2 p-3 rounded-lg bg-orange-50 text-orange-900 text-xs border border-orange-200">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>Letzte Zahlung fehlgeschlagen. Bitte aktualisiere deine Zahlungsdaten im Kundenportal.</span>
+                <span>{t("billing.pastDueWarning")}</span>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-2 pt-2">
               <Button variant="outline" onClick={() => nav("/pricing")} className="h-11">
-                Tarif ändern
+                {t("billing.changePlan")}
               </Button>
               <Button variant="outline" onClick={openPortal} disabled={portalLoading} className="h-11">
-                {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CreditCard className="h-4 w-4 mr-2" /> Verwalten <ExternalLink className="h-3 w-3 ml-1" /></>}
+                {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CreditCard className="h-4 w-4 mr-2" /> {t("billing.managePortal")} <ExternalLink className="h-3 w-3 ml-1" /></>}
               </Button>
             </div>
           </div>
@@ -215,9 +228,9 @@ export default function Billing() {
 
         {!s && !sub.inTrial && (
           <div className="rounded-2xl bg-card border border-border p-5 shadow-soft text-center">
-            <p className="text-sm text-muted-foreground mb-4">Du hast aktuell kein aktives Abo.</p>
+            <p className="text-sm text-muted-foreground mb-4">{t("billing.noActivePlan")}</p>
             <Button onClick={() => nav("/pricing")} className="w-full h-11 gradient-primary text-primary-foreground border-0">
-              Tarif wählen
+              {t("billing.choosePlan")}
             </Button>
           </div>
         )}
@@ -226,7 +239,7 @@ export default function Billing() {
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
           <div className="flex items-center gap-2 mb-3">
             <Receipt className="h-4 w-4 text-primary" />
-            <h2 className="font-semibold">Rechnungen & Zahlungen</h2>
+            <h2 className="font-semibold">{t("billing.invoicesTitle")}</h2>
           </div>
 
           {txLoading && (
@@ -237,64 +250,64 @@ export default function Billing() {
 
           {!txLoading && txs && txs.length === 0 && (
             <p className="text-sm text-muted-foreground py-2">
-              Noch keine Zahlungen vorhanden.
+              {t("billing.noInvoices")}
             </p>
           )}
 
           {!txLoading && txs && txs.length > 0 && (
             <ul className="divide-y divide-border -mx-1">
-              {txs.map((t) => {
-                const isPaid = t.status === "completed" || t.status === "paid";
-                const isFailed = t.status === "past_due" || t.status === "canceled";
+              {txs.map((tx) => {
+                const isPaid = tx.status === "completed" || tx.status === "paid";
+                const isFailed = tx.status === "past_due" || tx.status === "canceled";
                 return (
-                  <li key={t.id} className="flex items-center gap-3 py-3 px-1">
+                  <li key={tx.id} className="flex items-center gap-3 py-3 px-1">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">
-                          {fmtAmount(t.amount, t.currency)}
+                          {fmtAmount(tx.amount, tx.currency)}
                         </span>
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                           isPaid ? "bg-primary/10 text-primary" :
                           isFailed ? "bg-destructive/10 text-destructive" :
                           "bg-muted text-muted-foreground"
                         }`}>
-                          {STATUS_LABEL[t.status] ?? t.status}
+                          {statusLabel(tx.status)}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {fmtDate(t.billed_at ?? t.created_at)}
+                        {fmtDate(tx.billed_at ?? tx.created_at)}
                       </p>
                     </div>
-                    {t.invoice_url && (
+                    {tx.invoice_url && (
                       <div className="flex items-center gap-1 shrink-0">
                         <a
-                          href={t.invoice_url}
+                          href={tx.invoice_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline px-2 py-1"
-                          title="Rechnung ansehen"
+                          title={t("billing.view")}
                         >
-                          <FileText className="h-3.5 w-3.5" /> Ansehen
+                          <FileText className="h-3.5 w-3.5" /> {t("billing.view")}
                         </a>
                         {(() => {
-                          const isLoading = downloadingId === t.id;
-                          const hasFailed = failedIds.has(t.id);
+                          const isLoading = downloadingId === tx.id;
+                          const hasFailed = failedIds.has(tx.id);
                           return (
                             <button
                               type="button"
-                              onClick={() => downloadInvoice(t)}
+                              onClick={() => downloadInvoice(tx)}
                               disabled={isLoading}
                               className={`text-xs font-medium inline-flex items-center gap-1 hover:underline px-2 py-1 disabled:opacity-50 ${
                                 hasFailed ? "text-destructive" : "text-primary"
                               }`}
-                              title={hasFailed ? "Erneut versuchen" : "PDF herunterladen"}
+                              title={hasFailed ? t("billing.retry") : t("billing.pdf")}
                             >
                               {isLoading
                                 ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 : hasFailed
                                   ? <RotateCw className="h-3.5 w-3.5" />
                                   : <Download className="h-3.5 w-3.5" />}
-                              {hasFailed ? "Erneut" : "PDF"}
+                              {hasFailed ? t("billing.retry") : t("billing.pdf")}
                             </button>
                           );
                         })()}
@@ -308,7 +321,7 @@ export default function Billing() {
         </div>
 
         <p className="text-xs text-center text-muted-foreground">
-          Rechnungen & Zahlungsdaten werden über Paddle verwaltet.
+          {t("billing.footer")}
         </p>
       </div>
     </AppShell>
