@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "own usage update" ON public.pdf_usage;
