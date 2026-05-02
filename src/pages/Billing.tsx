@@ -80,9 +80,9 @@ export default function Billing() {
 
   useEffect(() => {
     if (params.get("checkout") === "success") {
-      toast.success("Zahlung erfolgreich – willkommen!");
-      const t = setInterval(() => sub.refresh(), 2000);
-      setTimeout(() => clearInterval(t), 12000);
+      toast.success(t("billing.checkoutSuccess"));
+      const id = setInterval(() => sub.refresh(), 2000);
+      setTimeout(() => clearInterval(id), 12000);
     }
   }, [params]);
 
