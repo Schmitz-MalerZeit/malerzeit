@@ -168,7 +168,15 @@ export function PdfPreviewRenderer({ url, onLoadPdfData, onDiagnostics }: PdfPre
   }, [url, onLoadPdfData, pushDiag]);
 
   useEffect(() => {
-    if (!pdfData || !containerWidth || !pagesRef.current) return;
+    if (!pdfData || !pagesRef.current) return;
+    // Use a sensible fallback width if the container hasn't been measured yet.
+    // Without this the very first render is skipped (containerWidth=0) and we
+    // depend on a ResizeObserver tick that may never come in some layouts
+    // (e.g. when the parent uses dvh inside an animated sheet) – the spinner
+    // would then run forever even though the PDF was fetched and parsed.
+    const effectiveWidth = containerWidth > 0
+      ? containerWidth
+      : (containerRef.current?.clientWidth || 600);
 
     let cancelled = false;
     let pdfDocument: PDFDocumentProxy | null = null;
@@ -181,12 +189,17 @@ export function PdfPreviewRenderer({ url, onLoadPdfData, onDiagnostics }: PdfPre
       pageElementsRef.current = [];
 
       try {
-        const loadingTask = getDocument({ data: new Uint8Array(pdfData) });
+        // Copy into a fresh ArrayBuffer – pdf.js may transfer/detach the
+        // buffer it receives, which would break subsequent re-renders
+        // (e.g. on zoom change) that reuse the same `pdfData` state.
+        const dataCopy = new Uint8Array(pdfData.byteLength);
+        dataCopy.set(pdfData);
+        const loadingTask = getDocument({ data: dataCopy });
         pdfDocument = await loadingTask.promise;
         const parseMs = Math.round(performance.now() - tParse0);
         setNumPages(pdfDocument.numPages);
         const tRender0 = performance.now();
-        const availableWidth = Math.max(240, containerWidth - 28);
+        const availableWidth = Math.max(240, effectiveWidth - 28);
         const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
         for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber++) {
@@ -264,7 +277,12 @@ export function PdfPreviewRenderer({ url, onLoadPdfData, onDiagnostics }: PdfPre
       pageElementsRef.current = [];
       pdfDocument?.destroy();
     };
-  }, [pdfData, containerWidth, zoom, onDiagnostics, url]);
+    // Intentionally NOT depending on `containerWidth`: the ResizeObserver
+    // emits an initial 0 → real-width transition that would otherwise cancel
+    // the very first render and leave the spinner forever. We read the width
+    // once at render start (see `effectiveWidth` above) which is good enough
+    // for the initial layout. Zoom changes still trigger a clean re-render.
+  }, [pdfData, zoom, onDiagnostics, url]);
 
   // Track current page during scroll
   useEffect(() => {
