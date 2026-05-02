@@ -455,7 +455,12 @@ export function PdfFlowSheet({
           </div>
 
           <div className="rounded-md border border-border overflow-hidden h-[40vh] min-h-[260px]">
-            <PdfPreviewRenderer url={state.url} onDiagnostics={setDiag} />
+            {/* Wichtig: Wir bevorzugen die lokale Blob-URL für die Vorschau.
+              * Die signierte Storage-URL liefert in der Web-App teilweise CORS-Header,
+              * die das Range-Fetch von pdf.js blockieren – dann lädt die Vorschau nie.
+              * Mit dem lokalen Blob (gleich nach dem Generieren oder einmalig nachgeladen)
+              * funktioniert die Vorschau zuverlässig in jedem Browser. */}
+            <PdfPreviewRenderer url={previewUrl} onDiagnostics={setDiag} />
           </div>
 
           <Button variant="ghost" className="h-10 mt-1" onClick={() => onOpenChange(false)}>

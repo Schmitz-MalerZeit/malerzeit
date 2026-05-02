@@ -189,7 +189,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   );
   y += 10;
 
-  // ───────── Leistungsbeschreibung (klare Liste, dünne Linien) ─────────
+  // ───────── Leistungsbeschreibung (klare Liste, ohne Trennlinien) ─────────
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(primary[0], primary[1], primary[2]);
@@ -198,7 +198,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setDrawColor(220, 220, 220);
   doc.setLineWidth(0.3);
   doc.line(margin, y, pageW - margin, y);
-  y += 5;
+  y += 6;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
@@ -213,12 +213,8 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(45, 45, 45);
     doc.text(lines, margin + 8, y);
-    y += lines.length * 5.2 + 2.5;
-    // dünner Trenner
-    doc.setDrawColor(235, 235, 235);
-    doc.setLineWidth(0.2);
-    doc.line(margin, y - 0.5, pageW - margin, y - 0.5);
-    y += 1.5;
+    // Etwas mehr Abstand zwischen Punkten – ohne Trennlinie, damit nichts überlappt
+    y += lines.length * 5.2 + 5;
   });
 
   y += 4;
