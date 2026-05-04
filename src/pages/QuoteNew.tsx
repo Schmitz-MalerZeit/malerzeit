@@ -230,6 +230,48 @@ export default function QuoteNew() {
     } finally { setLoading(false); }
   };
 
+  // Validates that street + PLZ + city are consistent (OpenPLZ).
+  // On mismatch we open a confirmation dialog with the canonical correction.
+  const proceedToAnalyze = async () => {
+    if (validatingAddress || loading) return;
+    setValidatingAddress(true);
+    try {
+      const result = await validateGermanAddress({
+        street: customer.address,
+        postalCode: customer.postal_code,
+        city: customer.city,
+      });
+      if (!result.ok && result.suggestion) {
+        setAddressMismatch({
+          current: { postalCode: customer.postal_code.trim(), city: customer.city.trim() },
+          suggested: result.suggestion,
+          reason: result.reason,
+        });
+        return;
+      }
+    } finally {
+      setValidatingAddress(false);
+    }
+    callAI("analyze");
+  };
+
+  const applyAddressSuggestion = () => {
+    if (!addressMismatch) return;
+    setCustomer((c) => ({
+      ...c,
+      postal_code: addressMismatch.suggested.postalCode,
+      city: addressMismatch.suggested.city,
+    }));
+    setAddressMismatch(null);
+    // Continue automatically – the user already confirmed the correction.
+    setTimeout(() => callAI("analyze"), 0);
+  };
+
+  const keepAddressAndContinue = () => {
+    setAddressMismatch(null);
+    callAI("analyze");
+  };
+
   const customerComplete =
     customer.name.trim().length > 1 &&
     customer.address.trim().length > 2 &&
