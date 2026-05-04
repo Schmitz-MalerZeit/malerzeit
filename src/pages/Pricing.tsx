@@ -97,7 +97,7 @@ export default function Pricing() {
           </div>
         )}
 
-        {!sub.inTrial && !sub.subscription && (
+        {user && !sub.inTrial && !sub.subscription && (
           <div className="rounded-2xl bg-orange-50 border border-orange-300 p-4 text-sm">
             <div className="font-semibold mb-1 text-orange-900">Test-PDFs aufgebraucht</div>
             <p className="text-orange-800">
