@@ -406,13 +406,61 @@ export default function QuoteNew() {
           )}
 
           <Button
-            onClick={() => callAI("analyze")}
-            disabled={loading || description.trim().length < 10 || !customerComplete}
+            onClick={proceedToAnalyze}
+            disabled={loading || validatingAddress || description.trim().length < 10 || !customerComplete}
             className="w-full h-14 text-base font-semibold gradient-primary text-primary-foreground border-0 shadow-soft hover:shadow-glow transition-base"
           >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Weiter <ArrowRight className="h-5 w-5 ml-2" /></>}
+            {loading || validatingAddress ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <>Weiter <ArrowRight className="h-5 w-5 ml-2" /></>
+            )}
           </Button>
         </div>
+
+        <AlertDialog open={!!addressMismatch} onOpenChange={(o) => { if (!o) setAddressMismatch(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Adresse prüfen</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    {addressMismatch?.reason === "plz_city_mismatch"
+                      ? "PLZ und Ort passen nicht zur eingegebenen Straße."
+                      : "Die Straße konnte unter dieser PLZ nicht gefunden werden."}
+                  </div>
+                  {addressMismatch && (
+                    <>
+                      <div className="rounded-md border border-border p-2">
+                        <div className="text-xs text-muted-foreground">Eingegeben</div>
+                        <div className="font-medium">
+                          {addressMismatch.current.postalCode} {addressMismatch.current.city || "—"}
+                        </div>
+                      </div>
+                      {addressMismatch.suggested && (
+                        <div className="rounded-md border border-primary/40 bg-primary/5 p-2">
+                          <div className="text-xs text-muted-foreground">Vorschlag (offiziell)</div>
+                          <div className="font-medium">
+                            {addressMismatch.suggested.postalCode} {addressMismatch.suggested.city}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setAddressMismatch(null)}>Zurück & korrigieren</AlertDialogCancel>
+              <AlertDialogAction onClick={keepAddressAndContinue} className="bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                So lassen
+              </AlertDialogAction>
+              <AlertDialogAction onClick={applyAddressSuggestion}>
+                Übernehmen & weiter
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </AppShell>
     );
   }
