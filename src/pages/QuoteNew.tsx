@@ -13,6 +13,11 @@ import { VoiceInput } from "@/components/VoiceInput";
 import { CustomerAutocomplete, type CustomerSuggestion } from "@/components/CustomerAutocomplete";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { lookupCityForPostalCode } from "@/lib/postalLookup";
+import { validateGermanAddress } from "@/lib/addressValidation";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const appendText = (prev: string, add: string) =>
   prev.trim().length === 0 ? add : `${prev.replace(/\s+$/, "")}\n${add}`;
