@@ -6,20 +6,20 @@ import { Loader2, MapPin } from "lucide-react";
 export interface AddressSuggestion {
   /** Just the street (no house number) */
   street: string;
-  /** House number (may be empty when the user hasn't typed one yet) */
+  /** House number (may be empty when none was found / typed) */
   houseNumber: string;
   postalCode: string;
   city: string;
   /** Full label for display */
   label: string;
+  /** True wenn die Hausnummer real bestätigt wurde (sonst nur Straßen-Treffer) */
+  houseNumberVerified?: boolean;
 }
 
 interface Props {
   id?: string;
   value: string;
   onChange: (val: string) => void;
-  /** Called when the user picks a suggestion. The host should fill PLZ + Ort
-   *  and may use the returned street/houseNumber to normalize the address. */
   onSelectSuggestion: (s: AddressSuggestion) => void;
   placeholder?: string;
   className?: string;
@@ -32,9 +32,40 @@ const splitStreetAndNumber = (input: string): { street: string; houseNumber: str
   return { street: (m[1] || "").trim(), houseNumber: (m[2] || "").trim() };
 };
 
-/** Normalise house numbers for comparison: "12 A" → "12a", "12-14" → "12-14". */
 const normHouseNumber = (n: string) =>
   (n || "").toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9\-/]/g, "");
+
+const normStreet = (s: string) =>
+  (s || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ß/g, "ss")
+    .replace(/str\.?\b/g, "strasse")
+    .replace(/[^a-z0-9]/g, "");
+
+interface NominatimResult {
+  lat?: string;
+  lon?: string;
+  display_name?: string;
+  address?: {
+    house_number?: string;
+    road?: string;
+    pedestrian?: string;
+    footway?: string;
+    cycleway?: string;
+    path?: string;
+    residential?: string;
+    postcode?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
+    hamlet?: string;
+    suburb?: string;
+    country_code?: string;
+  };
+}
 
 interface PhotonFeature {
   properties?: {
@@ -46,27 +77,80 @@ interface PhotonFeature {
     town?: string;
     village?: string;
     municipality?: string;
-    county?: string;
-    state?: string;
-    country?: string;
     countrycode?: string;
     osm_key?: string;
-    osm_value?: string;
-    type?: string;
   };
 }
 
+async function searchNominatim(query: string, signal: AbortSignal): Promise<AddressSuggestion[]> {
+  const url =
+    `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=15` +
+    `&countrycodes=de&accept-language=de&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { signal, headers: { Accept: "application/json" } });
+  if (!res.ok) return [];
+  const data: NominatimResult[] = await res.json();
+  const out: AddressSuggestion[] = [];
+  for (const r of data) {
+    const a = r.address || {};
+    if (a.country_code && a.country_code !== "de") continue;
+    const street =
+      (a.road || a.pedestrian || a.footway || a.cycleway || a.path || a.residential || "").trim();
+    const postcode = (a.postcode || "").trim();
+    const city = (a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || "").trim();
+    const housenumber = (a.house_number || "").trim();
+    if (!street || !postcode || !city) continue;
+    if (!/^\d{5}$/.test(postcode)) continue;
+    out.push({
+      street,
+      houseNumber: housenumber,
+      postalCode: postcode,
+      city,
+      label: housenumber
+        ? `${street} ${housenumber}, ${postcode} ${city}`
+        : `${street}, ${postcode} ${city}`,
+      houseNumberVerified: !!housenumber,
+    });
+  }
+  return out;
+}
+
+async function searchPhoton(query: string, signal: AbortSignal): Promise<AddressSuggestion[]> {
+  const url =
+    `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}` +
+    `&lang=de&limit=15&bbox=5.5,47.2,15.1,55.1`;
+  const res = await fetch(url, { signal, headers: { Accept: "application/json" } });
+  if (!res.ok) return [];
+  const data = await res.json();
+  const features: PhotonFeature[] = Array.isArray(data?.features) ? data.features : [];
+  const out: AddressSuggestion[] = [];
+  for (const f of features) {
+    const p = f.properties || {};
+    if (p.countrycode && p.countrycode !== "DE") continue;
+    const street = (p.street || (p.osm_key === "highway" ? p.name : "") || "").trim();
+    const housenumber = (p.housenumber || "").trim();
+    const postcode = (p.postcode || "").trim();
+    const city = (p.city || p.town || p.village || p.municipality || "").trim();
+    if (!street || !postcode || !city) continue;
+    if (!/^\d{5}$/.test(postcode)) continue;
+    out.push({
+      street,
+      houseNumber: housenumber,
+      postalCode: postcode,
+      city,
+      label: housenumber
+        ? `${street} ${housenumber}, ${postcode} ${city}`
+        : `${street}, ${postcode} ${city}`,
+      houseNumberVerified: !!housenumber,
+    });
+  }
+  return out;
+}
+
 /**
- * Address auto-complete using the Photon (Komoot/OpenStreetMap) API.
- *
- *  - Free, no API key, full German coverage including house numbers.
- *  - When the user types a house number, only addresses where that number
- *    actually exists are shown – matches normal mobile-app behaviour.
- *  - When no house number is entered yet, street-level suggestions are
- *    shown, sorted by relevance (Photon's importance ranking).
- *  - 250 ms debounce, request cancellation on each keystroke.
- *
- * Docs: https://photon.komoot.io/
+ * Address auto-complete (DE).
+ * Strategy: Nominatim first (real Hausnummern), Photon as fallback.
+ * Wenn der Nutzer eine Hausnummer getippt hat und es exakte Treffer gibt,
+ * werden NUR diese gezeigt – sonst (graceful) die Straßen-Treffer.
  */
 export function AddressAutocomplete({
   id, value, onChange, onSelectSuggestion, placeholder, className,
@@ -79,7 +163,6 @@ export function AddressAutocomplete({
   const abortRef = useRef<AbortController | null>(null);
   const justPickedFor = useRef<string | null>(null);
 
-  // Close on outside click
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
@@ -107,54 +190,80 @@ export function AddressAutocomplete({
         const query = parsed.houseNumber
           ? `${parsed.street} ${parsed.houseNumber}`
           : parsed.street;
-        // Photon: lang=de, restrict to Germany, typeahead-style search.
-        const url =
-          `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}` +
-          `&lang=de&limit=15&osm_tag=place&osm_tag=highway&osm_tag=building` +
-          // The osm_tag filter is loose (OR semantics) – we filter results
-          // on the client to keep only address-shaped hits below.
-          `&bbox=5.5,47.2,15.1,55.1`; // approx Germany bounding box
-        const res = await fetch(url, { signal: ctrl.signal, headers: { Accept: "application/json" } });
-        if (!res.ok) { setSuggestions([]); return; }
-        const data = await res.json();
-        const features: PhotonFeature[] = Array.isArray(data?.features) ? data.features : [];
 
-        const wantedNumber = normHouseNumber(parsed.houseNumber);
-        const seen = new Set<string>();
-        const out: AddressSuggestion[] = [];
-
-        for (const f of features) {
-          const p = f?.properties || {};
-          if (p.countrycode && p.countrycode !== "DE") continue;
-
-          // We need at minimum: street name + city + postcode.
-          const street = (p.street || (p.osm_key === "highway" ? p.name : "") || "").trim();
-          const housenumber = (p.housenumber || "").trim();
-          const postcode = (p.postcode || "").trim();
-          const city = (p.city || p.town || p.village || p.municipality || "").trim();
-          if (!street || !postcode || !city) continue;
-          if (!/^\d{5}$/.test(postcode)) continue;
-
-          // If the user typed a house number, only keep results that have
-          // exactly that house number – this is the "vor-Auswahl" behaviour
-          // the user asked for: suppress places where the number doesn't exist.
-          if (wantedNumber) {
-            if (!housenumber) continue;
-            if (normHouseNumber(housenumber) !== wantedNumber) continue;
-          }
-
-          const key = `${street}|${housenumber}|${postcode}|${city}`.toLowerCase();
-          if (seen.has(key)) continue;
-          seen.add(key);
-
-          const label = housenumber
-            ? `${street} ${housenumber}, ${postcode} ${city}`
-            : `${street}, ${postcode} ${city}`;
-          out.push({ street, houseNumber: housenumber, postalCode: postcode, city, label });
-          if (out.length >= 8) break;
+        // 1. Nominatim
+        let raw: AddressSuggestion[] = [];
+        try {
+          raw = await searchNominatim(query, ctrl.signal);
+        } catch (e) {
+          if ((e as any)?.name === "AbortError") return;
+          console.warn("Nominatim fehlgeschlagen, versuche Photon:", e);
         }
 
-        setSuggestions(out);
+        // 2. Photon-Fallback wenn Nominatim leer
+        if (raw.length === 0) {
+          try {
+            raw = await searchPhoton(query, ctrl.signal);
+          } catch (e) {
+            if ((e as any)?.name === "AbortError") return;
+            console.warn("Photon fehlgeschlagen:", e);
+          }
+        }
+
+        // Nur Straßen behalten, deren Name halbwegs zur Eingabe passt
+        const wantedStreet = normStreet(parsed.street);
+        const filteredByStreet = raw.filter((s) => {
+          const ns = normStreet(s.street);
+          return ns.includes(wantedStreet) || wantedStreet.includes(ns);
+        });
+        const baseList = filteredByStreet.length > 0 ? filteredByStreet : raw;
+
+        const wantedNumber = normHouseNumber(parsed.houseNumber);
+        let result: AddressSuggestion[];
+
+        if (wantedNumber) {
+          // Exakte Hausnummer-Treffer bevorzugen
+          const exact = baseList.filter(
+            (s) => s.houseNumber && normHouseNumber(s.houseNumber) === wantedNumber,
+          );
+          if (exact.length > 0) {
+            result = exact;
+          } else {
+            // Keine echten Hausnummer-Treffer → wenigstens die Straßen-Treffer
+            // anzeigen (deduped per Straße+PLZ+Ort), Hausnummer ist dann
+            // "nicht verifiziert" – Nutzer kann aber trotzdem auswählen.
+            const seen = new Set<string>();
+            result = [];
+            for (const s of baseList) {
+              const key = `${normStreet(s.street)}|${s.postalCode}|${s.city.toLowerCase()}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+              result.push({
+                ...s,
+                houseNumber: "",
+                houseNumberVerified: false,
+                label: `${s.street}, ${s.postalCode} ${s.city}`,
+              });
+            }
+          }
+        } else {
+          // Keine Hausnummer eingetippt → Straßen-Übersicht (dedupe)
+          const seen = new Set<string>();
+          result = [];
+          for (const s of baseList) {
+            const key = `${normStreet(s.street)}|${s.postalCode}|${s.city.toLowerCase()}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            result.push({
+              ...s,
+              houseNumber: "",
+              houseNumberVerified: false,
+              label: `${s.street}, ${s.postalCode} ${s.city}`,
+            });
+          }
+        }
+
+        setSuggestions(result.slice(0, 8));
         setHighlight(0);
         setOpen(true);
       } catch (e) {
@@ -165,13 +274,11 @@ export function AddressAutocomplete({
       } finally {
         setLoading(false);
       }
-    }, 250);
+    }, 300);
     return () => clearTimeout(handle);
   }, [parsed.street, parsed.houseNumber, trimmed]);
 
   const select = (s: AddressSuggestion) => {
-    // Prefer the house number from the suggestion; fall back to whatever the
-    // user typed so we never silently drop their input.
     const finalNumber = s.houseNumber || splitStreetAndNumber(value).houseNumber;
     const newAddress = finalNumber ? `${s.street} ${finalNumber}` : s.street;
     justPickedFor.current = newAddress;
@@ -226,16 +333,18 @@ export function AddressAutocomplete({
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
                   {s.postalCode} {s.city}
+                  {parsed.houseNumber && !s.houseNumberVerified && (
+                    <span className="ml-1 italic">· Hausnummer bitte prüfen</span>
+                  )}
                 </div>
               </div>
             </button>
           ))}
         </div>
       )}
-      {open && !loading && suggestions.length === 0 && parsed.street.length >= 3 && parsed.houseNumber && (
+      {open && !loading && suggestions.length === 0 && parsed.street.length >= 3 && (
         <div className="absolute z-50 left-0 right-0 mt-1 rounded-xl border border-border bg-popover shadow-lg p-3 text-xs text-muted-foreground">
-          Keine Adresse mit Hausnummer „{parsed.houseNumber}" gefunden.
-          Bitte Hausnummer prüfen oder ohne Hausnummer suchen.
+          Keine Adresse gefunden. Bitte Schreibweise prüfen.
         </div>
       )}
     </div>
