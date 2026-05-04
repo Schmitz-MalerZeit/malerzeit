@@ -39,7 +39,7 @@ const App = () => (
             <Route path="/refund" element={<Refund />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/" element={<Index />} />
-            <Route path="/pricing" element={<RequireAuth><Pricing /></RequireAuth>} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/billing" element={<RequireAuth><Billing /></RequireAuth>} />
             <Route path="/quote/new" element={<RequireAuth><RequireSubscription><QuoteNew /></RequireSubscription></RequireAuth>} />
             <Route path="/quote/result" element={<RequireAuth><RequireSubscription><QuoteResult /></RequireSubscription></RequireAuth>} />
