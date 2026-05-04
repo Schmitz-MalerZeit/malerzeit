@@ -13,6 +13,11 @@ import { VoiceInput } from "@/components/VoiceInput";
 import { CustomerAutocomplete, type CustomerSuggestion } from "@/components/CustomerAutocomplete";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { lookupCityForPostalCode } from "@/lib/postalLookup";
+import { validateGermanAddress } from "@/lib/addressValidation";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const appendText = (prev: string, add: string) =>
   prev.trim().length === 0 ? add : `${prev.replace(/\s+$/, "")}\n${add}`;
@@ -56,6 +61,12 @@ export default function QuoteNew() {
   const [hourlyRates, setHourlyRates] = useState<{ label: string; rate: number; is_default: boolean }[]>([]);
   const [pastCustomers, setPastCustomers] = useState<CustomerSuggestion[]>([]);
   const [plzLookupBusy, setPlzLookupBusy] = useState(false);
+  const [validatingAddress, setValidatingAddress] = useState(false);
+  const [addressMismatch, setAddressMismatch] = useState<{
+    current: { postalCode: string; city: string };
+    suggested: { postalCode: string; city: string };
+    reason: "plz_city_mismatch" | "street_not_in_plz";
+  } | null>(null);
   const subState = useSubscription();
 
   useEffect(() => {
@@ -219,6 +230,48 @@ export default function QuoteNew() {
     } finally { setLoading(false); }
   };
 
+  // Validates that street + PLZ + city are consistent (OpenPLZ).
+  // On mismatch we open a confirmation dialog with the canonical correction.
+  const proceedToAnalyze = async () => {
+    if (validatingAddress || loading) return;
+    setValidatingAddress(true);
+    try {
+      const result = await validateGermanAddress({
+        street: customer.address,
+        postalCode: customer.postal_code,
+        city: customer.city,
+      });
+      if (result.ok === false && result.suggestion) {
+        setAddressMismatch({
+          current: { postalCode: customer.postal_code.trim(), city: customer.city.trim() },
+          suggested: result.suggestion,
+          reason: result.reason,
+        });
+        return;
+      }
+    } finally {
+      setValidatingAddress(false);
+    }
+    callAI("analyze");
+  };
+
+  const applyAddressSuggestion = () => {
+    if (!addressMismatch) return;
+    setCustomer((c) => ({
+      ...c,
+      postal_code: addressMismatch.suggested.postalCode,
+      city: addressMismatch.suggested.city,
+    }));
+    setAddressMismatch(null);
+    // Continue automatically – the user already confirmed the correction.
+    setTimeout(() => callAI("analyze"), 0);
+  };
+
+  const keepAddressAndContinue = () => {
+    setAddressMismatch(null);
+    callAI("analyze");
+  };
+
   const customerComplete =
     customer.name.trim().length > 1 &&
     customer.address.trim().length > 2 &&
@@ -353,13 +406,61 @@ export default function QuoteNew() {
           )}
 
           <Button
-            onClick={() => callAI("analyze")}
-            disabled={loading || description.trim().length < 10 || !customerComplete}
+            onClick={proceedToAnalyze}
+            disabled={loading || validatingAddress || description.trim().length < 10 || !customerComplete}
             className="w-full h-14 text-base font-semibold gradient-primary text-primary-foreground border-0 shadow-soft hover:shadow-glow transition-base"
           >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Weiter <ArrowRight className="h-5 w-5 ml-2" /></>}
+            {loading || validatingAddress ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <>Weiter <ArrowRight className="h-5 w-5 ml-2" /></>
+            )}
           </Button>
         </div>
+
+        <AlertDialog open={!!addressMismatch} onOpenChange={(o) => { if (!o) setAddressMismatch(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Adresse prüfen</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    {addressMismatch?.reason === "plz_city_mismatch"
+                      ? "PLZ und Ort passen nicht zur eingegebenen Straße."
+                      : "Die Straße konnte unter dieser PLZ nicht gefunden werden."}
+                  </div>
+                  {addressMismatch && (
+                    <>
+                      <div className="rounded-md border border-border p-2">
+                        <div className="text-xs text-muted-foreground">Eingegeben</div>
+                        <div className="font-medium">
+                          {addressMismatch.current.postalCode} {addressMismatch.current.city || "—"}
+                        </div>
+                      </div>
+                      {addressMismatch.suggested && (
+                        <div className="rounded-md border border-primary/40 bg-primary/5 p-2">
+                          <div className="text-xs text-muted-foreground">Vorschlag (offiziell)</div>
+                          <div className="font-medium">
+                            {addressMismatch.suggested.postalCode} {addressMismatch.suggested.city}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setAddressMismatch(null)}>Zurück & korrigieren</AlertDialogCancel>
+              <AlertDialogAction onClick={keepAddressAndContinue} className="bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                So lassen
+              </AlertDialogAction>
+              <AlertDialogAction onClick={applyAddressSuggestion}>
+                Übernehmen & weiter
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </AppShell>
     );
   }
