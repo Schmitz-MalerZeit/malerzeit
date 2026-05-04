@@ -1,7 +1,14 @@
 /**
  * Resolves a German postal code to a city name.
- * Strategy: 1) check user's own history (passed in), 2) fallback to public Zippopotam.us API.
- * Returns null if nothing found. Caches API results in sessionStorage to avoid repeat calls.
+ *
+ * Strategy (in order):
+ *   1. user's own past-customer history (instant, offline)
+ *   2. sessionStorage cache (avoid repeat API calls in the same session)
+ *   3. OpenPLZ API – official Bund data, covers ALL German postal codes,
+ *      free, no key required. https://www.openplzapi.org/
+ *   4. Zippopotam.us as last-resort fallback (older, less complete coverage)
+ *
+ * Returns null only if no source knows the code.
  */
 export async function lookupCityForPostalCode(
   plz: string,
@@ -20,10 +27,37 @@ export async function lookupCityForPostalCode(
   const cacheKey = `plz:${code}`;
   try {
     const cached = sessionStorage.getItem(cacheKey);
-    if (cached) return cached || null;
+    if (cached) return cached;
   } catch { /* ignore */ }
 
-  // 3) Zippopotam.us (free, no key, supports DE)
+  const cache = (city: string) => {
+    try { sessionStorage.setItem(cacheKey, city); } catch { /* ignore */ }
+    return city;
+  };
+
+  // 3) OpenPLZ API – authoritative, complete German PLZ coverage
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch(
+      `https://openplzapi.org/de/Localities?postalCode=${encodeURIComponent(code)}`,
+      { signal: ctrl.signal, headers: { Accept: "application/json" } }
+    );
+    clearTimeout(t);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        // Prefer the "biggest"/canonical entry – API returns one entry per
+        // locality. For a 1-to-1 PLZ this is unambiguous; for a shared PLZ
+        // we take the first (alphabetically/officially listed) entry, which
+        // matches what the post office uses as primary city.
+        const city: string | undefined = data[0]?.name;
+        if (city) return cache(city);
+      }
+    }
+  } catch { /* ignore – fall through to Zippopotam */ }
+
+  // 4) Zippopotam.us fallback
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 4000);
@@ -32,10 +66,7 @@ export async function lookupCityForPostalCode(
     if (!res.ok) return null;
     const data = await res.json();
     const city: string | undefined = data?.places?.[0]?.["place name"];
-    if (city) {
-      try { sessionStorage.setItem(cacheKey, city); } catch { /* ignore */ }
-      return city;
-    }
+    if (city) return cache(city);
   } catch { /* ignore */ }
 
   return null;

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { VoiceInput } from "@/components/VoiceInput";
 import { CustomerAutocomplete, type CustomerSuggestion } from "@/components/CustomerAutocomplete";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { lookupCityForPostalCode } from "@/lib/postalLookup";
 
 const appendText = (prev: string, add: string) =>
@@ -264,12 +265,25 @@ export default function QuoteNew() {
               <div className="space-y-1.5">
                 <Label htmlFor="cust_addr">Straße & Hausnummer</Label>
                 <div className="flex gap-2">
-                  <Input id="cust_addr" value={customer.address}
-                    onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
-                    placeholder="Musterstraße 12" className="h-11 flex-1" />
+                  <AddressAutocomplete
+                    id="cust_addr"
+                    value={customer.address}
+                    onChange={(v) => setCustomer((c) => ({ ...c, address: v }))}
+                    onSelectSuggestion={(s) => setCustomer((c) => ({
+                      ...c,
+                      // Address has already been updated to "<street> <houseNumber>" by the
+                      // component; we only need to fill PLZ + Ort here.
+                      postal_code: s.postalCode,
+                      city: s.city,
+                    }))}
+                    placeholder="Musterstraße 12"
+                  />
                   <VoiceInput size="md" label="Adresse diktieren"
                     onTranscript={(t) => setCustomer((c) => ({ ...c, address: appendText(c.address, t) }))} />
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Tipp: Tippe die Straße ein – PLZ &amp; Ort werden mitvorgeschlagen.
+                </p>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5 col-span-1">
