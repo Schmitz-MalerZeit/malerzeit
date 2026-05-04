@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { VoiceInput } from "@/components/VoiceInput";
 import { CustomerAutocomplete, type CustomerSuggestion } from "@/components/CustomerAutocomplete";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { lookupCityForPostalCode } from "@/lib/postalLookup";
 
 const appendText = (prev: string, add: string) =>
