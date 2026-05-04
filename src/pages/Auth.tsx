@@ -119,8 +119,16 @@ export default function Auth() {
         </div>
 
         <p className="text-xs text-center text-muted-foreground mt-6 leading-relaxed">
-          Mit der Anmeldung akzeptieren Sie unsere <a href="/legal" className="underline">Nutzungsbedingungen</a> und <a href="/legal" className="underline">Datenschutzhinweise</a>.
+          Mit der Anmeldung akzeptieren Sie unsere <a href="/terms" className="underline">Nutzungsbedingungen</a> und <a href="/privacy" className="underline">Datenschutzhinweise</a>.
         </p>
+
+        <nav aria-label="Rechtliches" className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+          <a href="/pricing" className="underline hover:text-foreground">Tarife & Preise</a>
+          <a href="/terms" className="underline hover:text-foreground">Nutzungsbedingungen</a>
+          <a href="/privacy" className="underline hover:text-foreground">Datenschutz</a>
+          <a href="/refund" className="underline hover:text-foreground">Widerruf & Rückerstattung</a>
+        </nav>
+        <p className="text-[11px] text-center text-muted-foreground mt-3">Anbieter: Raumwerk Schmitz</p>
       </div>
     </div>
   );
