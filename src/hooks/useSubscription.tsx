@@ -46,12 +46,24 @@ export function useSubscription(): SubscriptionState {
     setLoading(true);
     const env = getPaddleEnvironment();
 
-    const periodStart = currentLocalMonthStart();
+    // Fetch subscription first to determine the billing-cycle period
+    const { data: subRow } = await supabase.from("subscriptions").select("*")
+      .eq("user_id", user.id).eq("environment", env)
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
 
-    const [{ data: subRow }, { data: usage }, { data: lifetime }, { data: addons }] = await Promise.all([
-      supabase.from("subscriptions").select("*")
-        .eq("user_id", user.id).eq("environment", env)
-        .order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    const toDate = (ts: string | null | undefined) => {
+      if (!ts) return null;
+      const d = new Date(ts);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const periodStart = toDate(subRow?.current_period_start as string | undefined)
+      ?? currentLocalMonthStart();
+
+    const [{ data: usage }, { data: lifetime }, { data: addons }] = await Promise.all([
       supabase.from("pdf_usage").select("count")
         .eq("user_id", user.id).eq("period_start", periodStart).maybeSingle(),
       supabase.from("pdf_usage").select("count").eq("user_id", user.id),
