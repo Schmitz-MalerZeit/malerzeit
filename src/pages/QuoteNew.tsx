@@ -61,6 +61,12 @@ export default function QuoteNew() {
   const [hourlyRates, setHourlyRates] = useState<{ label: string; rate: number; is_default: boolean }[]>([]);
   const [pastCustomers, setPastCustomers] = useState<CustomerSuggestion[]>([]);
   const [plzLookupBusy, setPlzLookupBusy] = useState(false);
+  const [validatingAddress, setValidatingAddress] = useState(false);
+  const [addressMismatch, setAddressMismatch] = useState<{
+    current: { postalCode: string; city: string };
+    suggested: { postalCode: string; city: string };
+    reason: "plz_city_mismatch" | "street_not_in_plz";
+  } | null>(null);
   const subState = useSubscription();
 
   useEffect(() => {
