@@ -90,18 +90,69 @@ export default function Quotes() {
     });
     setPdfFlowOpen(true);
     setOpeningId(q.id);
+
+    /** Erkennt Storage-Fehler, bei denen die hinterlegte PDF-Datei
+     *  nicht (mehr) existiert. Supabase liefert dafür je nach Version
+     *  unterschiedliche Strings, daher prüfen wir mehrere Marker. */
+    const isMissingObjectError = (err: unknown, status?: number) => {
+      if (status === 400 || status === 404) return true;
+      const msg = (err as any)?.message?.toString().toLowerCase() || "";
+      return msg.includes("not found") || msg.includes("object not found") || msg.includes("no such");
+    };
+
+    /** Verwaisten DB-Eintrag bereinigen, damit der Button beim nächsten
+     *  Render automatisch zu „Noch kein PDF gespeichert" wechselt – so kann
+     *  derselbe Fehler nicht erneut auftreten. */
+    const markPdfMissingInDb = async () => {
+      try {
+        await supabase
+          .from("quotes")
+          .update({ pdf_storage_path: null, pdf_filename: null })
+          .eq("id", q.id);
+      } catch (cleanupErr) {
+        console.warn("Konnte verwaisten PDF-Pfad nicht bereinigen:", cleanupErr);
+      }
+      setItems((prev) => (prev || []).map((x) =>
+        x.id === q.id ? { ...x, pdf_storage_path: null, pdf_filename: null } : x,
+      ));
+    };
+
     try {
       const { data, error } = await supabase.storage
         .from("quote-pdfs")
         .createSignedUrl(q.pdf_storage_path, 60 * 60);
-      if (error || !data?.signedUrl) throw error || new Error("PDF konnte nicht geöffnet werden");
+
+      if (error || !data?.signedUrl) {
+        if (isMissingObjectError(error)) {
+          await markPdfMissingInDb();
+          setPdfFlowOpen(false);
+          setPdfFlow({ phase: "idle" });
+          toast.info("Für diesen Vorschlag ist keine PDF-Datei mehr vorhanden.", {
+            description: "Bitte erstelle den Vorschlag bei Bedarf neu.",
+          });
+          return;
+        }
+        throw error || new Error("PDF konnte nicht geöffnet werden");
+      }
+
       setPdfFlow((prev) => ({
         ...prev,
         step: "PDF-Datei laden …",
         progress: 75,
       }));
       const response = await fetch(data.signedUrl);
-      if (!response.ok) throw new Error(`PDF-Datei konnte nicht geladen werden (${response.status})`);
+      if (!response.ok) {
+        if (isMissingObjectError(null, response.status)) {
+          await markPdfMissingInDb();
+          setPdfFlowOpen(false);
+          setPdfFlow({ phase: "idle" });
+          toast.info("Für diesen Vorschlag ist keine PDF-Datei mehr vorhanden.", {
+            description: "Bitte erstelle den Vorschlag bei Bedarf neu.",
+          });
+          return;
+        }
+        throw new Error(`PDF-Datei konnte nicht geladen werden (${response.status})`);
+      }
       const pdfBlob = await response.blob();
       setPdfFlow({
         phase: "ready",
