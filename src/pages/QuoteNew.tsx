@@ -241,7 +241,7 @@ export default function QuoteNew() {
         postalCode: customer.postal_code,
         city: customer.city,
       });
-      if (!result.ok && result.suggestion) {
+      if (result.ok === false && result.suggestion) {
         setAddressMismatch({
           current: { postalCode: customer.postal_code.trim(), city: customer.city.trim() },
           suggested: result.suggestion,
