@@ -166,7 +166,20 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
             line_items: {
               type: "array",
               items: { type: "string" },
-              description: "Professionelle Leistungsstichpunkte",
+              description: "Alle professionellen Leistungsstichpunkte (flach, in Reihenfolge der sections). Pflichtfeld.",
+            },
+            sections: {
+              type: "array",
+              description: "Optional. Gruppierung nach vom Nutzer genannten Räumen/Bereichen. Leer lassen, wenn keine Räume genannt wurden.",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string", description: "Raum-/Bereichsname, z. B. 'Wohnzimmer'." },
+                  items: { type: "array", items: { type: "string" }, description: "Leistungsstichpunkte für diesen Abschnitt." },
+                },
+                required: ["title", "items"],
+                additionalProperties: false,
+              },
             },
             estimated_hours: { type: "number", description: "Summe aller Arbeitsstunden aller Personen" },
             estimated_labor_cost: { type: "number", description: "Lohnkosten netto in Euro (Summe Stunden × Stundenlohn der genannten Personen)" },
