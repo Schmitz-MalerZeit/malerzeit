@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2, MessageCircle } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2, MessageCircle, Calculator } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
@@ -42,6 +42,8 @@ export default function QuoteResult() {
   const [addonDialogOpen, setAddonDialogOpen] = useState(false);
   const [addonDialogContext, setAddonDialogContext] = useState<string | undefined>(undefined);
   const [whatsappUpgradeOpen, setWhatsappUpgradeOpen] = useState(false);
+  const [itemsDirty, setItemsDirty] = useState(false);
+  const [recalcBusy, setRecalcBusy] = useState(false);
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
@@ -96,21 +98,86 @@ export default function QuoteResult() {
     setSaved(false);
   };
 
+  const persistItemsEdit = (next: any) => {
+    persistEdits(next);
+    setItemsDirty(true);
+  };
+
+  const recalcPrices = async () => {
+    if (!data) return;
+    setRecalcBusy(true);
+    try {
+      const { data: rates } = await supabase
+        .from("hourly_rates")
+        .select("label, rate, is_default")
+        .order("sort_order", { ascending: true });
+      const sections = Array.isArray(data.ai.sections) ? data.ai.sections : [];
+      const cleanSections = sections
+        .map((s: any) => ({
+          title: (s?.title || "").trim(),
+          items: Array.isArray(s?.items) ? s.items.filter((x: string) => x && x.trim()) : [],
+        }))
+        .filter((s: any) => s.title && s.items.length > 0);
+      const cleanItems = (data.ai.line_items || []).filter((x: string) => x && x.trim());
+
+      const { data: res, error } = await supabase.functions.invoke("recalc-quote", {
+        body: {
+          description: data.description,
+          line_items: cleanItems,
+          sections: cleanSections,
+          hourlyRates: rates || [],
+          materialMarkup: settings?.material_markup ?? 15,
+          qualityLevel: settings?.quality_level ?? "standard",
+          vatRate: data.ai.pricing?.vat_rate ?? settings?.vat_rate ?? 19,
+        },
+      });
+      if (error) throw error;
+      if ((res as any)?.error) throw new Error((res as any).error);
+
+      const r: any = res;
+      const nextSections = Array.isArray(r.sections) && r.sections.length > 0
+        ? r.sections
+        : sections;
+      const nextAi = {
+        ...data.ai,
+        sections: nextSections,
+        estimated_hours: r.estimated_hours,
+        estimated_labor_cost: r.estimated_labor_cost,
+        estimated_material_cost: r.estimated_material_cost,
+        pricing: r.pricing,
+      };
+      const next = { ...data, ai: nextAi };
+      setData(next);
+      sessionStorage.setItem("currentQuote", JSON.stringify(next));
+      sessionStorage.removeItem("currentQuotePdf");
+      if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }
+      setPreviewBlob(null);
+      setPdfQuotaConsumed(false);
+      setSaved(false);
+      setItemsDirty(false);
+      toast.success("Preise neu berechnet");
+    } catch (e: any) {
+      toast.error(e.message || "Neuberechnung fehlgeschlagen");
+    } finally {
+      setRecalcBusy(false);
+    }
+  };
+
   const updateLineItem = (index: number, value: string) => {
     if (!data) return;
     const items = [...data.ai.line_items];
     items[index] = value;
-    persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
+    persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
   };
   const removeLineItem = (index: number) => {
     if (!data) return;
     const items = data.ai.line_items.filter((_: string, i: number) => i !== index);
-    persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
+    persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
   };
   const addLineItem = () => {
     if (!data) return;
     const items = [...data.ai.line_items, ""];
-    persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
+    persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
   };
 
   // ---- Section helpers (Räume/Bereiche) ----------------------------------
@@ -122,7 +189,7 @@ export default function QuoteResult() {
 
   const setSections = (sections: Array<{ title: string; items: string[] }>) => {
     if (!data) return;
-    persistEdits({
+    persistItemsEdit({
       ...data,
       ai: { ...data.ai, sections, line_items: flattenSections(sections) },
     });
@@ -966,6 +1033,24 @@ export default function QuoteResult() {
                 <Plus className="h-4 w-4 mr-1.5" /> Position hinzufügen
               </Button>
             </>
+          )}
+
+          {itemsDirty && (
+            <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <p className="text-xs text-foreground">
+                Du hast Positionen geändert. Lass die Preise neu berechnen, damit Stunden, Lohn und Material zur neuen Liste passen.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                onClick={recalcPrices}
+                disabled={recalcBusy}
+                className="h-9 shrink-0"
+              >
+                {recalcBusy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Calculator className="h-4 w-4 mr-1.5" />}
+                Preise neu berechnen
+              </Button>
+            </div>
           )}
         </div>
 
