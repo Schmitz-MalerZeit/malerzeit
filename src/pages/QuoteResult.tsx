@@ -96,6 +96,10 @@ export default function QuoteResult() {
     // Mark as dirty: after edits the user can save again (UPDATE if a row
     // already exists, INSERT otherwise).
     setSaved(false);
+  };
+
+  const persistItemsEdit = (next: any) => {
+    persistEdits(next);
     setItemsDirty(true);
   };
 
