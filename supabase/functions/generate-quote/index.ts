@@ -255,6 +255,8 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
     if ((!Array.isArray(parsed.line_items) || parsed.line_items.length === 0) && sections.length > 0) {
       parsed.line_items = sections.flatMap((s) => s.items);
     }
+
+    return new Response(JSON.stringify({
       ...parsed,
       pricing: {
         labor_cost: labor,
