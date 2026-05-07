@@ -29,8 +29,17 @@ export interface QuotePDFData {
   lineItems: string[];
   /** Optionale Gliederung in Räume/Bereiche. Wenn vorhanden und nicht leer,
    *  wird statt der flachen Liste pro Bereich eine Überschrift mit den
-   *  zugehörigen Stichpunkten gerendert. */
-  sections?: Array<{ title: string; items: string[] }>;
+   *  zugehörigen Stichpunkten + Zwischensumme gerendert. */
+  sections?: Array<{
+    title: string;
+    items: string[];
+    hours?: number;
+    labor_cost?: number;
+    material_cost?: number;
+    net_amount?: number;
+    vat_amount?: number;
+    gross_amount?: number;
+  }>;
   net: number;
   vat: number;
   gross: number;
@@ -244,6 +253,32 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
         counter += 1;
         drawItem(item, `${counter}.`);
       });
+      // Zwischensumme pro Bereich (Netto / Brutto)
+      const hasSub =
+        typeof sec.net_amount === "number" ||
+        typeof sec.gross_amount === "number";
+      if (hasSub) {
+        if (y + 8 > pageH - 80) { doc.addPage(); y = margin; }
+        doc.setDrawColor(230, 230, 230);
+        doc.setLineWidth(0.2);
+        doc.line(margin + 8, y - 2, pageW - margin, y - 2);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(90, 90, 90);
+        const parts: string[] = [];
+        if (typeof sec.hours === "number" && sec.hours > 0) {
+          parts.push(`${sec.hours.toLocaleString("de-DE")} Std`);
+        }
+        if (typeof sec.net_amount === "number") parts.push(`Netto ${fmt(sec.net_amount)}`);
+        const left = `Zwischensumme ${sec.title}` + (parts.length ? ` · ${parts.join(" · ")}` : "");
+        doc.text(left, margin + 8, y + 2);
+        if (typeof sec.gross_amount === "number") {
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(primary[0], primary[1], primary[2]);
+          doc.text(`Brutto ${fmt(sec.gross_amount)}`, pageW - margin, y + 2, { align: "right" });
+        }
+        y += 8;
+      }
     });
   } else {
     d.lineItems.forEach((item, idx) => {
