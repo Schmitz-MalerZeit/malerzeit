@@ -239,7 +239,22 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
     parsed.customer_text = ensurePriceOrientationNotice(parsed.customer_text, "customer");
     parsed.whatsapp_text = ensurePriceOrientationNotice(parsed.whatsapp_text, "whatsapp");
 
-    return new Response(JSON.stringify({
+    // Normalize sections (optional). Filter ungültige Einträge weg.
+    let sections: Array<{ title: string; items: string[] }> = [];
+    if (Array.isArray(parsed.sections)) {
+      sections = parsed.sections
+        .map((s: any) => ({
+          title: typeof s?.title === "string" ? s.title.trim().replace(/[:\-–—]+$/g, "").trim() : "",
+          items: Array.isArray(s?.items) ? s.items.filter((x: any) => typeof x === "string" && x.trim()).map((x: string) => x.trim()) : [],
+        }))
+        .filter((s) => s.title && s.items.length > 0);
+    }
+    parsed.sections = sections;
+
+    // Wenn line_items leer ist, aber sections vorhanden → daraus rekonstruieren.
+    if ((!Array.isArray(parsed.line_items) || parsed.line_items.length === 0) && sections.length > 0) {
+      parsed.line_items = sections.flatMap((s) => s.items);
+    }
       ...parsed,
       pricing: {
         labor_cost: labor,
