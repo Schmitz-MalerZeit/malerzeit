@@ -126,5 +126,76 @@
   "language": {
     "de": "Deutsch",
     "en": "English"
+  },
+  "pricing": {
+    "title": "Plans",
+    "heading": "Choose your plan",
+    "sub": "Fair cancellation terms. No hidden fees.",
+    "trialTitle": "Free trial",
+    "trialBody": "Still <1>{{left}} of {{limit}} trial PDFs</1> left. Pick a plan afterwards to keep generating PDFs.",
+    "trialUsedTitle": "Trial PDFs used up",
+    "trialUsedBody": "You've used all {{limit}} free PDFs. Pick a plan to keep generating PDFs.",
+    "billingChoose": "Choose billing",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "save17": "-17%",
+    "yearlyHintBest": "✓ Best choice – save 17% compared to monthly billing",
+    "yearlyHintTip": "Tip: With yearly billing you save <1>17%</1>",
+    "perMonth": "/month",
+    "yearlyTotal": "Yearly {{amount}}",
+    "monthlyBilled": "Billed monthly",
+    "recommended": "Recommended",
+    "current": "Current plan",
+    "choose": "Choose plan",
+    "nativeManage": "Manage via the web version",
+    "quotaInfoTitle": "What counts as an AI quote?",
+    "quotaInfoBody": "Each time you generate a new AI quote it counts as one. PDF downloads, previews and re-opening older quotes do <1>not</1> count.",
+    "quotaInfoMonthlyTitle": "Monthly vs. yearly",
+    "quotaInfoMonthlyBody": "The quota applies <1>per month</1> and resets at the start of each month – regardless of monthly or yearly billing. Unused quotes expire at month end.",
+    "cancelTitle": "Cancellation terms",
+    "cancelMonthly": "<1>Monthly:</1> Cancel by the end of the current month – the subscription ends with the next month.",
+    "cancelYearly": "<1>Yearly:</1> Cancel up to <1>1 month before the end</1> of the contract year. Without cancellation it renews for another year.",
+    "cancelFooter": "Payments are processed via Paddle. All prices incl. VAT.",
+    "tiers": {
+      "starter": {
+        "name": "Light",
+        "tagline": "Price quotes with your company details",
+        "quota": "Up to 15 AI price quotes / month",
+        "features": [
+          "PDF download with company & address details",
+          "All hourly rates available",
+          "Voice input (dictation) everywhere",
+          "Overview of all price quotes",
+          "Customer text to copy for email",
+          "Email support",
+          "No own logo & company colors in the PDF",
+          "No WhatsApp short message"
+        ]
+      },
+      "profi": {
+        "name": "Profi",
+        "tagline": "PDFs with your own letterhead + WhatsApp message",
+        "quota": "Up to 50 AI price quotes / month",
+        "features": [
+          "Everything in Light",
+          "Own logo & company colors in the PDF letterhead",
+          "Professional WhatsApp short message directly to the customer",
+          "Quote preview before sending",
+          "Overview of all price quotes",
+          "Email support"
+        ]
+      },
+      "profiplus": {
+        "name": "Exklusiv",
+        "tagline": "200 AI quotes / month",
+        "quota": "Up to 200 AI price quotes / month",
+        "features": [
+          "Everything in Profi",
+          "Highest volume reserve",
+          "Priority support (reply < 12 h)",
+          "Overview of all price quotes"
+        ]
+      }
+    }
   }
 }
