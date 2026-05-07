@@ -18,6 +18,7 @@ import Legal from "./pages/Legal";
 import Terms from "./pages/Terms";
 import Refund from "./pages/Refund";
 import Privacy from "./pages/Privacy";
+import Imprint from "./pages/Imprint";
 import Pricing from "./pages/Pricing";
 import Billing from "./pages/Billing";
 import PdfActionView from "./pages/PdfActionView";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/refund" element={<Refund />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/imprint" element={<Imprint />} />
             <Route path="/" element={<Index />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/billing" element={<RequireAuth><Billing /></RequireAuth>} />
