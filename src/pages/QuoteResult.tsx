@@ -158,6 +158,8 @@ export default function QuoteResult() {
       setRecalcBusy(false);
     }
   };
+
+  const updateLineItem = (index: number, value: string) => {
     if (!data) return;
     const items = [...data.ai.line_items];
     items[index] = value;
