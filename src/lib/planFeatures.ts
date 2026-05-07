@@ -49,7 +49,7 @@ export function hasPrioritySupport(tier: PlanTier): boolean {
 }
 
 export const REQUIRED_TIER_LABEL: Record<"pdf" | "logo" | "whatsapp", string> = {
-  pdf: "Starter",
+  pdf: "Light",
   logo: "Profi",
   whatsapp: "Profi",
 };
