@@ -126,5 +126,76 @@
   "language": {
     "de": "Deutsch",
     "en": "English"
+  },
+  "pricing": {
+    "title": "Tarife",
+    "heading": "Wähle deinen Tarif",
+    "sub": "Faire Kündigungsfristen. Keine versteckten Kosten.",
+    "trialTitle": "Kostenloser Test",
+    "trialBody": "Noch <1>{{left}} von {{limit}} Test-PDFs</1> übrig. Wähle danach einen Tarif, um weiter PDFs zu erstellen.",
+    "trialUsedTitle": "Test-PDFs aufgebraucht",
+    "trialUsedBody": "Du hast alle {{limit}} kostenlosen PDFs genutzt. Wähle jetzt einen Tarif, um weiter PDFs zu erstellen.",
+    "billingChoose": "Zahlungsweise wählen",
+    "monthly": "Monatlich",
+    "yearly": "Jährlich",
+    "save17": "-17%",
+    "yearlyHintBest": "✓ Beste Wahl – du sparst 17% im Vergleich zur monatlichen Zahlung",
+    "yearlyHintTip": "Tipp: Bei jährlicher Zahlung sparst du <1>17%</1>",
+    "perMonth": "/Monat",
+    "yearlyTotal": "Jährlich {{amount}}",
+    "monthlyBilled": "Monatlich abgerechnet",
+    "recommended": "Empfohlen",
+    "current": "Aktueller Tarif",
+    "choose": "Tarif wählen",
+    "nativeManage": "Verwaltung über die Web-Version",
+    "quotaInfoTitle": "Was sind KI-Angebote?",
+    "quotaInfoBody": "Jedes Mal, wenn du ein neues Angebot per KI erstellen lässt, zählt das als ein KI-Angebot. PDF-Downloads, Vorschauen und das erneute Öffnen alter Angebote zählen <1>nicht</1> mit.",
+    "quotaInfoMonthlyTitle": "Monatlich vs. Jährlich",
+    "quotaInfoMonthlyBody": "Das Kontingent gilt <1>pro Monat</1> und wird am Monatsanfang zurückgesetzt – unabhängig davon, ob du monatlich oder jährlich zahlst. Nicht genutzte Angebote verfallen am Monatsende.",
+    "cancelTitle": "Kündigungsfristen",
+    "cancelMonthly": "<1>Monatlich:</1> Kündbar zum Ende des aktuellen Monats – das Abo endet dann zum Folgemonat.",
+    "cancelYearly": "<1>Jährlich:</1> Kündbar bis spätestens <1>1 Monat vor Ablauf</1> des Vertragsjahres. Ohne Kündigung verlängert sich der Vertrag um ein weiteres Jahr.",
+    "cancelFooter": "Zahlungsabwicklung über Paddle. Alle Preise inkl. MwSt.",
+    "tiers": {
+      "starter": {
+        "name": "Light",
+        "tagline": "Preisorientierungen mit deinen Firmendaten",
+        "quota": "Bis zu 15 Preisorientierungen per KI / Monat",
+        "features": [
+          "PDF-Download mit Firmen- & Adressdaten",
+          "Alle Stundensätze nutzbar",
+          "Spracheingabe (Diktat) überall",
+          "Übersicht aller Preisorientierungen",
+          "Kundentext zum Kopieren für E-Mail",
+          "E-Mail-Support",
+          "Kein eigenes Logo & Firmenfarben im PDF",
+          "Kein WhatsApp-Kurztext"
+        ]
+      },
+      "profi": {
+        "name": "Profi",
+        "tagline": "PDFs im eigenen Briefkopf + WhatsApp-Kurztext",
+        "quota": "Bis zu 50 Preisorientierungen per KI / Monat",
+        "features": [
+          "Alles aus Light",
+          "Eigenes Logo & Firmenfarben im PDF-Briefkopf",
+          "Professioneller WhatsApp-Kurztext direkt an den Kunden",
+          "Vorschau der Preisorientierung vor dem Versand",
+          "Übersicht aller Preisorientierungen",
+          "E-Mail-Support"
+        ]
+      },
+      "profiplus": {
+        "name": "Exklusiv",
+        "tagline": "200 KI-Angebote / Monat",
+        "quota": "Bis zu 200 Preisorientierungen per KI / Monat",
+        "features": [
+          "Alles aus Profi",
+          "Höchste Volumen-Reserve",
+          "Bevorzugter Support (Antwort < 12 h)",
+          "Übersicht aller Preisorientierungen"
+        ]
+      }
+    }
   }
 }
