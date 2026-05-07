@@ -201,10 +201,86 @@ export default function QuoteResult() {
     const items = data.ai.line_items.filter((_: string, i: number) => i !== index);
     persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
   };
-  const addLineItem = () => {
+  const openAddDialog = (sectionIdx: number | null) => {
+    const def = hourlyRates.find((r) => r.is_default) || hourlyRates[0];
+    setAddDlg({
+      open: true,
+      sectionIdx,
+      description: "",
+      hours: "",
+      rateId: def?.id || "",
+      materialNet: "",
+    });
+  };
+  const addLineItem = () => openAddDialog(null);
+
+  // Apply the dialog: insert the new position into items/sections AND update
+  // pricing/sections subtotals deterministically (no AI call). The user can
+  // still hit "Preise neu berechnen" afterwards if they want a full re-eval.
+  const confirmAddPosition = () => {
     if (!data) return;
-    const items = [...data.ai.line_items, ""];
-    persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
+    const desc = addDlg.description.trim();
+    if (!desc) { toast.error("Bitte eine Beschreibung eingeben."); return; }
+    const hours = Number((addDlg.hours || "0").replace(",", ".")) || 0;
+    const materialNet = Number((addDlg.materialNet || "0").replace(",", ".")) || 0;
+    const rate = hourlyRates.find((r) => r.id === addDlg.rateId);
+    const hourlyRate = rate?.rate || 0;
+    const labor = Math.round(hours * hourlyRate);
+    const markup = Number(settings?.material_markup ?? 15);
+    const materialGross = Math.round(materialNet * (1 + markup / 100));
+    const addNet = labor + materialGross;
+    const vatRate = Number(data.ai?.pricing?.vat_rate ?? settings?.vat_rate ?? 19);
+    const addVat = Math.round(addNet * (vatRate / 100) * 100) / 100;
+    const addGross = Math.round((addNet + addVat) * 100) / 100;
+
+    // Build updated sections / items
+    const sections = Array.isArray(data.ai.sections) ? [...data.ai.sections] : [];
+    let nextSections = sections;
+    let nextLineItems: string[] = [...(data.ai.line_items || [])];
+    if (addDlg.sectionIdx !== null && sections[addDlg.sectionIdx]) {
+      const sIdx = addDlg.sectionIdx;
+      const sec = { ...sections[sIdx] };
+      sec.items = [...(sec.items || []), desc];
+      sec.hours = (Number(sec.hours) || 0) + hours;
+      sec.labor_cost = (Number(sec.labor_cost) || 0) + labor;
+      sec.material_cost = (Number(sec.material_cost) || 0) + materialGross;
+      sec.net_amount = (Number(sec.net_amount) || 0) + addNet;
+      sec.vat_amount = Math.round(((Number(sec.vat_amount) || 0) + addVat) * 100) / 100;
+      sec.gross_amount = Math.round(((Number(sec.gross_amount) || 0) + addGross) * 100) / 100;
+      nextSections = [...sections];
+      nextSections[sIdx] = sec;
+      nextLineItems = nextSections.flatMap((s: any) => s.items);
+    } else {
+      nextLineItems = [...nextLineItems, desc];
+    }
+
+    // Update overall pricing
+    const prevP = data.ai.pricing || {};
+    const newPricing = {
+      ...prevP,
+      vat_rate: vatRate,
+      labor_cost: (Number(prevP.labor_cost) || 0) + labor,
+      material_cost: (Number(prevP.material_cost) || 0) + materialGross,
+      net_amount: (Number(prevP.net_amount) || 0) + addNet,
+      vat_amount: Math.round(((Number(prevP.vat_amount) || 0) + addVat) * 100) / 100,
+      gross_amount: Math.round(((Number(prevP.gross_amount) || 0) + addGross) * 100) / 100,
+    };
+
+    const nextAi = {
+      ...data.ai,
+      sections: nextSections,
+      line_items: nextLineItems,
+      estimated_hours: (Number(data.ai.estimated_hours) || 0) + hours,
+      estimated_labor_cost: (Number(data.ai.estimated_labor_cost) || 0) + labor,
+      estimated_material_cost: (Number(data.ai.estimated_material_cost) || 0) + materialNet,
+      pricing: newPricing,
+    };
+    const next = { ...data, ai: nextAi };
+    // Use persistEdits (NOT persistItemsEdit) – the pricing is already up to
+    // date, so we don't want the "Preise neu berechnen" banner to appear.
+    persistEdits(next);
+    setAddDlg((s) => ({ ...s, open: false }));
+    toast.success("Position hinzugefügt");
   };
 
   // ---- Section helpers (Räume/Bereiche) ----------------------------------
