@@ -185,6 +185,7 @@ export type Database = {
           estimated_material: number | null
           gross_amount: number
           id: string
+          internal_notes: string | null
           line_items: Json
           net_amount: number
           pdf_created_at: string | null
@@ -214,6 +215,7 @@ export type Database = {
           estimated_material?: number | null
           gross_amount?: number
           id?: string
+          internal_notes?: string | null
           line_items?: Json
           net_amount?: number
           pdf_created_at?: string | null
@@ -243,6 +245,7 @@ export type Database = {
           estimated_material?: number | null
           gross_amount?: number
           id?: string
+          internal_notes?: string | null
           line_items?: Json
           net_amount?: number
           pdf_created_at?: string | null
