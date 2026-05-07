@@ -52,6 +52,15 @@ export default function QuoteResult() {
   const [whatsappUpgradeOpen, setWhatsappUpgradeOpen] = useState(false);
   const [itemsDirty, setItemsDirty] = useState(false);
   const [recalcBusy, setRecalcBusy] = useState(false);
+  const [hourlyRates, setHourlyRates] = useState<Array<{ id: string; label: string; rate: number; is_default: boolean }>>([]);
+  const [addDlg, setAddDlg] = useState<{
+    open: boolean;
+    sectionIdx: number | null;
+    description: string;
+    hours: string;
+    rateId: string;
+    materialNet: string;
+  }>({ open: false, sectionIdx: null, description: "", hours: "", rateId: "", materialNet: "" });
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
