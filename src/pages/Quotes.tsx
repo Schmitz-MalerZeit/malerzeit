@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { FolderOpen, Loader2, Eye, Trash2 } from "lucide-react";
+import { FolderOpen, Loader2, Eye, Trash2, StickyNote, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
+} from "@/components/ui/sheet";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -29,6 +33,9 @@ export default function Quotes() {
   const [profile, setProfile] = useState<any | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<any | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [notesQuote, setNotesQuote] = useState<any | null>(null);
+  const [notesValue, setNotesValue] = useState("");
+  const [notesSaving, setNotesSaving] = useState(false);
   const subState = useSubscription();
   const waAllowed = canSendViaWhatsapp(getTier(subState));
 
@@ -50,6 +57,32 @@ export default function Quotes() {
       toast.error(e?.message || "Löschen fehlgeschlagen");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const openNotes = (q: any) => {
+    setNotesQuote(q);
+    setNotesValue(q.internal_notes || "");
+  };
+
+  const saveNotes = async () => {
+    if (!notesQuote) return;
+    setNotesSaving(true);
+    try {
+      const { error } = await supabase
+        .from("quotes")
+        .update({ internal_notes: notesValue || null })
+        .eq("id", notesQuote.id);
+      if (error) throw error;
+      setItems((prev) => (prev || []).map((x) =>
+        x.id === notesQuote.id ? { ...x, internal_notes: notesValue || null } : x,
+      ));
+      toast.success("Notiz gespeichert");
+      setNotesQuote(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Speichern fehlgeschlagen");
+    } finally {
+      setNotesSaving(false);
     }
   };
 
@@ -91,18 +124,12 @@ export default function Quotes() {
     setPdfFlowOpen(true);
     setOpeningId(q.id);
 
-    /** Erkennt Storage-Fehler, bei denen die hinterlegte PDF-Datei
-     *  nicht (mehr) existiert. Supabase liefert dafür je nach Version
-     *  unterschiedliche Strings, daher prüfen wir mehrere Marker. */
     const isMissingObjectError = (err: unknown, status?: number) => {
       if (status === 400 || status === 404) return true;
       const msg = (err as any)?.message?.toString().toLowerCase() || "";
       return msg.includes("not found") || msg.includes("object not found") || msg.includes("no such");
     };
 
-    /** Verwaisten DB-Eintrag bereinigen, damit der Button beim nächsten
-     *  Render automatisch zu „Noch kein PDF gespeichert" wechselt – so kann
-     *  derselbe Fehler nicht erneut auftreten. */
     const markPdfMissingInDb = async () => {
       try {
         await supabase
@@ -200,7 +227,12 @@ export default function Quotes() {
               {Array.isArray(q.line_items) && q.line_items.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-2">{q.line_items.length} Leistungspositionen</p>
               )}
-              <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+              {q.internal_notes && (
+                <p className="text-xs text-muted-foreground mt-2 line-clamp-2 italic">
+                  📝 {q.internal_notes}
+                </p>
+              )}
+              <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2">
                 <Button
                   type="button"
                   variant={q.pdf_storage_path ? "outline" : "secondary"}
@@ -211,6 +243,15 @@ export default function Quotes() {
                   {openingId === q.id
                     ? <Loader2 className="h-4 w-4 animate-spin" />
                     : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF öffnen" : "Noch kein PDF gespeichert"}</>}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => openNotes(q)}
+                  className={`h-10 w-10 p-0 ${q.internal_notes ? "text-primary border-primary/40" : ""}`}
+                  aria-label="Notizen"
+                >
+                  <StickyNote className="h-4 w-4" />
                 </Button>
                 <Button
                   type="button"
@@ -250,6 +291,33 @@ export default function Quotes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Sheet open={!!notesQuote} onOpenChange={(o) => { if (!o && !notesSaving) setNotesQuote(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
+          <SheetHeader>
+            <SheetTitle>Interne Notizen</SheetTitle>
+            <SheetDescription>
+              {notesQuote?.customer_name || "Vorschlag"} · nur intern sichtbar, erscheint nicht im PDF oder in Nachrichten.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 py-4">
+            <Textarea
+              value={notesValue}
+              onChange={(e) => setNotesValue(e.target.value)}
+              placeholder="Hinweise zum Kunden, gerechnete Aufschläge, Sondervereinbarungen …"
+              className="min-h-[260px] resize-y text-sm"
+            />
+          </div>
+          <SheetFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setNotesQuote(null)} disabled={notesSaving}>
+              Abbrechen
+            </Button>
+            <Button onClick={saveNotes} disabled={notesSaving}>
+              {notesSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4 mr-2" /> Speichern</>}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <PdfFlowSheet
         open={pdfFlowOpen}
