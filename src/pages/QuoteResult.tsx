@@ -804,6 +804,7 @@ export default function QuoteResult() {
         user_id: u.user.id,
         description: data.description,
         line_items: ai.line_items,
+        sections: Array.isArray(ai.sections) ? ai.sections : [],
         customer_text: customerDisplay,
         whatsapp_text: whatsappDisplay,
         net_amount: p.net_amount,
