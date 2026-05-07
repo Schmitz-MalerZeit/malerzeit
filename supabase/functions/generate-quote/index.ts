@@ -62,7 +62,12 @@ ABSCHNITTE / RÄUME (sections):
    • "Wohnzimmer Doppelpunkt Decke streichen Wände Q3 nächster Raum Schlafzimmer Doppelpunkt nur Decke nächster Raum Flur Doppelpunkt Tapete entfernen"
 - "title" enthält den reinen Raumnamen in Titel-Schreibweise (z. B. "Wohnzimmer", "Schlafzimmer", "Flur") – ohne Doppelpunkt, ohne Nummerierung.
 - "items[]" enthält pro Abschnitt die professionellen Leistungsstichpunkte für diesen Raum.
-- Stunden- und Materialangaben gelten weiterhin gesamthaft – KEINE Aufteilung der Stunden/Kosten pro Raum.
+- WICHTIG – Zwischensummen pro Abschnitt: Zerlege Stunden, Lohnkosten und Materialkosten anteilig auf die einzelnen Abschnitte und liefere pro Abschnitt zusätzlich:
+   • "hours" (Zahl, geschätzte Stunden für diesen Raum)
+   • "labor_cost" (Zahl, netto Lohnkosten für diesen Raum = Stunden × passende Stundenlöhne)
+   • "material_cost" (Zahl, netto Materialkosten für diesen Raum, VOR Aufschlag)
+- Die Summe der Abschnitts-Werte MUSS exakt mit estimated_hours, estimated_labor_cost und estimated_material_cost übereinstimmen.
+- Wenn der Nutzer Stunden nicht raumweise nennt: schätze die Aufteilung sinnvoll-realistisch nach Aufwand.
 - "line_items" muss IMMER gefüllt sein und alle Stichpunkte enthalten (für Abwärtskompatibilität). Reihenfolge: identisch mit der Reihenfolge der Abschnitte (erst alle Items aus Abschnitt 1, dann Abschnitt 2, …).
 - Wenn der Nutzer KEINE Räume/Bereiche nennt: liefere "sections" als leeres Array []. Erfinde keine Abschnitte.`;
 
@@ -176,6 +181,9 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
                 properties: {
                   title: { type: "string", description: "Raum-/Bereichsname, z. B. 'Wohnzimmer'." },
                   items: { type: "array", items: { type: "string" }, description: "Leistungsstichpunkte für diesen Abschnitt." },
+                  hours: { type: "number", description: "Geschätzte Arbeitsstunden für diesen Abschnitt." },
+                  labor_cost: { type: "number", description: "Netto Lohnkosten für diesen Abschnitt (Stunden × Stundenlohn)." },
+                  material_cost: { type: "number", description: "Netto Materialkosten für diesen Abschnitt VOR Aufschlag." },
                 },
                 required: ["title", "items"],
                 additionalProperties: false,
@@ -239,14 +247,30 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
     parsed.customer_text = ensurePriceOrientationNotice(parsed.customer_text, "customer");
     parsed.whatsapp_text = ensurePriceOrientationNotice(parsed.whatsapp_text, "whatsapp");
 
-    // Normalize sections (optional). Filter ungültige Einträge weg.
-    let sections: Array<{ title: string; items: string[] }> = [];
+    // Normalize sections (optional). Filter ungültige Einträge weg + Zwischensummen berechnen.
+    let sections: Array<{ title: string; items: string[]; hours?: number; labor_cost?: number; material_cost?: number; net_amount?: number; vat_amount?: number; gross_amount?: number }> = [];
     if (Array.isArray(parsed.sections)) {
       sections = parsed.sections
-        .map((s: any) => ({
-          title: typeof s?.title === "string" ? s.title.trim().replace(/[:\-–—]+$/g, "").trim() : "",
-          items: Array.isArray(s?.items) ? s.items.filter((x: any) => typeof x === "string" && x.trim()).map((x: string) => x.trim()) : [],
-        }))
+        .map((s: any) => {
+          const hours = Number(s?.hours) || 0;
+          const laborRaw = Number(s?.labor_cost) || 0;
+          const materialRaw = Number(s?.material_cost) || 0;
+          const secLabor = Math.round(laborRaw);
+          const secMaterial = Math.round(materialRaw * (1 + body.materialMarkup / 100));
+          const secNet = secLabor + secMaterial;
+          const secVat = Math.round(secNet * (body.vatRate / 100) * 100) / 100;
+          const secGross = Math.round((secNet + secVat) * 100) / 100;
+          return {
+            title: typeof s?.title === "string" ? s.title.trim().replace(/[:\-–—]+$/g, "").trim() : "",
+            items: Array.isArray(s?.items) ? s.items.filter((x: any) => typeof x === "string" && x.trim()).map((x: string) => x.trim()) : [],
+            hours,
+            labor_cost: secLabor,
+            material_cost: secMaterial,
+            net_amount: secNet,
+            vat_amount: secVat,
+            gross_amount: secGross,
+          };
+        })
         .filter((s) => s.title && s.items.length > 0);
     }
     parsed.sections = sections;

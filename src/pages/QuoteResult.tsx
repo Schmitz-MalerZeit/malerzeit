@@ -860,8 +860,8 @@ export default function QuoteResult() {
           </div>
           {Array.isArray(ai.sections) && ai.sections.length > 0 ? (
             <div className="space-y-5">
-              {ai.sections.map((sec: { title: string; items: string[] }, sIdx: number) => (
-                <div key={sIdx} className="space-y-2">
+              {ai.sections.map((sec: any, sIdx: number) => (
+                <div key={sIdx} className="space-y-2 rounded-xl border border-border/60 bg-secondary/30 p-3">
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
@@ -909,6 +909,18 @@ export default function QuoteResult() {
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" /> Position
                   </Button>
+                  {(typeof sec.net_amount === "number" || typeof sec.gross_amount === "number") && (
+                    <div className="mt-2 pt-2 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <span className="text-muted-foreground">
+                        Zwischensumme {sec.title}
+                        {typeof sec.hours === "number" && sec.hours > 0 ? ` · ${sec.hours.toLocaleString("de-DE")} Std` : ""}
+                        {typeof sec.net_amount === "number" ? ` · Netto ${fmt(sec.net_amount)}` : ""}
+                      </span>
+                      {typeof sec.gross_amount === "number" && (
+                        <span className="font-semibold text-primary">Brutto {fmt(sec.gross_amount)}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
               <Button
