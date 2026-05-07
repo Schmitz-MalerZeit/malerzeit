@@ -78,6 +78,16 @@ export default function QuoteResult() {
     setData(JSON.parse(raw));
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => setProfile(data));
     supabase.from("user_settings").select("*").maybeSingle().then(({ data }) => setSettings(data));
+    supabase
+      .from("hourly_rates")
+      .select("id, label, rate, is_default")
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => {
+        const list = (data || []).map((r: any) => ({
+          id: r.id, label: r.label, rate: Number(r.rate) || 0, is_default: !!r.is_default,
+        }));
+        setHourlyRates(list);
+      });
 
     // Restore previously generated PDF from sessionStorage if available
     const cachedB64 = sessionStorage.getItem("currentQuotePdf");
