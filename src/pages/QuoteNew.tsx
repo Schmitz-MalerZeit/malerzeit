@@ -379,9 +379,15 @@ export default function QuoteNew() {
               </div>
               <h2 className="font-semibold">Arbeiten, Stunden & Material</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-3">
               Beschreibe die Arbeiten, das eingesetzte Personal mit Stunden und Stundenlohn sowie den geschätzten Materialaufwand. Daraus berechnet die KI deinen Preis.
             </p>
+            <div className="rounded-xl bg-secondary/50 border border-border p-3 mb-4 text-xs text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">Tipp:</strong> Du kannst dein Angebot in Bereiche gliedern.
+              Schreib oder sag z. B. <em>„Wohnzimmer: Decke streichen, Wände Q3. Schlafzimmer: nur Decke. Flur: Tapete entfernen."</em>
+              Beim Diktieren funktioniert auch <em>„Wohnzimmer Doppelpunkt … nächster Raum Schlafzimmer Doppelpunkt …"</em>.
+              Im PDF erscheinen die Bereiche dann als eigene Abschnitte.
+            </div>
             <Textarea
               placeholder={DESCRIPTION_PLACEHOLDER}
               value={description}
