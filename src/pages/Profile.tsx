@@ -143,13 +143,52 @@ export default function Profile() {
               </div>
             </label>
           </div>
-          {p.logo_primary_color && (
-            <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-              <span>PDF-Farben:</span>
-              <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: p.logo_primary_color }} />
-              <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: p.logo_secondary_color }} />
+          <div className="mt-5 pt-4 border-t border-border">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <Label className="text-sm font-medium">PDF-Farbe</Label>
+              {p.logo_url && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const c = await extractDominantColors(p.logo_url);
+                      setP((prev) => ({ ...prev, logo_primary_color: c.primary, logo_secondary_color: c.secondary }));
+                      toast.success("Farbe aus Logo neu abgeleitet");
+                    } catch { toast.error("Konnte Farbe nicht ableiten"); }
+                  }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Aus Logo ableiten
+                </button>
+              )}
             </div>
-          )}
+            <p className="text-xs text-muted-foreground mb-3">
+              Wird automatisch aus dem Logo abgeleitet (sanft, professionell). Du kannst sie jederzeit gegen einen kuratierten Profi-Ton tauschen.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {PDF_COLOR_PALETTE.map((sw) => {
+                const active = (p.logo_primary_color || "").toLowerCase() === sw.primary.toLowerCase();
+                return (
+                  <button
+                    key={sw.id}
+                    type="button"
+                    title={sw.label}
+                    aria-label={sw.label}
+                    onClick={() => setP({ ...p, logo_primary_color: sw.primary, logo_secondary_color: sw.secondary })}
+                    className={`h-9 w-9 rounded-full border-2 transition-base ${active ? "border-foreground scale-110" : "border-border hover:border-foreground/40"}`}
+                    style={{ backgroundColor: sw.primary }}
+                  />
+                );
+              })}
+            </div>
+            {p.logo_primary_color && (
+              <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                <span>Aktuell:</span>
+                <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: p.logo_primary_color }} />
+                <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: p.logo_secondary_color }} />
+              </div>
+            )}
+          </div>
 
           {showPdfPreview && (
             <div className="mt-5 pt-5 border-t border-border">
