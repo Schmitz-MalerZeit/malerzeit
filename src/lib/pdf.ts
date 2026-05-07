@@ -426,43 +426,55 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     y += cl.length * 4.5;
   }
 
-  // ───────── Footer (Anschrift / Kontakt) ─────────
-  const footerY = pageH - 22;
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.2);
-  doc.line(margin, footerY - 4, pageW - margin, footerY - 4);
+  // ───────── Footer (Anschrift / Kontakt) – auf JEDER Seite ─────────
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    const footerY = pageH - 22;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.line(margin, footerY - 4, pageW - margin, footerY - 4);
 
-  const colW = (pageW - margin * 2) / 2;
-  // Spalte 1: Anschrift
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(60, 60, 60);
-  doc.text("Anschrift", margin, footerY);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(110, 110, 110);
-  const addrLines = [
-    d.company.name,
-    d.company.address,
-    d.company.addressLine2,
-    [d.company.postalCode, d.company.city].filter(Boolean).join(" "),
-  ].filter(Boolean) as string[];
-  addrLines.forEach((ln, i) => doc.text(ln, margin, footerY + 3.5 + i * 3.2));
+    const colW = (pageW - margin * 2) / 2;
+    // Spalte 1: Anschrift
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(60, 60, 60);
+    doc.text("Anschrift", margin, footerY);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(110, 110, 110);
+    const addrLines = [
+      d.company.name,
+      d.company.address,
+      d.company.addressLine2,
+      [d.company.postalCode, d.company.city].filter(Boolean).join(" "),
+    ].filter(Boolean) as string[];
+    addrLines.forEach((ln, i) => doc.text(ln, margin, footerY + 3.5 + i * 3.2));
 
-  // Spalte 2: Kontakt
-  const cx = margin + colW;
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(60, 60, 60);
-  doc.text("Kontakt", cx, footerY);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(110, 110, 110);
-  const contactLines = [
-    d.company.website,
-    d.company.email,
-    d.company.phone,
-    d.company.contact,
-    d.company.vatId ? `USt-IdNr.: ${d.company.vatId}` : undefined,
-  ].filter(Boolean) as string[];
-  contactLines.forEach((ln, i) => doc.text(ln, cx, footerY + 3.5 + i * 3.2));
+    // Spalte 2: Kontakt
+    const cx = margin + colW;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(60, 60, 60);
+    doc.text("Kontakt", cx, footerY);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(110, 110, 110);
+    const contactLines = [
+      d.company.website,
+      d.company.email,
+      d.company.phone,
+      d.company.contact,
+      d.company.vatId ? `USt-IdNr.: ${d.company.vatId}` : undefined,
+    ].filter(Boolean) as string[];
+    contactLines.forEach((ln, i) => doc.text(ln, cx, footerY + 3.5 + i * 3.2));
+
+    // Seitenzahl (nur bei mehr als einer Seite)
+    if (totalPages > 1) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text(`Seite ${p} von ${totalPages}`, pageW - margin, pageH - 8, { align: "right" });
+    }
+  }
 
   return doc;
 }
