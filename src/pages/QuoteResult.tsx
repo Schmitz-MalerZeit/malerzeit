@@ -476,7 +476,7 @@ export default function QuoteResult() {
       } : undefined,
       date: new Date().toLocaleDateString("de-DE"),
       lineItems: ai.line_items,
-      sections: Array.isArray(ai.sections) ? ai.sections : [],
+      sections: scaledSections,
       net: effNet, vat: effVat, gross: effGross, vatRate: vatRate,
       validityDays: settings?.quote_validity_days ?? 14,
       closingText: settings?.closing_text ?? "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
