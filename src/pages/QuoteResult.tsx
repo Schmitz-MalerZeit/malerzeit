@@ -1030,6 +1030,24 @@ export default function QuoteResult() {
               </Button>
             </>
           )}
+
+          {itemsDirty && (
+            <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <p className="text-xs text-foreground">
+                Du hast Positionen geändert. Lass die Preise neu berechnen, damit Stunden, Lohn und Material zur neuen Liste passen.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                onClick={recalcPrices}
+                disabled={recalcBusy}
+                className="h-9 shrink-0"
+              >
+                {recalcBusy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Calculator className="h-4 w-4 mr-1.5" />}
+                Preise neu berechnen
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl bg-secondary/50 border border-border p-4 text-xs text-muted-foreground leading-relaxed">
