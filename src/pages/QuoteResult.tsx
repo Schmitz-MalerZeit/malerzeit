@@ -978,7 +978,7 @@ export default function QuoteResult() {
     document.body.removeChild(a);
   };
 
-
+  // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
   // und den Busy-Spinner – wird beim Auto-Speichern nach PDF-Erstellung genutzt.
   // Wenn bereits ein Datensatz existiert (savedQuoteId), wird ein UPDATE statt
   // INSERT ausgeführt – verhindert Duplikate, wenn der Nutzer nach dem
