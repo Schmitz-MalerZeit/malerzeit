@@ -52,7 +52,19 @@ Deine Aufgabe:
 - Übernimm die Lohnkosten (Summe Stunden × Stundenlohn) als estimated_labor_cost.
 - Wenn Stunden fehlen: schätze konservativ-realistisch.
 - Rückfragen NUR zu Arbeitsumfang/Material – NIEMALS zu Stundenlöhnen. Max. 4 Rückfragen, nur wenn wirklich nötig.
-- Antworten ausschließlich auf Deutsch.`;
+- Antworten ausschließlich auf Deutsch.
+
+ABSCHNITTE / RÄUME (sections):
+- Wenn der Nutzer im Beschreibungstext Räume oder Bereiche nennt (z. B. "Wohnzimmer:", "Schlafzimmer –", "Flur", "Bad", "Küche", "Treppenhaus", "Fassade", "Garage"), gliedere die Leistungen in genau diese Abschnitte und liefere sie zusätzlich im Feld "sections" als Liste von { title, items[] }.
+- Erkenne auch gesprochene/diktierte Trenner und behandle sie wie Abschnittsgrenzen: "Doppelpunkt", "nächster Raum", "neuer Raum", "neuer Bereich", "weiter mit", "Position 2", "zweitens", "und dann".
+- Beispiel-Eingaben (gleichwertig):
+   • "Wohnzimmer: Decke streichen, Wände Q3. Schlafzimmer: nur Decke. Flur: Tapete entfernen."
+   • "Wohnzimmer Doppelpunkt Decke streichen Wände Q3 nächster Raum Schlafzimmer Doppelpunkt nur Decke nächster Raum Flur Doppelpunkt Tapete entfernen"
+- "title" enthält den reinen Raumnamen in Titel-Schreibweise (z. B. "Wohnzimmer", "Schlafzimmer", "Flur") – ohne Doppelpunkt, ohne Nummerierung.
+- "items[]" enthält pro Abschnitt die professionellen Leistungsstichpunkte für diesen Raum.
+- Stunden- und Materialangaben gelten weiterhin gesamthaft – KEINE Aufteilung der Stunden/Kosten pro Raum.
+- "line_items" muss IMMER gefüllt sein und alle Stichpunkte enthalten (für Abwärtskompatibilität). Reihenfolge: identisch mit der Reihenfolge der Abschnitte (erst alle Items aus Abschnitt 1, dann Abschnitt 2, …).
+- Wenn der Nutzer KEINE Räume/Bereiche nennt: liefere "sections" als leeres Array []. Erfinde keine Abschnitte.`;
 
 const ensurePriceOrientationNotice = (text: string, channel: "customer" | "whatsapp") => {
   const trimmed = (text || "").trim();
