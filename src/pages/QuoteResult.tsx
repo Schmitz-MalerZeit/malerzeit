@@ -988,7 +988,7 @@ export default function QuoteResult() {
               Preisorientierung mit einem Tipp direkt per WhatsApp – inklusive persönlicher
               Anrede deines Kunden und der PDF als Anhang.
               <br /><br />
-              Im Starter-Tarif lädst du das PDF einfach herunter und teilst es selbst.
+              Im Light-Tarif lädst du das PDF einfach herunter und teilst es selbst.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:flex-col sm:space-x-0 gap-2">
