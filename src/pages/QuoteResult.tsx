@@ -167,17 +167,17 @@ export default function QuoteResult() {
     if (!data) return;
     const items = [...data.ai.line_items];
     items[index] = value;
-    persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
+    persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
   };
   const removeLineItem = (index: number) => {
     if (!data) return;
     const items = data.ai.line_items.filter((_: string, i: number) => i !== index);
-    persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
+    persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
   };
   const addLineItem = () => {
     if (!data) return;
     const items = [...data.ai.line_items, ""];
-    persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
+    persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
   };
 
   // ---- Section helpers (Räume/Bereiche) ----------------------------------
@@ -189,7 +189,7 @@ export default function QuoteResult() {
 
   const setSections = (sections: Array<{ title: string; items: string[] }>) => {
     if (!data) return;
-    persistEdits({
+    persistItemsEdit({
       ...data,
       ai: { ...data.ai, sections, line_items: flattenSections(sections) },
     });
