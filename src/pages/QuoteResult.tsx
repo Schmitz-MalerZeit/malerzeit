@@ -6,6 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2, MessageCircle, Calculator, ArrowLeft } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
 import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
@@ -44,6 +52,15 @@ export default function QuoteResult() {
   const [whatsappUpgradeOpen, setWhatsappUpgradeOpen] = useState(false);
   const [itemsDirty, setItemsDirty] = useState(false);
   const [recalcBusy, setRecalcBusy] = useState(false);
+  const [hourlyRates, setHourlyRates] = useState<Array<{ id: string; label: string; rate: number; is_default: boolean }>>([]);
+  const [addDlg, setAddDlg] = useState<{
+    open: boolean;
+    sectionIdx: number | null;
+    description: string;
+    hours: string;
+    rateId: string;
+    materialNet: string;
+  }>({ open: false, sectionIdx: null, description: "", hours: "", rateId: "", materialNet: "" });
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
@@ -61,6 +78,16 @@ export default function QuoteResult() {
     setData(JSON.parse(raw));
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => setProfile(data));
     supabase.from("user_settings").select("*").maybeSingle().then(({ data }) => setSettings(data));
+    supabase
+      .from("hourly_rates")
+      .select("id, label, rate, is_default")
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => {
+        const list = (data || []).map((r: any) => ({
+          id: r.id, label: r.label, rate: Number(r.rate) || 0, is_default: !!r.is_default,
+        }));
+        setHourlyRates(list);
+      });
 
     // Restore previously generated PDF from sessionStorage if available
     const cachedB64 = sessionStorage.getItem("currentQuotePdf");
@@ -174,10 +201,86 @@ export default function QuoteResult() {
     const items = data.ai.line_items.filter((_: string, i: number) => i !== index);
     persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
   };
-  const addLineItem = () => {
+  const openAddDialog = (sectionIdx: number | null) => {
+    const def = hourlyRates.find((r) => r.is_default) || hourlyRates[0];
+    setAddDlg({
+      open: true,
+      sectionIdx,
+      description: "",
+      hours: "",
+      rateId: def?.id || "",
+      materialNet: "",
+    });
+  };
+  const addLineItem = () => openAddDialog(null);
+
+  // Apply the dialog: insert the new position into items/sections AND update
+  // pricing/sections subtotals deterministically (no AI call). The user can
+  // still hit "Preise neu berechnen" afterwards if they want a full re-eval.
+  const confirmAddPosition = () => {
     if (!data) return;
-    const items = [...data.ai.line_items, ""];
-    persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
+    const desc = addDlg.description.trim();
+    if (!desc) { toast.error("Bitte eine Beschreibung eingeben."); return; }
+    const hours = Number((addDlg.hours || "0").replace(",", ".")) || 0;
+    const materialNet = Number((addDlg.materialNet || "0").replace(",", ".")) || 0;
+    const rate = hourlyRates.find((r) => r.id === addDlg.rateId);
+    const hourlyRate = rate?.rate || 0;
+    const labor = Math.round(hours * hourlyRate);
+    const markup = Number(settings?.material_markup ?? 15);
+    const materialGross = Math.round(materialNet * (1 + markup / 100));
+    const addNet = labor + materialGross;
+    const vatRate = Number(data.ai?.pricing?.vat_rate ?? settings?.vat_rate ?? 19);
+    const addVat = Math.round(addNet * (vatRate / 100) * 100) / 100;
+    const addGross = Math.round((addNet + addVat) * 100) / 100;
+
+    // Build updated sections / items
+    const sections = Array.isArray(data.ai.sections) ? [...data.ai.sections] : [];
+    let nextSections = sections;
+    let nextLineItems: string[] = [...(data.ai.line_items || [])];
+    if (addDlg.sectionIdx !== null && sections[addDlg.sectionIdx]) {
+      const sIdx = addDlg.sectionIdx;
+      const sec = { ...sections[sIdx] };
+      sec.items = [...(sec.items || []), desc];
+      sec.hours = (Number(sec.hours) || 0) + hours;
+      sec.labor_cost = (Number(sec.labor_cost) || 0) + labor;
+      sec.material_cost = (Number(sec.material_cost) || 0) + materialGross;
+      sec.net_amount = (Number(sec.net_amount) || 0) + addNet;
+      sec.vat_amount = Math.round(((Number(sec.vat_amount) || 0) + addVat) * 100) / 100;
+      sec.gross_amount = Math.round(((Number(sec.gross_amount) || 0) + addGross) * 100) / 100;
+      nextSections = [...sections];
+      nextSections[sIdx] = sec;
+      nextLineItems = nextSections.flatMap((s: any) => s.items);
+    } else {
+      nextLineItems = [...nextLineItems, desc];
+    }
+
+    // Update overall pricing
+    const prevP = data.ai.pricing || {};
+    const newPricing = {
+      ...prevP,
+      vat_rate: vatRate,
+      labor_cost: (Number(prevP.labor_cost) || 0) + labor,
+      material_cost: (Number(prevP.material_cost) || 0) + materialGross,
+      net_amount: (Number(prevP.net_amount) || 0) + addNet,
+      vat_amount: Math.round(((Number(prevP.vat_amount) || 0) + addVat) * 100) / 100,
+      gross_amount: Math.round(((Number(prevP.gross_amount) || 0) + addGross) * 100) / 100,
+    };
+
+    const nextAi = {
+      ...data.ai,
+      sections: nextSections,
+      line_items: nextLineItems,
+      estimated_hours: (Number(data.ai.estimated_hours) || 0) + hours,
+      estimated_labor_cost: (Number(data.ai.estimated_labor_cost) || 0) + labor,
+      estimated_material_cost: (Number(data.ai.estimated_material_cost) || 0) + materialNet,
+      pricing: newPricing,
+    };
+    const next = { ...data, ai: nextAi };
+    // Use persistEdits (NOT persistItemsEdit) – the pricing is already up to
+    // date, so we don't want the "Preise neu berechnen" banner to appear.
+    persistEdits(next);
+    setAddDlg((s) => ({ ...s, open: false }));
+    toast.success("Position hinzugefügt");
   };
 
   // ---- Section helpers (Räume/Bereiche) ----------------------------------
@@ -979,7 +1082,7 @@ export default function QuoteResult() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => addSectionItem(sIdx)}
+                    onClick={() => openAddDialog(sIdx)}
                     className="h-8 text-xs"
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" /> Position
@@ -1232,6 +1335,101 @@ export default function QuoteResult() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={addDlg.open} onOpenChange={(o) => setAddDlg((s) => ({ ...s, open: o }))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Position hinzufügen</DialogTitle>
+            <DialogDescription>
+              Stunden, Stundensatz und Materialkosten werden direkt in die Kalkulation übernommen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="add-desc">Beschreibung</Label>
+              <Textarea
+                id="add-desc"
+                value={addDlg.description}
+                onChange={(e) => setAddDlg((s) => ({ ...s, description: e.target.value }))}
+                placeholder="z. B. Decke spachteln und streichen"
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="add-hours">Stunden</Label>
+                <Input
+                  id="add-hours"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.25"
+                  min="0"
+                  value={addDlg.hours}
+                  onChange={(e) => setAddDlg((s) => ({ ...s, hours: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="add-material">Material netto (€)</Label>
+                <Input
+                  id="add-material"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={addDlg.materialNet}
+                  onChange={(e) => setAddDlg((s) => ({ ...s, materialNet: e.target.value }))}
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Stundensatz</Label>
+              {hourlyRates.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Noch keine Stundensätze hinterlegt. Bitte unter Profil → Stundensätze pflegen.
+                </p>
+              ) : (
+                <Select
+                  value={addDlg.rateId}
+                  onValueChange={(v) => setAddDlg((s) => ({ ...s, rateId: v }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Stundensatz wählen" /></SelectTrigger>
+                  <SelectContent>
+                    {hourlyRates.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.label} – {r.rate.toLocaleString("de-DE")} €/Std{r.is_default ? " (Standard)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            {(() => {
+              const h = Number((addDlg.hours || "0").replace(",", ".")) || 0;
+              const m = Number((addDlg.materialNet || "0").replace(",", ".")) || 0;
+              const r = hourlyRates.find((x) => x.id === addDlg.rateId)?.rate || 0;
+              const labor = h * r;
+              const markup = Number(settings?.material_markup ?? 15);
+              const matGross = m * (1 + markup / 100);
+              const net = labor + matGross;
+              return (
+                <div className="rounded-lg bg-secondary/40 p-3 text-xs space-y-1">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Lohn</span><span>{fmt(labor)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Material (inkl. {markup}% Aufschlag)</span><span>{fmt(matGross)}</span></div>
+                  <div className="flex justify-between font-semibold pt-1 border-t border-border/60"><span>Netto neue Position</span><span>{fmt(net)}</span></div>
+                </div>
+              );
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddDlg((s) => ({ ...s, open: false }))}>Abbrechen</Button>
+            <Button onClick={confirmAddPosition}>
+              <Plus className="h-4 w-4 mr-1.5" /> Hinzufügen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
