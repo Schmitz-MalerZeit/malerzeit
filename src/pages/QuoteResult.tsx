@@ -112,6 +112,59 @@ export default function QuoteResult() {
     const items = [...data.ai.line_items, ""];
     persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
   };
+
+  // ---- Section helpers (Räume/Bereiche) ----------------------------------
+  // Beim Editieren von Sections halten wir line_items automatisch synchron
+  // (flach, in Reihenfolge der Sections), damit PDF/WhatsApp/Templates
+  // konsistent bleiben.
+  const flattenSections = (sections: Array<{ title: string; items: string[] }>) =>
+    sections.flatMap((s) => s.items);
+
+  const setSections = (sections: Array<{ title: string; items: string[] }>) => {
+    if (!data) return;
+    persistEdits({
+      ...data,
+      ai: { ...data.ai, sections, line_items: flattenSections(sections) },
+    });
+  };
+
+  const updateSectionTitle = (sIdx: number, value: string) => {
+    if (!data) return;
+    const next = [...(data.ai.sections || [])];
+    next[sIdx] = { ...next[sIdx], title: value };
+    setSections(next);
+  };
+  const updateSectionItem = (sIdx: number, iIdx: number, value: string) => {
+    if (!data) return;
+    const next = [...(data.ai.sections || [])];
+    const items = [...next[sIdx].items];
+    items[iIdx] = value;
+    next[sIdx] = { ...next[sIdx], items };
+    setSections(next);
+  };
+  const removeSectionItem = (sIdx: number, iIdx: number) => {
+    if (!data) return;
+    const next = [...(data.ai.sections || [])];
+    const items = next[sIdx].items.filter((_: string, i: number) => i !== iIdx);
+    next[sIdx] = { ...next[sIdx], items };
+    setSections(next);
+  };
+  const addSectionItem = (sIdx: number) => {
+    if (!data) return;
+    const next = [...(data.ai.sections || [])];
+    next[sIdx] = { ...next[sIdx], items: [...next[sIdx].items, ""] };
+    setSections(next);
+  };
+  const removeSection = (sIdx: number) => {
+    if (!data) return;
+    const next = (data.ai.sections || []).filter((_: any, i: number) => i !== sIdx);
+    setSections(next);
+  };
+  const addSection = () => {
+    if (!data) return;
+    const next = [...(data.ai.sections || []), { title: "Neuer Bereich", items: [""] }];
+    setSections(next);
+  };
   const updateCustomerText = (value: string) => {
     if (!data) return;
     persistEdits({ ...data, ai: { ...data.ai, customer_text: value } });
@@ -212,6 +265,7 @@ export default function QuoteResult() {
       } : undefined,
       date: new Date().toLocaleDateString("de-DE"),
       lineItems: ai.line_items,
+      sections: Array.isArray(ai.sections) ? ai.sections : [],
       net: p.net_amount, vat: p.vat_amount, gross: p.gross_amount, vatRate: p.vat_rate,
       validityDays: settings?.quote_validity_days ?? 14,
       closingText: settings?.closing_text ?? "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
@@ -440,6 +494,7 @@ export default function QuoteResult() {
       user_id: u.user.id,
       description: data.description,
       line_items: ai.line_items,
+      sections: Array.isArray(ai.sections) ? ai.sections : [],
       customer_text: customerDisplay,
       whatsapp_text: whatsappDisplay,
       net_amount: p.net_amount,
@@ -749,6 +804,7 @@ export default function QuoteResult() {
         user_id: u.user.id,
         description: data.description,
         line_items: ai.line_items,
+        sections: Array.isArray(ai.sections) ? ai.sections : [],
         customer_text: customerDisplay,
         whatsapp_text: whatsappDisplay,
         net_amount: p.net_amount,
@@ -802,36 +858,103 @@ export default function QuoteResult() {
               <Pencil className="h-3 w-3" /> bearbeitbar
             </span>
           </div>
-          <ul className="space-y-2">
-            {ai.line_items.map((item: string, i: number) => (
-              <li key={i} className="flex gap-2 items-start">
-                <span className="text-primary font-bold mt-2.5">•</span>
-                <Textarea
-                  value={item}
-                  onChange={(e) => updateLineItem(i, e.target.value)}
-                  rows={1}
-                  className="flex-1 min-h-[40px] text-sm resize-y"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeLineItem(i)}
-                  className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
-                  aria-label="Position entfernen"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addLineItem}
-            className="mt-3 h-9"
-          >
-            <Plus className="h-4 w-4 mr-1.5" /> Position hinzufügen
-          </Button>
+          {Array.isArray(ai.sections) && ai.sections.length > 0 ? (
+            <div className="space-y-5">
+              {ai.sections.map((sec: { title: string; items: string[] }, sIdx: number) => (
+                <div key={sIdx} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={sec.title}
+                      onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
+                      className="flex-1 bg-transparent border-0 border-b border-border focus:border-primary focus:outline-none text-sm font-semibold text-foreground py-1"
+                      placeholder="Bereich (z. B. Wohnzimmer)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeSection(sIdx)}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      aria-label="Bereich entfernen"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <ul className="space-y-2 pl-1">
+                    {sec.items.map((item: string, iIdx: number) => (
+                      <li key={iIdx} className="flex gap-2 items-start">
+                        <span className="text-primary font-bold mt-2.5">•</span>
+                        <Textarea
+                          value={item}
+                          onChange={(e) => updateSectionItem(sIdx, iIdx, e.target.value)}
+                          rows={1}
+                          className="flex-1 min-h-[40px] text-sm resize-y"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeSectionItem(sIdx, iIdx)}
+                          className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+                          aria-label="Position entfernen"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => addSectionItem(sIdx)}
+                    className="h-8 text-xs"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Position
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addSection}
+                className="h-9"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Bereich hinzufügen
+              </Button>
+            </div>
+          ) : (
+            <>
+              <ul className="space-y-2">
+                {ai.line_items.map((item: string, i: number) => (
+                  <li key={i} className="flex gap-2 items-start">
+                    <span className="text-primary font-bold mt-2.5">•</span>
+                    <Textarea
+                      value={item}
+                      onChange={(e) => updateLineItem(i, e.target.value)}
+                      rows={1}
+                      className="flex-1 min-h-[40px] text-sm resize-y"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeLineItem(i)}
+                      className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+                      aria-label="Position entfernen"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addLineItem}
+                className="mt-3 h-9"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Position hinzufügen
+              </Button>
+            </>
+          )}
         </div>
 
         <div className="rounded-xl bg-secondary/50 border border-border p-4 text-xs text-muted-foreground leading-relaxed">

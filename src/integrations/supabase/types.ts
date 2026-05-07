@@ -192,6 +192,7 @@ export type Database = {
           pdf_mime_type: string | null
           pdf_size_bytes: number | null
           pdf_storage_path: string | null
+          sections: Json
           title: string
           updated_at: string
           user_id: string
@@ -220,6 +221,7 @@ export type Database = {
           pdf_mime_type?: string | null
           pdf_size_bytes?: number | null
           pdf_storage_path?: string | null
+          sections?: Json
           title?: string
           updated_at?: string
           user_id: string
@@ -248,6 +250,7 @@ export type Database = {
           pdf_mime_type?: string | null
           pdf_size_bytes?: number | null
           pdf_storage_path?: string | null
+          sections?: Json
           title?: string
           updated_at?: string
           user_id?: string

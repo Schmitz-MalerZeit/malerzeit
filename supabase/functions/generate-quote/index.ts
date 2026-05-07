@@ -52,7 +52,19 @@ Deine Aufgabe:
 - Übernimm die Lohnkosten (Summe Stunden × Stundenlohn) als estimated_labor_cost.
 - Wenn Stunden fehlen: schätze konservativ-realistisch.
 - Rückfragen NUR zu Arbeitsumfang/Material – NIEMALS zu Stundenlöhnen. Max. 4 Rückfragen, nur wenn wirklich nötig.
-- Antworten ausschließlich auf Deutsch.`;
+- Antworten ausschließlich auf Deutsch.
+
+ABSCHNITTE / RÄUME (sections):
+- Wenn der Nutzer im Beschreibungstext Räume oder Bereiche nennt (z. B. "Wohnzimmer:", "Schlafzimmer –", "Flur", "Bad", "Küche", "Treppenhaus", "Fassade", "Garage"), gliedere die Leistungen in genau diese Abschnitte und liefere sie zusätzlich im Feld "sections" als Liste von { title, items[] }.
+- Erkenne auch gesprochene/diktierte Trenner und behandle sie wie Abschnittsgrenzen: "Doppelpunkt", "nächster Raum", "neuer Raum", "neuer Bereich", "weiter mit", "Position 2", "zweitens", "und dann".
+- Beispiel-Eingaben (gleichwertig):
+   • "Wohnzimmer: Decke streichen, Wände Q3. Schlafzimmer: nur Decke. Flur: Tapete entfernen."
+   • "Wohnzimmer Doppelpunkt Decke streichen Wände Q3 nächster Raum Schlafzimmer Doppelpunkt nur Decke nächster Raum Flur Doppelpunkt Tapete entfernen"
+- "title" enthält den reinen Raumnamen in Titel-Schreibweise (z. B. "Wohnzimmer", "Schlafzimmer", "Flur") – ohne Doppelpunkt, ohne Nummerierung.
+- "items[]" enthält pro Abschnitt die professionellen Leistungsstichpunkte für diesen Raum.
+- Stunden- und Materialangaben gelten weiterhin gesamthaft – KEINE Aufteilung der Stunden/Kosten pro Raum.
+- "line_items" muss IMMER gefüllt sein und alle Stichpunkte enthalten (für Abwärtskompatibilität). Reihenfolge: identisch mit der Reihenfolge der Abschnitte (erst alle Items aus Abschnitt 1, dann Abschnitt 2, …).
+- Wenn der Nutzer KEINE Räume/Bereiche nennt: liefere "sections" als leeres Array []. Erfinde keine Abschnitte.`;
 
 const ensurePriceOrientationNotice = (text: string, channel: "customer" | "whatsapp") => {
   const trimmed = (text || "").trim();
@@ -154,7 +166,20 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
             line_items: {
               type: "array",
               items: { type: "string" },
-              description: "Professionelle Leistungsstichpunkte",
+              description: "Alle professionellen Leistungsstichpunkte (flach, in Reihenfolge der sections). Pflichtfeld.",
+            },
+            sections: {
+              type: "array",
+              description: "Optional. Gruppierung nach vom Nutzer genannten Räumen/Bereichen. Leer lassen, wenn keine Räume genannt wurden.",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string", description: "Raum-/Bereichsname, z. B. 'Wohnzimmer'." },
+                  items: { type: "array", items: { type: "string" }, description: "Leistungsstichpunkte für diesen Abschnitt." },
+                },
+                required: ["title", "items"],
+                additionalProperties: false,
+              },
             },
             estimated_hours: { type: "number", description: "Summe aller Arbeitsstunden aller Personen" },
             estimated_labor_cost: { type: "number", description: "Lohnkosten netto in Euro (Summe Stunden × Stundenlohn der genannten Personen)" },
@@ -213,6 +238,23 @@ Modus: ${body.mode === "analyze" ? "Erstanalyse - Rückfragen NUR zu Arbeitsumfa
 
     parsed.customer_text = ensurePriceOrientationNotice(parsed.customer_text, "customer");
     parsed.whatsapp_text = ensurePriceOrientationNotice(parsed.whatsapp_text, "whatsapp");
+
+    // Normalize sections (optional). Filter ungültige Einträge weg.
+    let sections: Array<{ title: string; items: string[] }> = [];
+    if (Array.isArray(parsed.sections)) {
+      sections = parsed.sections
+        .map((s: any) => ({
+          title: typeof s?.title === "string" ? s.title.trim().replace(/[:\-–—]+$/g, "").trim() : "",
+          items: Array.isArray(s?.items) ? s.items.filter((x: any) => typeof x === "string" && x.trim()).map((x: string) => x.trim()) : [],
+        }))
+        .filter((s) => s.title && s.items.length > 0);
+    }
+    parsed.sections = sections;
+
+    // Wenn line_items leer ist, aber sections vorhanden → daraus rekonstruieren.
+    if ((!Array.isArray(parsed.line_items) || parsed.line_items.length === 0) && sections.length > 0) {
+      parsed.line_items = sections.flatMap((s) => s.items);
+    }
 
     return new Response(JSON.stringify({
       ...parsed,
