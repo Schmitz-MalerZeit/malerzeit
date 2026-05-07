@@ -96,9 +96,68 @@ export default function QuoteResult() {
     // Mark as dirty: after edits the user can save again (UPDATE if a row
     // already exists, INSERT otherwise).
     setSaved(false);
+    setItemsDirty(true);
   };
 
-  const updateLineItem = (index: number, value: string) => {
+  const recalcPrices = async () => {
+    if (!data) return;
+    setRecalcBusy(true);
+    try {
+      const { data: rates } = await supabase
+        .from("hourly_rates")
+        .select("label, rate, is_default")
+        .order("sort_order", { ascending: true });
+      const sections = Array.isArray(data.ai.sections) ? data.ai.sections : [];
+      const cleanSections = sections
+        .map((s: any) => ({
+          title: (s?.title || "").trim(),
+          items: Array.isArray(s?.items) ? s.items.filter((x: string) => x && x.trim()) : [],
+        }))
+        .filter((s: any) => s.title && s.items.length > 0);
+      const cleanItems = (data.ai.line_items || []).filter((x: string) => x && x.trim());
+
+      const { data: res, error } = await supabase.functions.invoke("recalc-quote", {
+        body: {
+          description: data.description,
+          line_items: cleanItems,
+          sections: cleanSections,
+          hourlyRates: rates || [],
+          materialMarkup: settings?.material_markup ?? 15,
+          qualityLevel: settings?.quality_level ?? "standard",
+          vatRate: data.ai.pricing?.vat_rate ?? settings?.vat_rate ?? 19,
+        },
+      });
+      if (error) throw error;
+      if ((res as any)?.error) throw new Error((res as any).error);
+
+      const r: any = res;
+      const nextSections = Array.isArray(r.sections) && r.sections.length > 0
+        ? r.sections
+        : sections;
+      const nextAi = {
+        ...data.ai,
+        sections: nextSections,
+        estimated_hours: r.estimated_hours,
+        estimated_labor_cost: r.estimated_labor_cost,
+        estimated_material_cost: r.estimated_material_cost,
+        pricing: r.pricing,
+      };
+      const next = { ...data, ai: nextAi };
+      setData(next);
+      sessionStorage.setItem("currentQuote", JSON.stringify(next));
+      sessionStorage.removeItem("currentQuotePdf");
+      if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }
+      setPreviewBlob(null);
+      setPdfQuotaConsumed(false);
+      setSaved(false);
+      setItemsDirty(false);
+      toast.success("Preise neu berechnet");
+    } catch (e: any) {
+      toast.error(e.message || "Neuberechnung fehlgeschlagen");
+    } finally {
+      setRecalcBusy(false);
+    }
+  };
     if (!data) return;
     const items = [...data.ai.line_items];
     items[index] = value;
