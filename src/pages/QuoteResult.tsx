@@ -352,6 +352,7 @@ export default function QuoteResult() {
   const templateVars = {
     customerName: data.customer?.name || "",
     lineItems: ai.line_items || [],
+    sections: Array.isArray(ai.sections) ? ai.sections : null,
     grossFormatted: fmt(p.gross_amount),
     netFormatted: fmt(p.net_amount),
     vatFormatted: fmt(p.vat_amount),

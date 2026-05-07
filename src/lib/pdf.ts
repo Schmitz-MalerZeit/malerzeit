@@ -220,10 +220,61 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   const useSections = Array.isArray(d.sections) && d.sections.length > 0
     && d.sections.some((s) => s && s.title && Array.isArray(s.items) && s.items.length > 0);
 
+  // Bottom-Reserve: Footer (~22mm) + Sicherheitspuffer (~8mm) – damit
+  // Inhalt niemals in den Footer-Bereich läuft.
+  const contentBottom = pageH - 32;
+
+  // Laufende Zwischensumme über bereits abgeschlossene Abschnitte hinweg
+  // (für „Übertrag" bei Seitenumbrüchen mitten in der Leistungsliste).
+  let runningNet = 0;
+  let runningGross = 0;
+
+  const drawCarryDown = () => {
+    // Fuß der aktuellen Seite: „Übertrag" mit aktueller Zwischensumme.
+    if (runningNet <= 0 && runningGross <= 0) return;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.line(margin, contentBottom + 2, pageW - margin, contentBottom + 2);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(110, 110, 110);
+    doc.text(`Übertrag (Zwischensumme): Netto ${fmt(runningNet)}`, margin, contentBottom + 7);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(primary[0], primary[1], primary[2]);
+    doc.text(`Brutto ${fmt(runningGross)}`, pageW - margin, contentBottom + 7, { align: "right" });
+  };
+
+  const drawCarryUp = () => {
+    if (runningNet <= 0 && runningGross <= 0) return;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(110, 110, 110);
+    doc.text(`Übertrag von vorheriger Seite: Netto ${fmt(runningNet)}`, margin, y);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(primary[0], primary[1], primary[2]);
+    doc.text(`Brutto ${fmt(runningGross)}`, pageW - margin, y, { align: "right" });
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.line(margin, y + 2, pageW - margin, y + 2);
+    y += 7;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10.5);
+    doc.setTextColor(45, 45, 45);
+  };
+
+  const ensureSpace = (needed: number) => {
+    if (y + needed > contentBottom) {
+      drawCarryDown();
+      doc.addPage();
+      y = margin;
+      drawCarryUp();
+    }
+  };
+
   // Renderhilfe: ein Stichpunkt mit Nummerierung
   const drawItem = (item: string, num: string) => {
     const lines = doc.splitTextToSize(item, pageW - margin * 2 - 8);
-    if (y + lines.length * 5.2 > pageH - 80) { doc.addPage(); y = margin; }
+    ensureSpace(lines.length * 5.2);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(primary[0], primary[1], primary[2]);
     doc.text(num, margin, y);
@@ -239,7 +290,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
       const items = (sec.items || []).filter((x) => typeof x === "string" && x.trim());
       if (!items.length) return;
       // Abschnitts-Überschrift
-      if (y + 12 > pageH - 80) { doc.addPage(); y = margin; }
+      ensureSpace(12);
       if (sIdx > 0) y += 2;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10.5);
@@ -258,7 +309,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
         typeof sec.net_amount === "number" ||
         typeof sec.gross_amount === "number";
       if (hasSub) {
-        if (y + 8 > pageH - 80) { doc.addPage(); y = margin; }
+        ensureSpace(8);
         doc.setDrawColor(230, 230, 230);
         doc.setLineWidth(0.2);
         doc.line(margin + 8, y - 2, pageW - margin, y - 2);
@@ -278,6 +329,9 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
           doc.text(`Brutto ${fmt(sec.gross_amount)}`, pageW - margin, y + 2, { align: "right" });
         }
         y += 8;
+        // Laufende Summe für „Übertrag" aktualisieren
+        if (typeof sec.net_amount === "number") runningNet += sec.net_amount;
+        if (typeof sec.gross_amount === "number") runningGross += sec.gross_amount;
       }
     });
   } else {
@@ -372,43 +426,55 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     y += cl.length * 4.5;
   }
 
-  // ───────── Footer (Anschrift / Kontakt) ─────────
-  const footerY = pageH - 22;
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.2);
-  doc.line(margin, footerY - 4, pageW - margin, footerY - 4);
+  // ───────── Footer (Anschrift / Kontakt) – auf JEDER Seite ─────────
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    const footerY = pageH - 22;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.line(margin, footerY - 4, pageW - margin, footerY - 4);
 
-  const colW = (pageW - margin * 2) / 2;
-  // Spalte 1: Anschrift
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(60, 60, 60);
-  doc.text("Anschrift", margin, footerY);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(110, 110, 110);
-  const addrLines = [
-    d.company.name,
-    d.company.address,
-    d.company.addressLine2,
-    [d.company.postalCode, d.company.city].filter(Boolean).join(" "),
-  ].filter(Boolean) as string[];
-  addrLines.forEach((ln, i) => doc.text(ln, margin, footerY + 3.5 + i * 3.2));
+    const colW = (pageW - margin * 2) / 2;
+    // Spalte 1: Anschrift
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(60, 60, 60);
+    doc.text("Anschrift", margin, footerY);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(110, 110, 110);
+    const addrLines = [
+      d.company.name,
+      d.company.address,
+      d.company.addressLine2,
+      [d.company.postalCode, d.company.city].filter(Boolean).join(" "),
+    ].filter(Boolean) as string[];
+    addrLines.forEach((ln, i) => doc.text(ln, margin, footerY + 3.5 + i * 3.2));
 
-  // Spalte 2: Kontakt
-  const cx = margin + colW;
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(60, 60, 60);
-  doc.text("Kontakt", cx, footerY);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(110, 110, 110);
-  const contactLines = [
-    d.company.website,
-    d.company.email,
-    d.company.phone,
-    d.company.contact,
-    d.company.vatId ? `USt-IdNr.: ${d.company.vatId}` : undefined,
-  ].filter(Boolean) as string[];
-  contactLines.forEach((ln, i) => doc.text(ln, cx, footerY + 3.5 + i * 3.2));
+    // Spalte 2: Kontakt
+    const cx = margin + colW;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(60, 60, 60);
+    doc.text("Kontakt", cx, footerY);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(110, 110, 110);
+    const contactLines = [
+      d.company.website,
+      d.company.email,
+      d.company.phone,
+      d.company.contact,
+      d.company.vatId ? `USt-IdNr.: ${d.company.vatId}` : undefined,
+    ].filter(Boolean) as string[];
+    contactLines.forEach((ln, i) => doc.text(ln, cx, footerY + 3.5 + i * 3.2));
+
+    // Seitenzahl (nur bei mehr als einer Seite)
+    if (totalPages > 1) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text(`Seite ${p} von ${totalPages}`, pageW - margin, pageH - 8, { align: "right" });
+    }
+  }
 
   return doc;
 }
