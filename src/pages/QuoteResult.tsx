@@ -978,6 +978,43 @@ export default function QuoteResult() {
     document.body.removeChild(a);
   };
 
+        <div className="rounded-2xl bg-card border border-border p-4 shadow-soft space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm">Allgemeiner Aufschlag</h3>
+            <span className="text-xs text-muted-foreground">erscheint nicht im PDF</span>
+          </div>
+          <div className="grid grid-cols-[120px_1fr_auto] gap-2 items-center">
+            <Select
+              value={surcharge.mode}
+              onValueChange={(v) => updateSurcharge({ mode: v as "percent" | "amount", value: surcharge.value })}
+            >
+              <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="percent">Prozent (%)</SelectItem>
+                <SelectItem value="amount">Betrag (€ netto)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              value={surcharge.value === 0 ? "" : String(surcharge.value)}
+              placeholder="0"
+              onChange={(e) => updateSurcharge({ mode: surcharge.mode, value: Number(e.target.value) || 0 })}
+              className="h-10"
+            />
+            <span className="text-sm text-muted-foreground w-10 text-center">
+              {surcharge.mode === "percent" ? "%" : "€"}
+            </span>
+          </div>
+          {surchargeNet > 0 && (
+            <div className="text-xs text-muted-foreground flex justify-between border-t border-border/60 pt-2">
+              <span>Aufschlag (netto)</span>
+              <span className="font-medium text-foreground">{fmt(surchargeNet)}</span>
+            </div>
+          )}
+        </div>
 
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
   // und den Busy-Spinner – wird beim Auto-Speichern nach PDF-Erstellung genutzt.
