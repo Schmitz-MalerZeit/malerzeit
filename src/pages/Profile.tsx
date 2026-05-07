@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Upload, ImageIcon, Eye } from "lucide-react";
-import { extractDominantColors } from "@/lib/colorExtractor";
+import { extractDominantColors, PDF_COLOR_PALETTE } from "@/lib/colorExtractor";
 import { VoiceInput } from "@/components/VoiceInput";
 import { LetterheadPreview } from "@/components/LetterheadPreview";
 import { useSubscription } from "@/hooks/useSubscription";
