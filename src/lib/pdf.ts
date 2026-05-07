@@ -207,8 +207,12 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
   doc.setTextColor(45, 45, 45);
-  d.lineItems.forEach((item, idx) => {
-    const num = `${idx + 1}.`;
+
+  const useSections = Array.isArray(d.sections) && d.sections.length > 0
+    && d.sections.some((s) => s && s.title && Array.isArray(s.items) && s.items.length > 0);
+
+  // Renderhilfe: ein Stichpunkt mit Nummerierung
+  const drawItem = (item: string, num: string) => {
     const lines = doc.splitTextToSize(item, pageW - margin * 2 - 8);
     if (y + lines.length * 5.2 > pageH - 80) { doc.addPage(); y = margin; }
     doc.setFont("helvetica", "bold");
@@ -217,9 +221,35 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(45, 45, 45);
     doc.text(lines, margin + 8, y);
-    // Etwas mehr Abstand zwischen Punkten – ohne Trennlinie, damit nichts überlappt
     y += lines.length * 5.2 + 5;
-  });
+  };
+
+  if (useSections) {
+    let counter = 0;
+    d.sections!.forEach((sec, sIdx) => {
+      const items = (sec.items || []).filter((x) => typeof x === "string" && x.trim());
+      if (!items.length) return;
+      // Abschnitts-Überschrift
+      if (y + 12 > pageH - 80) { doc.addPage(); y = margin; }
+      if (sIdx > 0) y += 2;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.setTextColor(primary[0], primary[1], primary[2]);
+      doc.text(sec.title, margin, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10.5);
+      doc.setTextColor(45, 45, 45);
+      items.forEach((item) => {
+        counter += 1;
+        drawItem(item, `${counter}.`);
+      });
+    });
+  } else {
+    d.lineItems.forEach((item, idx) => {
+      drawItem(item, `${idx + 1}.`);
+    });
+  }
 
   y += 4;
 
