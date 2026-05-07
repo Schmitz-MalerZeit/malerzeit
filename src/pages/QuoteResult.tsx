@@ -1335,6 +1335,101 @@ export default function QuoteResult() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={addDlg.open} onOpenChange={(o) => setAddDlg((s) => ({ ...s, open: o }))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Position hinzufügen</DialogTitle>
+            <DialogDescription>
+              Stunden, Stundensatz und Materialkosten werden direkt in die Kalkulation übernommen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="add-desc">Beschreibung</Label>
+              <Textarea
+                id="add-desc"
+                value={addDlg.description}
+                onChange={(e) => setAddDlg((s) => ({ ...s, description: e.target.value }))}
+                placeholder="z. B. Decke spachteln und streichen"
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="add-hours">Stunden</Label>
+                <Input
+                  id="add-hours"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.25"
+                  min="0"
+                  value={addDlg.hours}
+                  onChange={(e) => setAddDlg((s) => ({ ...s, hours: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="add-material">Material netto (€)</Label>
+                <Input
+                  id="add-material"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={addDlg.materialNet}
+                  onChange={(e) => setAddDlg((s) => ({ ...s, materialNet: e.target.value }))}
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Stundensatz</Label>
+              {hourlyRates.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Noch keine Stundensätze hinterlegt. Bitte unter Profil → Stundensätze pflegen.
+                </p>
+              ) : (
+                <Select
+                  value={addDlg.rateId}
+                  onValueChange={(v) => setAddDlg((s) => ({ ...s, rateId: v }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Stundensatz wählen" /></SelectTrigger>
+                  <SelectContent>
+                    {hourlyRates.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.label} – {r.rate.toLocaleString("de-DE")} €/Std{r.is_default ? " (Standard)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            {(() => {
+              const h = Number((addDlg.hours || "0").replace(",", ".")) || 0;
+              const m = Number((addDlg.materialNet || "0").replace(",", ".")) || 0;
+              const r = hourlyRates.find((x) => x.id === addDlg.rateId)?.rate || 0;
+              const labor = h * r;
+              const markup = Number(settings?.material_markup ?? 15);
+              const matGross = m * (1 + markup / 100);
+              const net = labor + matGross;
+              return (
+                <div className="rounded-lg bg-secondary/40 p-3 text-xs space-y-1">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Lohn</span><span>{fmt(labor)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Material (inkl. {markup}% Aufschlag)</span><span>{fmt(matGross)}</span></div>
+                  <div className="flex justify-between font-semibold pt-1 border-t border-border/60"><span>Netto neue Position</span><span>{fmt(net)}</span></div>
+                </div>
+              );
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddDlg((s) => ({ ...s, open: false }))}>Abbrechen</Button>
+            <Button onClick={confirmAddPosition}>
+              <Plus className="h-4 w-4 mr-1.5" /> Hinzufügen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
