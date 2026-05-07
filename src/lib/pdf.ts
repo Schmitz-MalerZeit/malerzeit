@@ -27,6 +27,10 @@ export interface QuotePDFData {
   };
   date: string;
   lineItems: string[];
+  /** Optionale Gliederung in Räume/Bereiche. Wenn vorhanden und nicht leer,
+   *  wird statt der flachen Liste pro Bereich eine Überschrift mit den
+   *  zugehörigen Stichpunkten gerendert. */
+  sections?: Array<{ title: string; items: string[] }>;
   net: number;
   vat: number;
   gross: number;
