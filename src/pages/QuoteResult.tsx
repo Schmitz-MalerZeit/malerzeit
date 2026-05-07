@@ -736,7 +736,7 @@ export default function QuoteResult() {
     //  - Brutto-Preis fett hervorgehoben
     // WhatsApp-Versand ist ein Profi-/Exklusiv-Feature: im Starter wird
     // `whatsappText` bewusst leer gelassen, damit das Sheet keinen WA-Button zeigt.
-    const grossFormatted = fmt(p.gross_amount);
+    const grossFormatted = fmt(effGross);
     const emailBody = buildEmailMessageBody(customerDisplay, { grossFormatted });
     const whatsappText = whatsappAllowed
       ? buildWhatsappMessageBody(whatsappDisplay, { grossFormatted })
@@ -965,7 +965,7 @@ export default function QuoteResult() {
     }
     // Kein PDF erzeugen – nur den vorbereiteten WhatsApp-Text öffnen.
     // Brutto-Preis fett im Text wie im PdfFlowSheet.
-    const grossFormatted = fmt(p.gross_amount);
+    const grossFormatted = fmt(effGross);
     const text = buildWhatsappMessageBody(whatsappDisplay, { grossFormatted });
     const base = waPhone ? `https://wa.me/${waPhone}` : "https://wa.me/";
     const waUrl = `${base}?text=${encodeURIComponent(text)}`;
@@ -1190,11 +1190,11 @@ export default function QuoteResult() {
         </div>
 
         <div className="rounded-2xl gradient-primary text-primary-foreground p-5 shadow-elevated">
-          <div className="flex justify-between text-sm mb-2"><span>Netto</span><span className="font-medium">{fmt(p.net_amount)}</span></div>
-          <div className="flex justify-between text-sm mb-3"><span>MwSt. ({p.vat_rate}%)</span><span className="font-medium">{fmt(p.vat_amount)}</span></div>
+          <div className="flex justify-between text-sm mb-2"><span>Netto</span><span className="font-medium">{fmt(effNet)}</span></div>
+          <div className="flex justify-between text-sm mb-3"><span>MwSt. ({vatRate}%)</span><span className="font-medium">{fmt(effVat)}</span></div>
           <div className="border-t border-white/20 pt-3 flex justify-between items-baseline">
             <span className="font-semibold">Brutto</span>
-            <span className="text-2xl font-bold">{fmt(p.gross_amount)}</span>
+            <span className="text-2xl font-bold">{fmt(effGross)}</span>
           </div>
         </div>
 
