@@ -429,6 +429,27 @@ export default function QuoteResult() {
         }
       }
     }
+    // Aufschlag proportional auf Bereichs-Zwischensummen verteilen, damit die
+    // Summen der Positionen im PDF zur ausgewiesenen Gesamtsumme passen.
+    const rawSections = Array.isArray(ai.sections) ? ai.sections : [];
+    const factor = baseNet > 0 ? effNet / baseNet : 1;
+    const scaledSections = rawSections.map((s: any) => {
+      const sNet = typeof s?.net_amount === "number" ? s.net_amount : 0;
+      const newNet = Math.round(sNet * factor * 100) / 100;
+      const newVat = Math.round(newNet * (vatRate / 100) * 100) / 100;
+      const newGross = Math.round((newNet + newVat) * 100) / 100;
+      const scale = sNet > 0 ? newNet / sNet : 1;
+      return {
+        ...s,
+        labor_cost: typeof s?.labor_cost === "number"
+          ? Math.round(s.labor_cost * scale * 100) / 100 : s?.labor_cost,
+        material_cost: typeof s?.material_cost === "number"
+          ? Math.round(s.material_cost * scale * 100) / 100 : s?.material_cost,
+        net_amount: newNet,
+        vat_amount: newVat,
+        gross_amount: newGross,
+      };
+    });
     return buildQuotePDF({
       company: {
         name: profile?.company_name,
@@ -455,7 +476,7 @@ export default function QuoteResult() {
       } : undefined,
       date: new Date().toLocaleDateString("de-DE"),
       lineItems: ai.line_items,
-      sections: Array.isArray(ai.sections) ? ai.sections : [],
+      sections: scaledSections,
       net: effNet, vat: effVat, gross: effGross, vatRate: vatRate,
       validityDays: settings?.quote_validity_days ?? 14,
       closingText: settings?.closing_text ?? "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
