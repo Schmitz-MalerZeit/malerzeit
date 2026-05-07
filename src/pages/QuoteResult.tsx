@@ -348,14 +348,33 @@ export default function QuoteResult() {
   const ai = data.ai;
   const p = ai.pricing;
 
+  // Allgemeiner Aufschlag (nur in dieser Kontroll-Ansicht eingebbar). Erscheint
+  // NICHT als eigene Position im PDF, erhöht aber Netto / MwSt. / Brutto.
+  const surcharge: { mode: "percent" | "amount"; value: number } =
+    ai.surcharge && (ai.surcharge.mode === "percent" || ai.surcharge.mode === "amount")
+      ? { mode: ai.surcharge.mode, value: Number(ai.surcharge.value) || 0 }
+      : { mode: "percent", value: 0 };
+  const baseNet = Number(p.net_amount) || 0;
+  const vatRate = Number(p.vat_rate) || 19;
+  const surchargeNet = Math.round(
+    (surcharge.mode === "percent" ? baseNet * (surcharge.value / 100) : surcharge.value) * 100,
+  ) / 100;
+  const effNet = Math.round((baseNet + surchargeNet) * 100) / 100;
+  const effVat = Math.round(effNet * (vatRate / 100) * 100) / 100;
+  const effGross = Math.round((effNet + effVat) * 100) / 100;
+
+  const updateSurcharge = (next: { mode: "percent" | "amount"; value: number }) => {
+    persistEdits({ ...data, ai: { ...data.ai, surcharge: next } });
+  };
+
   // Variablen für Nachrichten-Vorlagen
   const templateVars = {
     customerName: data.customer?.name || "",
     lineItems: ai.line_items || [],
     sections: Array.isArray(ai.sections) ? ai.sections : null,
-    grossFormatted: fmt(p.gross_amount),
-    netFormatted: fmt(p.net_amount),
-    vatFormatted: fmt(p.vat_amount),
+    grossFormatted: fmt(effGross),
+    netFormatted: fmt(effNet),
+    vatFormatted: fmt(effVat),
     companyName: profile?.company_name || "",
     signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name || "",
     validityDays: settings?.quote_validity_days ?? 14,
@@ -437,7 +456,7 @@ export default function QuoteResult() {
       date: new Date().toLocaleDateString("de-DE"),
       lineItems: ai.line_items,
       sections: Array.isArray(ai.sections) ? ai.sections : [],
-      net: p.net_amount, vat: p.vat_amount, gross: p.gross_amount, vatRate: p.vat_rate,
+      net: effNet, vat: effVat, gross: effGross, vatRate: vatRate,
       validityDays: settings?.quote_validity_days ?? 14,
       closingText: settings?.closing_text ?? "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
       signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name,
@@ -668,10 +687,10 @@ export default function QuoteResult() {
       sections: Array.isArray(ai.sections) ? ai.sections : [],
       customer_text: customerDisplay,
       whatsapp_text: whatsappDisplay,
-      net_amount: p.net_amount,
-      vat_amount: p.vat_amount,
-      gross_amount: p.gross_amount,
-      vat_rate: p.vat_rate,
+      net_amount: effNet,
+      vat_amount: effVat,
+      gross_amount: effGross,
+      vat_rate: vatRate,
       estimated_hours: ai.estimated_hours,
       estimated_material: ai.estimated_material_cost,
       customer_name: data.customer?.name || null,
@@ -717,7 +736,7 @@ export default function QuoteResult() {
     //  - Brutto-Preis fett hervorgehoben
     // WhatsApp-Versand ist ein Profi-/Exklusiv-Feature: im Starter wird
     // `whatsappText` bewusst leer gelassen, damit das Sheet keinen WA-Button zeigt.
-    const grossFormatted = fmt(p.gross_amount);
+    const grossFormatted = fmt(effGross);
     const emailBody = buildEmailMessageBody(customerDisplay, { grossFormatted });
     const whatsappText = whatsappAllowed
       ? buildWhatsappMessageBody(whatsappDisplay, { grossFormatted })
@@ -946,7 +965,7 @@ export default function QuoteResult() {
     }
     // Kein PDF erzeugen – nur den vorbereiteten WhatsApp-Text öffnen.
     // Brutto-Preis fett im Text wie im PdfFlowSheet.
-    const grossFormatted = fmt(p.gross_amount);
+    const grossFormatted = fmt(effGross);
     const text = buildWhatsappMessageBody(whatsappDisplay, { grossFormatted });
     const base = waPhone ? `https://wa.me/${waPhone}` : "https://wa.me/";
     const waUrl = `${base}?text=${encodeURIComponent(text)}`;
@@ -958,7 +977,6 @@ export default function QuoteResult() {
     a.click();
     document.body.removeChild(a);
   };
-
 
   // Speichert den Vorschlag in der Datenbank. `silent=true` unterdrückt Toasts
   // und den Busy-Spinner – wird beim Auto-Speichern nach PDF-Erstellung genutzt.
@@ -978,10 +996,10 @@ export default function QuoteResult() {
         sections: Array.isArray(ai.sections) ? ai.sections : [],
         customer_text: customerDisplay,
         whatsapp_text: whatsappDisplay,
-        net_amount: p.net_amount,
-        vat_amount: p.vat_amount,
-        gross_amount: p.gross_amount,
-        vat_rate: p.vat_rate,
+        net_amount: effNet,
+        vat_amount: effVat,
+        gross_amount: effGross,
+        vat_rate: vatRate,
         estimated_hours: ai.estimated_hours,
         estimated_material: ai.estimated_material_cost,
         customer_name: data.customer?.name || null,
@@ -1170,12 +1188,50 @@ export default function QuoteResult() {
           Der ausgewiesene Preis berücksichtigt einen geschätzten Arbeitslohn sowie den voraussichtlichen Materialeinsatz auf Grundlage der angegebenen Informationen.
         </div>
 
+        <div className="rounded-2xl bg-card border border-border p-4 shadow-soft space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm">Allgemeiner Aufschlag</h3>
+            <span className="text-xs text-muted-foreground">erscheint nicht im PDF</span>
+          </div>
+          <div className="grid grid-cols-[140px_1fr_28px] gap-2 items-center">
+            <Select
+              value={surcharge.mode}
+              onValueChange={(v) => updateSurcharge({ mode: v as "percent" | "amount", value: surcharge.value })}
+            >
+              <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="percent">Prozent (%)</SelectItem>
+                <SelectItem value="amount">Betrag (€ netto)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              value={surcharge.value === 0 ? "" : String(surcharge.value)}
+              placeholder="0"
+              onChange={(e) => updateSurcharge({ mode: surcharge.mode, value: Number(e.target.value) || 0 })}
+              className="h-10"
+            />
+            <span className="text-sm text-muted-foreground text-center">
+              {surcharge.mode === "percent" ? "%" : "€"}
+            </span>
+          </div>
+          {surchargeNet > 0 && (
+            <div className="text-xs flex justify-between border-t border-border/60 pt-2">
+              <span className="text-muted-foreground">Aufschlag (netto)</span>
+              <span className="font-medium text-foreground">{fmt(surchargeNet)}</span>
+            </div>
+          )}
+        </div>
+
         <div className="rounded-2xl gradient-primary text-primary-foreground p-5 shadow-elevated">
-          <div className="flex justify-between text-sm mb-2"><span>Netto</span><span className="font-medium">{fmt(p.net_amount)}</span></div>
-          <div className="flex justify-between text-sm mb-3"><span>MwSt. ({p.vat_rate}%)</span><span className="font-medium">{fmt(p.vat_amount)}</span></div>
+          <div className="flex justify-between text-sm mb-2"><span>Netto</span><span className="font-medium">{fmt(effNet)}</span></div>
+          <div className="flex justify-between text-sm mb-3"><span>MwSt. ({vatRate}%)</span><span className="font-medium">{fmt(effVat)}</span></div>
           <div className="border-t border-white/20 pt-3 flex justify-between items-baseline">
             <span className="font-semibold">Brutto</span>
-            <span className="text-2xl font-bold">{fmt(p.gross_amount)}</span>
+            <span className="text-2xl font-bold">{fmt(effGross)}</span>
           </div>
         </div>
 
