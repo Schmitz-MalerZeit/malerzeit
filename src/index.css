@@ -109,3 +109,65 @@
   .transition-base { transition: var(--transition-base); }
   .safe-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 }
+
+/* Legal pages (Imprint / Privacy / Refund) */
+@layer components {
+  .legal-sub {
+    @apply text-sm text-muted-foreground mb-10;
+  }
+  .legal-section { @apply mt-8; }
+  .legal-section h2 {
+    @apply text-base font-bold text-primary mt-10 mb-3 pb-2 border-b-2 border-border;
+  }
+  .legal-section h3 {
+    @apply text-sm font-bold text-foreground mt-5 mb-1.5;
+  }
+  .legal-section p {
+    @apply text-sm text-muted-foreground mb-3 leading-relaxed;
+  }
+  .legal-section ul {
+    @apply list-disc pl-5 mb-3 space-y-1.5;
+  }
+  .legal-section ul li {
+    @apply text-sm text-muted-foreground;
+  }
+  .legal-section a {
+    @apply text-primary underline underline-offset-2 hover:text-primary/80;
+  }
+  .legal-section .info-box {
+    @apply bg-card border border-border rounded-xl px-6 py-5 mb-4;
+  }
+  .legal-section .info-box p {
+    @apply text-sm text-foreground mb-2 leading-relaxed last:mb-0;
+  }
+  .legal-section .info-box strong { @apply text-primary; }
+  .legal-section .warning-box {
+    @apply rounded-xl px-5 py-4 my-5 border;
+    background: hsl(38 55% 50% / 0.08);
+    border-color: hsl(38 55% 50% / 0.3);
+  }
+  .legal-section .warning-box p {
+    @apply text-sm text-foreground mb-2 last:mb-0;
+  }
+  .legal-section .warning-box strong { color: hsl(38 45% 35%); }
+  .legal-section .muster-box {
+    @apply rounded-xl p-7 my-5 border border-dashed border-border;
+    background: hsl(215 25% 96%);
+  }
+  .dark .legal-section .muster-box { background: hsl(215 25% 14%); }
+  .legal-section .muster-box h3 {
+    @apply mt-0 text-primary text-base mb-4;
+  }
+  .legal-section .muster-box p {
+    @apply text-sm text-foreground mb-2.5;
+  }
+  .legal-section .muster-box .muster-hint {
+    @apply text-xs text-muted-foreground mt-4;
+  }
+  .legal-highlight {
+    @apply mt-10 rounded-r-lg border-l-4 border-primary px-5 py-4 text-sm text-foreground;
+    background: hsl(var(--primary) / 0.05);
+  }
+  .legal-highlight strong { @apply text-primary; }
+}
+

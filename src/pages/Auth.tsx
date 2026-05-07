@@ -124,6 +124,7 @@ export default function Auth() {
 
         <nav aria-label="Rechtliches" className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <a href="/pricing" className="underline hover:text-foreground">Tarife & Preise</a>
+          <a href="/imprint" className="underline hover:text-foreground">Impressum</a>
           <a href="/terms" className="underline hover:text-foreground">Nutzungsbedingungen</a>
           <a href="/privacy" className="underline hover:text-foreground">Datenschutz</a>
           <a href="/refund" className="underline hover:text-foreground">Widerruf & Rückerstattung</a>
