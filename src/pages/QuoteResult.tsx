@@ -922,7 +922,7 @@ export default function QuoteResult() {
                 <Lock className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-sm mb-1">PDF-Download im Starter-Tarif</h3>
+                <h3 className="font-semibold text-sm mb-1">PDF-Download im Light-Tarif</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Wähle einen Tarif, um PDF-Angebote zu erstellen und herunterzuladen.
                 </p>
