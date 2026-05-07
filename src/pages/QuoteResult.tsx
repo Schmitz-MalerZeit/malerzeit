@@ -348,14 +348,33 @@ export default function QuoteResult() {
   const ai = data.ai;
   const p = ai.pricing;
 
+  // Allgemeiner Aufschlag (nur in dieser Kontroll-Ansicht eingebbar). Erscheint
+  // NICHT als eigene Position im PDF, erhöht aber Netto / MwSt. / Brutto.
+  const surcharge: { mode: "percent" | "amount"; value: number } =
+    ai.surcharge && (ai.surcharge.mode === "percent" || ai.surcharge.mode === "amount")
+      ? { mode: ai.surcharge.mode, value: Number(ai.surcharge.value) || 0 }
+      : { mode: "percent", value: 0 };
+  const baseNet = Number(p.net_amount) || 0;
+  const vatRate = Number(p.vat_rate) || 19;
+  const surchargeNet = Math.round(
+    (surcharge.mode === "percent" ? baseNet * (surcharge.value / 100) : surcharge.value) * 100,
+  ) / 100;
+  const effNet = Math.round((baseNet + surchargeNet) * 100) / 100;
+  const effVat = Math.round(effNet * (vatRate / 100) * 100) / 100;
+  const effGross = Math.round((effNet + effVat) * 100) / 100;
+
+  const updateSurcharge = (next: { mode: "percent" | "amount"; value: number }) => {
+    persistEdits({ ...data, ai: { ...data.ai, surcharge: next } });
+  };
+
   // Variablen für Nachrichten-Vorlagen
   const templateVars = {
     customerName: data.customer?.name || "",
     lineItems: ai.line_items || [],
     sections: Array.isArray(ai.sections) ? ai.sections : null,
-    grossFormatted: fmt(p.gross_amount),
-    netFormatted: fmt(p.net_amount),
-    vatFormatted: fmt(p.vat_amount),
+    grossFormatted: fmt(effGross),
+    netFormatted: fmt(effNet),
+    vatFormatted: fmt(effVat),
     companyName: profile?.company_name || "",
     signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name || "",
     validityDays: settings?.quote_validity_days ?? 14,
