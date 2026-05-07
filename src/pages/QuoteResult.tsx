@@ -855,36 +855,103 @@ export default function QuoteResult() {
               <Pencil className="h-3 w-3" /> bearbeitbar
             </span>
           </div>
-          <ul className="space-y-2">
-            {ai.line_items.map((item: string, i: number) => (
-              <li key={i} className="flex gap-2 items-start">
-                <span className="text-primary font-bold mt-2.5">•</span>
-                <Textarea
-                  value={item}
-                  onChange={(e) => updateLineItem(i, e.target.value)}
-                  rows={1}
-                  className="flex-1 min-h-[40px] text-sm resize-y"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeLineItem(i)}
-                  className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
-                  aria-label="Position entfernen"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addLineItem}
-            className="mt-3 h-9"
-          >
-            <Plus className="h-4 w-4 mr-1.5" /> Position hinzufügen
-          </Button>
+          {Array.isArray(ai.sections) && ai.sections.length > 0 ? (
+            <div className="space-y-5">
+              {ai.sections.map((sec: { title: string; items: string[] }, sIdx: number) => (
+                <div key={sIdx} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={sec.title}
+                      onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
+                      className="flex-1 bg-transparent border-0 border-b border-border focus:border-primary focus:outline-none text-sm font-semibold text-foreground py-1"
+                      placeholder="Bereich (z. B. Wohnzimmer)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeSection(sIdx)}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                      aria-label="Bereich entfernen"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <ul className="space-y-2 pl-1">
+                    {sec.items.map((item: string, iIdx: number) => (
+                      <li key={iIdx} className="flex gap-2 items-start">
+                        <span className="text-primary font-bold mt-2.5">•</span>
+                        <Textarea
+                          value={item}
+                          onChange={(e) => updateSectionItem(sIdx, iIdx, e.target.value)}
+                          rows={1}
+                          className="flex-1 min-h-[40px] text-sm resize-y"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeSectionItem(sIdx, iIdx)}
+                          className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+                          aria-label="Position entfernen"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => addSectionItem(sIdx)}
+                    className="h-8 text-xs"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Position
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addSection}
+                className="h-9"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Bereich hinzufügen
+              </Button>
+            </div>
+          ) : (
+            <>
+              <ul className="space-y-2">
+                {ai.line_items.map((item: string, i: number) => (
+                  <li key={i} className="flex gap-2 items-start">
+                    <span className="text-primary font-bold mt-2.5">•</span>
+                    <Textarea
+                      value={item}
+                      onChange={(e) => updateLineItem(i, e.target.value)}
+                      rows={1}
+                      className="flex-1 min-h-[40px] text-sm resize-y"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeLineItem(i)}
+                      className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+                      aria-label="Position entfernen"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addLineItem}
+                className="mt-3 h-9"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Position hinzufügen
+              </Button>
+            </>
+          )}
         </div>
 
         <div className="rounded-xl bg-secondary/50 border border-border p-4 text-xs text-muted-foreground leading-relaxed">
