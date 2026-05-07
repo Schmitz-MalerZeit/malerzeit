@@ -903,7 +903,7 @@ export default function QuoteResult() {
               <div className="flex-1">
                 <h3 className="font-semibold text-sm mb-1">Mehr Wirkung mit Profi</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Dein PDF erscheint im Starter sauber mit deinen Firmen- und Adressdaten.
+                  Dein PDF erscheint im Light-Tarif sauber mit deinen Firmen- und Adressdaten.
                   Mit <strong className="text-foreground">Profi</strong> kommen dein eigenes Logo & deine Firmenfarben in den Briefkopf –
                   und du kannst die PDF mit einem Tipp direkt per WhatsApp an den Kunden senden.
                 </p>
@@ -922,7 +922,7 @@ export default function QuoteResult() {
                 <Lock className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-sm mb-1">PDF-Download im Starter-Tarif</h3>
+                <h3 className="font-semibold text-sm mb-1">PDF-Download im Light-Tarif</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Wähle einen Tarif, um PDF-Angebote zu erstellen und herunterzuladen.
                 </p>
@@ -988,7 +988,7 @@ export default function QuoteResult() {
               Preisorientierung mit einem Tipp direkt per WhatsApp – inklusive persönlicher
               Anrede deines Kunden und der PDF als Anhang.
               <br /><br />
-              Im Starter-Tarif lädst du das PDF einfach herunter und teilst es selbst.
+              Im Light-Tarif lädst du das PDF einfach herunter und teilst es selbst.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:flex-col sm:space-x-0 gap-2">

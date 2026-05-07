@@ -20,7 +20,7 @@ interface Tx {
 }
 
 const PLAN_NAMES: Record<string, string> = {
-  starter_plan: "Starter", profi_plan: "Profi", profiplus_plan: "Exklusiv",
+  starter_plan: "Light", profi_plan: "Profi", profiplus_plan: "Exklusiv",
 };
 
 export default function Billing() {

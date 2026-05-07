@@ -11,7 +11,7 @@ export type PlanTier = "none" | "trial" | "starter" | "profi" | "exklusiv";
 export const TIER_LABEL: Record<PlanTier, string> = {
   none: "Kein Tarif",
   trial: "Test",
-  starter: "Starter",
+  starter: "Light",
   profi: "Profi",
   exklusiv: "Exklusiv",
 };
@@ -49,7 +49,7 @@ export function hasPrioritySupport(tier: PlanTier): boolean {
 }
 
 export const REQUIRED_TIER_LABEL: Record<"pdf" | "logo" | "whatsapp", string> = {
-  pdf: "Starter",
+  pdf: "Light",
   logo: "Profi",
   whatsapp: "Profi",
 };
