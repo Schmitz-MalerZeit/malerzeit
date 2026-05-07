@@ -112,6 +112,59 @@ export default function QuoteResult() {
     const items = [...data.ai.line_items, ""];
     persistEdits({ ...data, ai: { ...data.ai, line_items: items } });
   };
+
+  // ---- Section helpers (Räume/Bereiche) ----------------------------------
+  // Beim Editieren von Sections halten wir line_items automatisch synchron
+  // (flach, in Reihenfolge der Sections), damit PDF/WhatsApp/Templates
+  // konsistent bleiben.
+  const flattenSections = (sections: Array<{ title: string; items: string[] }>) =>
+    sections.flatMap((s) => s.items);
+
+  const setSections = (sections: Array<{ title: string; items: string[] }>) => {
+    if (!data) return;
+    persistEdits({
+      ...data,
+      ai: { ...data.ai, sections, line_items: flattenSections(sections) },
+    });
+  };
+
+  const updateSectionTitle = (sIdx: number, value: string) => {
+    if (!data) return;
+    const next = [...(data.ai.sections || [])];
+    next[sIdx] = { ...next[sIdx], title: value };
+    setSections(next);
+  };
+  const updateSectionItem = (sIdx: number, iIdx: number, value: string) => {
+    if (!data) return;
+    const next = [...(data.ai.sections || [])];
+    const items = [...next[sIdx].items];
+    items[iIdx] = value;
+    next[sIdx] = { ...next[sIdx], items };
+    setSections(next);
+  };
+  const removeSectionItem = (sIdx: number, iIdx: number) => {
+    if (!data) return;
+    const next = [...(data.ai.sections || [])];
+    const items = next[sIdx].items.filter((_: string, i: number) => i !== iIdx);
+    next[sIdx] = { ...next[sIdx], items };
+    setSections(next);
+  };
+  const addSectionItem = (sIdx: number) => {
+    if (!data) return;
+    const next = [...(data.ai.sections || [])];
+    next[sIdx] = { ...next[sIdx], items: [...next[sIdx].items, ""] };
+    setSections(next);
+  };
+  const removeSection = (sIdx: number) => {
+    if (!data) return;
+    const next = (data.ai.sections || []).filter((_: any, i: number) => i !== sIdx);
+    setSections(next);
+  };
+  const addSection = () => {
+    if (!data) return;
+    const next = [...(data.ai.sections || []), { title: "Neuer Bereich", items: [""] }];
+    setSections(next);
+  };
   const updateCustomerText = (value: string) => {
     if (!data) return;
     persistEdits({ ...data, ai: { ...data.ai, customer_text: value } });
