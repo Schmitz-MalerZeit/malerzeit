@@ -16,6 +16,10 @@
 export interface MessageTemplateVars {
   customerName?: string | null;
   lineItems?: string[];
+  /** Optional: Gliederung in Räume/Bereiche. Wenn vorhanden, wird der
+   *  Platzhalter {leistungen} mit Raum-Überschriften gerendert,
+   *  damit der Arbeitsort (Wohnzimmer, Flur, …) sichtbar ist. */
+  sections?: Array<{ title?: string; items?: string[] }> | null;
   grossFormatted?: string;
   netFormatted?: string;
   vatFormatted?: string;
@@ -31,6 +35,25 @@ const formatItems = (items: string[] | undefined): string =>
     .map((s) => `• ${s}`)
     .join("\n");
 
+const formatSections = (
+  sections: Array<{ title?: string; items?: string[] }> | null | undefined,
+): string => {
+  if (!Array.isArray(sections) || sections.length === 0) return "";
+  const blocks = sections
+    .map((sec) => {
+      const title = (sec?.title || "").trim();
+      const items = (sec?.items || [])
+        .map((s) => (s || "").trim())
+        .filter(Boolean);
+      if (!items.length) return "";
+      const head = title ? `*${title}*` : "";
+      const body = items.map((s) => `• ${s}`).join("\n");
+      return head ? `${head}\n${body}` : body;
+    })
+    .filter(Boolean);
+  return blocks.join("\n\n");
+};
+
 export const renderMessageTemplate = (
   template: string,
   vars: MessageTemplateVars,
@@ -39,10 +62,11 @@ export const renderMessageTemplate = (
   const customer = (vars.customerName || "").trim();
   const signature =
     (vars.signatureName || "").trim() || (vars.companyName || "").trim();
+  const sectioned = formatSections(vars.sections);
   const replacements: Record<string, string> = {
     kunde: customer,
     anrede: customer ? `Hallo ${customer},` : "Hallo,",
-    leistungen: formatItems(vars.lineItems),
+    leistungen: sectioned || formatItems(vars.lineItems),
     preis: vars.grossFormatted || "",
     netto: vars.netFormatted || "",
     mwst: vars.vatFormatted || "",
