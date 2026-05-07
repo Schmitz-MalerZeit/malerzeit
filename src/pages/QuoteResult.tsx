@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2, MessageCircle, Calculator } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2, MessageCircle, Calculator, ArrowLeft } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
@@ -918,6 +918,14 @@ export default function QuoteResult() {
   return (
     <AppShell title={headerTitle}>
       <div className="space-y-5">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => nav("/quote/new")}
+          className="-ml-2 h-9 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" /> Zurück zur Eingabe
+        </Button>
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-lg">Leistungen</h2>
