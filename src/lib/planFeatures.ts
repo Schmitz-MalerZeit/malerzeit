@@ -11,7 +11,7 @@ export type PlanTier = "none" | "trial" | "starter" | "profi" | "exklusiv";
 export const TIER_LABEL: Record<PlanTier, string> = {
   none: "Kein Tarif",
   trial: "Test",
-  starter: "Starter",
+  starter: "Light",
   profi: "Profi",
   exklusiv: "Exklusiv",
 };
