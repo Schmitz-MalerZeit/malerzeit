@@ -1188,6 +1188,44 @@ export default function QuoteResult() {
           Der ausgewiesene Preis berücksichtigt einen geschätzten Arbeitslohn sowie den voraussichtlichen Materialeinsatz auf Grundlage der angegebenen Informationen.
         </div>
 
+        <div className="rounded-2xl bg-card border border-border p-4 shadow-soft space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm">Allgemeiner Aufschlag</h3>
+            <span className="text-xs text-muted-foreground">erscheint nicht im PDF</span>
+          </div>
+          <div className="grid grid-cols-[140px_1fr_28px] gap-2 items-center">
+            <Select
+              value={surcharge.mode}
+              onValueChange={(v) => updateSurcharge({ mode: v as "percent" | "amount", value: surcharge.value })}
+            >
+              <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="percent">Prozent (%)</SelectItem>
+                <SelectItem value="amount">Betrag (€ netto)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              value={surcharge.value === 0 ? "" : String(surcharge.value)}
+              placeholder="0"
+              onChange={(e) => updateSurcharge({ mode: surcharge.mode, value: Number(e.target.value) || 0 })}
+              className="h-10"
+            />
+            <span className="text-sm text-muted-foreground text-center">
+              {surcharge.mode === "percent" ? "%" : "€"}
+            </span>
+          </div>
+          {surchargeNet > 0 && (
+            <div className="text-xs flex justify-between border-t border-border/60 pt-2">
+              <span className="text-muted-foreground">Aufschlag (netto)</span>
+              <span className="font-medium text-foreground">{fmt(surchargeNet)}</span>
+            </div>
+          )}
+        </div>
+
         <div className="rounded-2xl gradient-primary text-primary-foreground p-5 shadow-elevated">
           <div className="flex justify-between text-sm mb-2"><span>Netto</span><span className="font-medium">{fmt(effNet)}</span></div>
           <div className="flex justify-between text-sm mb-3"><span>MwSt. ({vatRate}%)</span><span className="font-medium">{fmt(effVat)}</span></div>
