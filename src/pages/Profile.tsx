@@ -40,6 +40,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const nav = useNavigate();
   const subState = useSubscription();
   const tier = getTier(subState);
   const showPdfPreview = canUseLogoInPdf(tier);
@@ -240,6 +243,61 @@ export default function Profile() {
         <Button onClick={save} disabled={saving} className="w-full h-12 gradient-primary text-primary-foreground border-0 font-semibold">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
         </Button>
+
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 mt-8">
+          <h3 className="font-semibold text-destructive mb-1 flex items-center gap-2">
+            <Trash2 className="h-4 w-4" /> Konto löschen
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Löscht dein Konto, alle Angebote, PDFs, dein Profil und Einstellungen unwiderruflich.
+            Aktive Abonnements werden vorher gekündigt.
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="w-full h-11">
+                Konto endgültig löschen
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Konto endgültig löschen?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Diese Aktion kann nicht rückgängig gemacht werden. Alle deine Daten werden sofort gelöscht
+                  und ein eventuell aktives Abo wird gekündigt. Tippe <strong>LÖSCHEN</strong> zum Bestätigen.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <Input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="LÖSCHEN"
+                className="h-11"
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setConfirmText("")}>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={confirmText !== "LÖSCHEN" || deleting}
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    setDeleting(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke("delete-account");
+                      if (error || data?.error) throw new Error(error?.message || data?.error);
+                      await supabase.auth.signOut();
+                      toast.success("Konto gelöscht");
+                      nav("/auth", { replace: true });
+                    } catch (err: any) {
+                      toast.error(err.message || "Löschung fehlgeschlagen");
+                      setDeleting(false);
+                    }
+                  }}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Endgültig löschen"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
     </AppShell>
   );
