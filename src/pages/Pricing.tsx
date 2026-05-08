@@ -86,6 +86,20 @@ export default function Pricing() {
   return (
     <AppShell title={t("pricing.title")}>
       <div className="space-y-6">
+        {discountCode && (
+          <div className="rounded-2xl bg-primary/5 border border-primary/30 p-4 text-sm flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-primary" />
+              <span>Rabattcode aktiv: <strong className="font-mono">{discountCode}</strong></span>
+            </div>
+            <button
+              onClick={() => { setDiscountCode(""); try { sessionStorage.removeItem("promo_code"); } catch {} }}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              entfernen
+            </button>
+          </div>
+        )}
         {sub.inTrial && (
           <div className="rounded-2xl bg-accent/10 border border-accent/30 p-5 text-sm">
             <div className="font-semibold mb-1 flex items-center gap-2">
