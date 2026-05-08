@@ -32,17 +32,31 @@ export default function Auth() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: `${window.location.origin}/auth` },
         });
         if (error) throw error;
-        toast.success("Konto erstellt – willkommen!");
-        nav("/");
+        // Email-Bestätigung ist Pflicht – ohne Session muss der User erst die Mail bestätigen
+        if (!data.session) {
+          toast.success("Bitte bestätige deine E-Mail-Adresse über den Link, den wir dir gerade gesendet haben.");
+          setMode("signin");
+          setPassword("");
+        } else {
+          toast.success("Konto erstellt – willkommen!");
+          nav("/");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        nav("/");
+        if (error) {
+          if (error.message?.toLowerCase().includes("email not confirmed")) {
+            toast.error("Bitte bestätige zuerst deine E-Mail-Adresse. Schau in dein Postfach (auch Spam).");
+          } else {
+            throw error;
+          }
+        } else {
+          nav("/");
+        }
       }
     } catch (err: any) {
       toast.error(err.message || "Anmeldung fehlgeschlagen");
