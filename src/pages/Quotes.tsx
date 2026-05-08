@@ -96,9 +96,9 @@ export default function Quotes() {
   }, []);
 
 
-  const reopenInResult = (q: any) => {
+  const reopenInResult = (q: any, asNewVersion = false) => {
     const reconstructed = {
-      savedQuoteId: q.id,
+      savedQuoteId: asNewVersion ? null : q.id,
       description: q.description || "",
       customer: {
         name: q.customer_name || "",
