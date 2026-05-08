@@ -364,6 +364,26 @@ export default function QuoteNew() {
                 )}
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="cust_project">
+                  Objekt / Bauvorhaben <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="cust_project"
+                    value={customer.project_label}
+                    onChange={(e) => setCustomer((c) => ({ ...c, project_label: e.target.value }))}
+                    placeholder="z. B. Mietwohnung Hauptstr. 5, WE 3. OG rechts"
+                    className="h-11 flex-1"
+                    maxLength={200}
+                  />
+                  <VoiceInput size="md" label="Objekt diktieren"
+                    onTranscript={(t) => setCustomer((c) => ({ ...c, project_label: appendText(c.project_label, t) }))} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Für abweichende Objektadresse (z. B. vermietete Wohnung), Wohnungsnummer, Stockwerk oder Bezeichnung der Baustelle.
+                </p>
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="cust_addr">Straße & Hausnummer</Label>
                 <div className="flex gap-2">
                   <AddressAutocomplete
