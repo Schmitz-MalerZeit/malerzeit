@@ -42,7 +42,28 @@ export default function Pricing() {
     const priceId = `${tier.id}_${billing}`;
     setBusyId(priceId);
     try {
-      await openCheckout({ priceId, customerEmail: user.email, userId: user.id });
+      const hasActiveSub = sub.subscription &&
+        ["active", "trialing", "past_due"].includes(sub.subscription.status) &&
+        !sub.subscription.cancel_at_period_end;
+
+      if (hasActiveSub) {
+        // Switch existing subscription via Paddle API instead of creating a new one
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data, error } = await supabase.functions.invoke("change-subscription", {
+          body: { newPriceId: priceId },
+        });
+        if (error || data?.error) {
+          const { toast } = await import("sonner");
+          toast.error(t("pricing.switchFailed", { defaultValue: "Tarifwechsel fehlgeschlagen" }));
+        } else {
+          const { toast } = await import("sonner");
+          toast.success(t("pricing.switchSuccess", { defaultValue: "Tarif gewechselt – anteilige Berechnung erfolgt automatisch." }));
+          await sub.refresh();
+          nav("/billing");
+        }
+      } else {
+        await openCheckout({ priceId, customerEmail: user.email, userId: user.id });
+      }
     } finally { setBusyId(null); }
   };
 
