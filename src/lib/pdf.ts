@@ -157,11 +157,19 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     y += 6;
   }
 
-  // Empfänger
+  // ───────── Titel "Unverbindliche Preisorientierung" (zuerst) ─────────
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(primary[0], primary[1], primary[2]);
+  doc.text("Unverbindliche Preisorientierung", margin, y + 4);
+  y += 14;
+
+  // ───────── Empfänger-Anschrift + Datum rechts ─────────
   const recYStart = y;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(40, 40, 40);
+  let recLineCount = 0;
   if (d.customer) {
     const lines = [
       d.customer.name,
@@ -169,47 +177,28 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
       [d.customer.postalCode, d.customer.city].filter(Boolean).join(" "),
     ].filter(Boolean) as string[];
     lines.forEach((ln, i) => doc.text(ln, margin, recYStart + i * 5.2));
-    if (d.customer.projectLabel && d.customer.projectLabel.trim()) {
-      const baseY = recYStart + lines.length * 5.2 + 5;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10.5);
-      doc.setTextColor(40, 40, 40);
-      const wrapped = doc.splitTextToSize(d.customer.projectLabel.trim(), pageW - margin * 2 - 60);
-      doc.text(wrapped, margin, baseY);
-    }
+    recLineCount = lines.length;
   }
-
-  // Rechts oben: Datum (klassisches Meta-Block-Format)
-  const metaX = pageW - margin;
+  // Rechts: Datum
   doc.setFontSize(9.5);
   doc.setTextColor(40, 40, 40);
-  doc.text(d.date, metaX, recYStart, { align: "right" });
+  doc.text(d.date, pageW - margin, recYStart, { align: "right" });
 
-  y = recYStart + 28;
-
-  // ───────── Titel "Unverbindliche Preisorientierung" ─────────
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(primary[0], primary[1], primary[2]);
-  doc.text("Unverbindliche Preisorientierung", margin, y);
-  y += 6;
-
-  y += 4;
+  y = recYStart + Math.max(recLineCount, 1) * 5.2 + 8;
 
   // ───────── Anrede ─────────
-  const salutation = "Sehr geehrte Damen und Herren,";
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
   doc.setTextColor(50, 50, 50);
-  doc.text(salutation, margin, y);
+  doc.text("Sehr geehrte Damen und Herren,", margin, y);
   y += 5;
   doc.text(
     "vielen Dank für Ihre Anfrage. Gerne geben wir Ihnen nachfolgend eine unverbindliche Preisorientierung für die geplanten Arbeiten:",
     margin, y, { maxWidth: pageW - margin * 2 }
   );
-  y += 10;
+  y += 12;
 
-  // ───────── Leistungsbeschreibung (klare Liste, ohne Trennlinien) ─────────
+  // ───────── Leistungsbeschreibung Überschrift ─────────
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(primary[0], primary[1], primary[2]);
@@ -219,6 +208,21 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setLineWidth(0.3);
   doc.line(margin, y, pageW - margin, y);
   y += 6;
+
+  // ───────── Bauvorhaben-Bezeichnung (zwischen zwei Linien) ─────────
+  const projectLabel = (d.customer?.projectLabel || "").trim();
+  if (projectLabel) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(45, 45, 45);
+    const pl = doc.splitTextToSize(projectLabel, pageW - margin * 2);
+    doc.text(pl, margin, y + 4);
+    y += pl.length * 5.2 + 4;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageW - margin, y);
+    y += 6;
+  }
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
