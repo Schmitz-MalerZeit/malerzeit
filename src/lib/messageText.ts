@@ -72,6 +72,7 @@ export const buildEmailMessageBody = (
   opts: BuildMessageOptions = {},
 ): string => {
   let body = stripClosingSignature(customerText || "").trim();
+  body = insertProjectLabel(body, opts.projectLabel, false);
   if (opts.grossFormatted && !/gesamtpreis|brutto|preis|betrag/i.test(body)) {
     body += `\n\nGesamtpreis (brutto): ${opts.grossFormatted}`;
   }
@@ -91,6 +92,7 @@ export const buildWhatsappMessageBody = (
   // Bewusst KEIN stripClosingSignature für WhatsApp – die Vorlage soll die
   // Grußformel + Unterschrift mitliefern (WhatsApp hat keine eigene Signatur).
   let body = (whatsappText || "").trim();
+  body = insertProjectLabel(body, opts.projectLabel, true);
   if (opts.grossFormatted && !/gesamtpreis|brutto|preis|betrag/i.test(body)) {
     body += `\n\nGesamtpreis (brutto): ${opts.grossFormatted}`;
   }
