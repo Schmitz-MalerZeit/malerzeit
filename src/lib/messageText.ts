@@ -37,7 +37,29 @@ const stripClosingSignature = (text: string): string => {
 export interface BuildMessageOptions {
   /** Brutto-Gesamtpreis als bereits formatierter String, z. B. „1.234,56 €". */
   grossFormatted?: string;
+  /** Objekt-/Bauvorhaben-Bezeichnung (z. B. „Wohnung 1"). Wird – falls
+   *  vorhanden – als eigene Zeile in den Text eingefügt, damit der
+   *  Empfänger den Einsatzort eindeutig zuordnen kann. */
+  projectLabel?: string | null;
 }
+
+/**
+ * Fügt das Bauvorhaben (z. B. „Wohnung 1") als eigene Zeile direkt nach
+ * der Anrede ein. Ist bereits eine entsprechende Zeile vorhanden (gleicher
+ * Text), wird nichts dupliziert.
+ */
+const insertProjectLabel = (body: string, projectLabel?: string | null, bold = false): string => {
+  const label = (projectLabel || "").trim();
+  if (!label) return body;
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (new RegExp(`(^|\\n)\\s*\\*?📍?\\s*\\*?${escaped}\\*?\\s*(\\n|$)`, "i").test(body)) {
+    return body;
+  }
+  const line = bold ? `📍 *${label}*` : `📍 ${label}`;
+  const idx = body.indexOf("\n\n");
+  if (idx === -1) return `${line}\n\n${body}`;
+  return `${body.slice(0, idx)}\n\n${line}${body.slice(idx)}`;
+};
 
 /**
  * Bereitet einen Kunden-Text für die E-Mail vor:
