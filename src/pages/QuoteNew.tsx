@@ -62,7 +62,18 @@ type Draft = {
 const loadDraft = (): Draft | null => {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return null;
+    if (!raw) {
+      const currentRaw = localStorage.getItem("currentQuote");
+      if (!currentRaw) return null;
+      const current = JSON.parse(currentRaw);
+      return {
+        description: current?.description ?? "",
+        customer: current?.customer ?? { name: "", address: "", postal_code: "", city: "", phone: "", email: "" },
+        answers: current?.answers ?? {},
+        questions: [],
+        step: "input",
+      } satisfies Draft;
+    }
     const d = JSON.parse(raw);
     if (!d || typeof d !== "object") return null;
     return d as Draft;
@@ -254,7 +265,6 @@ export default function QuoteNew() {
           description, answers, ai: resp, customer,
         }));
         sessionStorage.removeItem("currentQuotePdf"); // invalidate old cached PDF
-        try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
         nav("/quote/result");
       }
     } catch (err: any) {
