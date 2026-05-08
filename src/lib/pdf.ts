@@ -170,16 +170,12 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     ].filter(Boolean) as string[];
     lines.forEach((ln, i) => doc.text(ln, margin, recYStart + i * 5.2));
     if (d.customer.projectLabel && d.customer.projectLabel.trim()) {
-      const baseY = recYStart + lines.length * 5.2 + 3;
+      const baseY = recYStart + lines.length * 5.2 + 5;
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      doc.text("Bauvorhaben:", margin, baseY);
-      doc.setFont("helvetica", "normal");
       doc.setFontSize(10.5);
       doc.setTextColor(40, 40, 40);
-      const wrapped = doc.splitTextToSize(d.customer.projectLabel.trim(), 90);
-      doc.text(wrapped, margin + 22, baseY);
+      const wrapped = doc.splitTextToSize(d.customer.projectLabel.trim(), pageW - margin * 2 - 60);
+      doc.text(wrapped, margin, baseY);
     }
   }
 
