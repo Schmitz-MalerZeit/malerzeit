@@ -250,7 +250,7 @@ export default function QuoteNew() {
         setQuestions(resp.clarifying_questions);
         setStep("questions");
       } else {
-        sessionStorage.setItem("currentQuote", JSON.stringify({
+        localStorage.setItem("currentQuote", JSON.stringify({
           description, answers, ai: resp, customer,
         }));
         sessionStorage.removeItem("currentQuotePdf"); // invalidate old cached PDF

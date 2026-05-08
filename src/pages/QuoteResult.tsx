@@ -73,7 +73,7 @@ export default function QuoteResult() {
   }, [previewBlobUrl]);
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("currentQuote");
+    const raw = localStorage.getItem("currentQuote");
     if (!raw) { nav("/quote/new"); return; }
     setData(JSON.parse(raw));
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => setProfile(data));
@@ -112,7 +112,7 @@ export default function QuoteResult() {
   // next preview/download uses the new texts.
   const persistEdits = (next: any) => {
     setData(next);
-    sessionStorage.setItem("currentQuote", JSON.stringify(next));
+    localStorage.setItem("currentQuote", JSON.stringify(next));
     sessionStorage.removeItem("currentQuotePdf");
     if (previewBlobUrl) {
       URL.revokeObjectURL(previewBlobUrl);
@@ -175,7 +175,7 @@ export default function QuoteResult() {
       };
       const next = { ...data, ai: nextAi };
       setData(next);
-      sessionStorage.setItem("currentQuote", JSON.stringify(next));
+      localStorage.setItem("currentQuote", JSON.stringify(next));
       sessionStorage.removeItem("currentQuotePdf");
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }
       setPreviewBlob(null);
