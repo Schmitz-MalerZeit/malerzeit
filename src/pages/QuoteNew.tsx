@@ -175,14 +175,15 @@ export default function QuoteNew() {
   };
 
   const handleSelectCustomer = (s: CustomerSuggestion) => {
-    setCustomer({
+    setCustomer((c) => ({
+      ...c,
       name: s.name,
       address: s.address || "",
       postal_code: s.postal_code || "",
       city: s.city || "",
       phone: s.phone || "",
       email: s.email || "",
-    });
+    }));
   };
 
   // Soft pre-check only (UX). Actual increment happens server-side after PDF success.
