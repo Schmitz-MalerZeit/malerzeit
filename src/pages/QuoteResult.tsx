@@ -477,6 +477,7 @@ export default function QuoteResult() {
       },
       customer: data.customer ? {
         name: data.customer.name,
+        projectLabel: (data.customer as any).project_label,
         address: data.customer.address,
         postalCode: data.customer.postal_code,
         city: data.customer.city,
