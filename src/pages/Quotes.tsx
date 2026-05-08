@@ -129,8 +129,8 @@ export default function Quotes() {
         },
         surcharge: { mode: "percent", value: 0 },
       },
-      pdf_storage_path: q.pdf_storage_path || null,
-      pdf_filename: q.pdf_filename || null,
+      pdf_storage_path: asNewVersion ? null : (q.pdf_storage_path || null),
+      pdf_filename: asNewVersion ? null : (q.pdf_filename || null),
     };
     localStorage.setItem("currentQuote", JSON.stringify(reconstructed));
     sessionStorage.removeItem("currentQuotePdf");
