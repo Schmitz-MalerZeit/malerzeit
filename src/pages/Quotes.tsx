@@ -323,55 +323,82 @@ export default function Quotes() {
         <div className="space-y-3">
           {filtered.map((q) => (
             <div key={q.id} className="rounded-2xl bg-card border border-border p-4 shadow-soft">
-              {q.customer_name && (
-                <div className="text-sm font-semibold text-foreground mb-2 truncate">
-                  {q.customer_name}
+              <button
+                type="button"
+                onClick={() => reopenInResult(q, false)}
+                className="w-full text-left -m-1 p-1 rounded-lg hover:bg-accent/40 transition-colors"
+                aria-label="Vorschlag bearbeiten"
+              >
+                {q.customer_name && (
+                  <div className="text-sm font-semibold text-foreground mb-2 truncate">
+                    {q.customer_name}
+                  </div>
+                )}
+                <div className="flex justify-between items-start gap-3 mb-2">
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(q.created_at).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
+                  </div>
+                  <div className="text-base font-bold text-primary">{fmt(q.gross_amount)}</div>
                 </div>
-              )}
-              <div className="flex justify-between items-start gap-3 mb-2">
-                <div className="text-xs text-muted-foreground">
-                  {new Date(q.created_at).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
-                </div>
-                <div className="text-base font-bold text-primary">{fmt(q.gross_amount)}</div>
-              </div>
-              <p className="text-sm text-foreground line-clamp-2">{q.description}</p>
-              {Array.isArray(q.line_items) && q.line_items.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-2">{q.line_items.length} Leistungspositionen</p>
-              )}
-              {q.internal_notes && (
-                <p className="text-xs text-muted-foreground mt-2 line-clamp-2 italic">
-                  📝 {q.internal_notes}
-                </p>
-              )}
-              <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2">
+                {q.project_label && (
+                  <p className="text-xs text-muted-foreground mb-1 truncate">📍 {q.project_label}</p>
+                )}
+                <p className="text-sm text-foreground line-clamp-2">{q.description}</p>
+                {Array.isArray(q.line_items) && q.line_items.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">{q.line_items.length} Leistungspositionen</p>
+                )}
+                {q.internal_notes && (
+                  <p className="text-xs text-muted-foreground mt-2 line-clamp-2 italic">
+                    📝 {q.internal_notes}
+                  </p>
+                )}
+              </button>
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant={q.pdf_storage_path ? "outline" : "secondary"}
                   onClick={() => openSavedPdf(q)}
                   disabled={openingId === q.id}
-                  className="h-10 w-full"
+                  className="h-10"
                 >
                   {openingId === q.id
                     ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF öffnen" : "Öffnen & PDF erstellen"}</>}
+                    : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF" : "PDF erstellen"}</>}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => reopenInResult(q, true)}
+                  className="h-10"
+                  aria-label="Neue Version erstellen"
+                >
+                  <Copy className="h-4 w-4 mr-2" /> Neue Version
+                </Button>
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => reopenInResult(q, false)}
+                  className="h-9 text-xs"
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" /> Bearbeiten
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => openNotes(q)}
-                  className={`h-10 w-10 p-0 ${q.internal_notes ? "text-primary border-primary/40" : ""}`}
-                  aria-label="Notizen"
+                  className={`h-9 text-xs ${q.internal_notes ? "text-primary border-primary/40" : ""}`}
                 >
-                  <StickyNote className="h-4 w-4" />
+                  <StickyNote className="h-3.5 w-3.5 mr-1.5" /> Notiz
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setDeleteCandidate(q)}
-                  className="h-10 w-10 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  aria-label="Vorschlag löschen"
+                  className="h-9 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Löschen
                 </Button>
               </div>
             </div>
