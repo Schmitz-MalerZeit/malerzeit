@@ -53,7 +53,7 @@ const DRAFT_KEY = "quoteDraft.v1";
 
 type Draft = {
   description: string;
-  customer: { name: string; address: string; postal_code: string; city: string; phone: string; email: string };
+  customer: { name: string; project_label: string; address: string; postal_code: string; city: string; phone: string; email: string };
   answers: Record<string, string>;
   questions: string[];
   step: "input" | "questions" | "loading";
@@ -68,7 +68,7 @@ const loadDraft = (): Draft | null => {
       const current = JSON.parse(currentRaw);
       return {
         description: current?.description ?? "",
-        customer: current?.customer ?? { name: "", address: "", postal_code: "", city: "", phone: "", email: "" },
+        customer: { name: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(current?.customer ?? {}) },
         answers: current?.answers ?? {},
         questions: [],
         step: "input",
@@ -84,7 +84,7 @@ export default function QuoteNew() {
   const nav = useNavigate();
   const initial = loadDraft();
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [customer, setCustomer] = useState(initial?.customer ?? { name: "", address: "", postal_code: "", city: "", phone: "", email: "" });
+  const [customer, setCustomer] = useState({ name: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(initial?.customer ?? {}) });
   const [step, setStep] = useState<"input" | "questions" | "loading">(
     initial?.step === "questions" ? "questions" : "input"
   );
@@ -175,14 +175,15 @@ export default function QuoteNew() {
   };
 
   const handleSelectCustomer = (s: CustomerSuggestion) => {
-    setCustomer({
+    setCustomer((c) => ({
+      ...c,
       name: s.name,
       address: s.address || "",
       postal_code: s.postal_code || "",
       city: s.city || "",
       phone: s.phone || "",
       email: s.email || "",
-    });
+    }));
   };
 
   // Soft pre-check only (UX). Actual increment happens server-side after PDF success.
@@ -361,6 +362,26 @@ export default function QuoteNew() {
                     Tipp: Tippe los – bisherige Kunden werden vorgeschlagen.
                   </p>
                 )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cust_project">
+                  Objekt / Bauvorhaben <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="cust_project"
+                    value={customer.project_label}
+                    onChange={(e) => setCustomer((c) => ({ ...c, project_label: e.target.value }))}
+                    placeholder="z. B. Mietwohnung Hauptstr. 5, WE 3. OG rechts"
+                    className="h-11 flex-1"
+                    maxLength={200}
+                  />
+                  <VoiceInput size="md" label="Objekt diktieren"
+                    onTranscript={(t) => setCustomer((c) => ({ ...c, project_label: appendText(c.project_label, t) }))} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Für abweichende Objektadresse (z. B. vermietete Wohnung), Wohnungsnummer, Stockwerk oder Bezeichnung der Baustelle.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cust_addr">Straße & Hausnummer</Label>

@@ -477,6 +477,7 @@ export default function QuoteResult() {
       },
       customer: data.customer ? {
         name: data.customer.name,
+        projectLabel: (data.customer as any).project_label,
         address: data.customer.address,
         postalCode: data.customer.postal_code,
         city: data.customer.city,
@@ -727,6 +728,7 @@ export default function QuoteResult() {
       customer_city: data.customer?.city || null,
       customer_phone: data.customer?.phone || null,
       customer_email: data.customer?.email || null,
+      project_label: (data.customer as any)?.project_label || null,
       pdf_storage_path: path,
       pdf_filename: fileName,
       pdf_created_at: new Date().toISOString(),
@@ -1036,6 +1038,7 @@ export default function QuoteResult() {
         customer_city: data.customer?.city || null,
         customer_phone: data.customer?.phone || null,
         customer_email: data.customer?.email || null,
+        project_label: (data.customer as any)?.project_label || null,
         pdf_storage_path: lastSavedPdfPath,
         pdf_filename: lastFilename || null,
         pdf_created_at: lastSavedPdfPath ? new Date().toISOString() : null,
