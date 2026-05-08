@@ -153,8 +153,9 @@ export default function Quotes() {
         signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name || "",
       },
     );
-    const emailBody = buildEmailMessageBody(baseEmail, { grossFormatted });
-    const whatsappText = waAllowed ? buildWhatsappMessageBody(baseWa, { grossFormatted }) : "";
+    const projectLabel = q.project_label || "";
+    const emailBody = buildEmailMessageBody(baseEmail, { grossFormatted, projectLabel });
+    const whatsappText = waAllowed ? buildWhatsappMessageBody(baseWa, { grossFormatted, projectLabel }) : "";
     const whatsappPhone = waAllowed ? normalizePhoneForWa(q.customer_phone || "") : null;
 
     setLastQuote(q);

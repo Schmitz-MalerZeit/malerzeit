@@ -767,9 +767,10 @@ export default function QuoteResult() {
     // WhatsApp-Versand ist ein Profi-/Exklusiv-Feature: im Starter wird
     // `whatsappText` bewusst leer gelassen, damit das Sheet keinen WA-Button zeigt.
     const grossFormatted = fmt(effGross);
-    const emailBody = buildEmailMessageBody(customerDisplay, { grossFormatted });
+    const projectLabel = (data.customer as any)?.project_label || "";
+    const emailBody = buildEmailMessageBody(customerDisplay, { grossFormatted, projectLabel });
     const whatsappText = whatsappAllowed
-      ? buildWhatsappMessageBody(whatsappDisplay, { grossFormatted })
+      ? buildWhatsappMessageBody(whatsappDisplay, { grossFormatted, projectLabel })
       : "";
     return { subject, emailBody, whatsappText };
   };
@@ -996,7 +997,8 @@ export default function QuoteResult() {
     // Kein PDF erzeugen – nur den vorbereiteten WhatsApp-Text öffnen.
     // Brutto-Preis fett im Text wie im PdfFlowSheet.
     const grossFormatted = fmt(effGross);
-    const text = buildWhatsappMessageBody(whatsappDisplay, { grossFormatted });
+    const projectLabel = (data.customer as any)?.project_label || "";
+    const text = buildWhatsappMessageBody(whatsappDisplay, { grossFormatted, projectLabel });
     const base = waPhone ? `https://wa.me/${waPhone}` : "https://wa.me/";
     const waUrl = `${base}?text=${encodeURIComponent(text)}`;
     const a = document.createElement("a");
