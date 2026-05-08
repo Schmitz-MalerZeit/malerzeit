@@ -21,6 +21,7 @@ export interface QuotePDFData {
   };
   customer?: {
     name?: string;
+    projectLabel?: string;
     address?: string;
     postalCode?: string;
     city?: string;
