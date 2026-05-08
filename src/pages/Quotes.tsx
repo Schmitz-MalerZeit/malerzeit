@@ -241,6 +241,48 @@ export default function Quotes() {
   };
 
 
+  // Intelligente Suche: alle Tokens (Leerzeichen-getrennt) müssen irgendwo
+  // im Vorschlag vorkommen — Name, Adresse, PLZ, Stadt, Datum, Beschreibung,
+  // Leistungen, Sektionen, Notizen, Kundentexte. Diakritika werden ignoriert.
+  const norm = (s: string) =>
+    (s || "")
+      .toString()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+  const buildHaystack = (q: any): string => {
+    const parts: string[] = [
+      q.customer_name, q.customer_address, q.customer_postal_code, q.customer_city,
+      q.customer_phone, q.customer_email, q.description, q.internal_notes,
+      q.customer_text, q.whatsapp_text,
+      Array.isArray(q.line_items) ? q.line_items.join(" ") : "",
+      Array.isArray(q.sections)
+        ? q.sections.map((s: any) =>
+            [s?.title, Array.isArray(s?.items) ? s.items.join(" ") : ""].join(" "),
+          ).join(" ")
+        : "",
+    ];
+    if (q.created_at) {
+      const d = new Date(q.created_at);
+      parts.push(
+        d.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }),
+        d.toLocaleDateString("de-DE"),
+        d.toISOString().slice(0, 10),
+        String(d.getFullYear()),
+      );
+    }
+    if (q.gross_amount != null) parts.push(String(q.gross_amount), fmt(q.gross_amount));
+    return norm(parts.filter(Boolean).join(" "));
+  };
+
+  const tokens = norm(search).split(/\s+/).filter(Boolean);
+  const filtered = (items || []).filter((q) => {
+    if (tokens.length === 0) return true;
+    const hay = buildHaystack(q);
+    return tokens.every((t) => hay.includes(t));
+  });
+
   return (
     <AppShell title="Gespeicherte Vorschläge">
       {items === null && <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}
@@ -251,8 +293,34 @@ export default function Quotes() {
         </div>
       )}
       {items && items.length > 0 && (
+        <>
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Suchen: Name, Adresse, PLZ, Stadt, Datum, Leistung …"
+            className="pl-9 pr-9 h-11"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground"
+              aria-label="Suche zurücksetzen"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 text-sm text-muted-foreground">
+            Keine Vorschläge passen zu „{search}".
+          </div>
+        ) : (
         <div className="space-y-3">
-          {items.map((q) => (
+          {filtered.map((q) => (
             <div key={q.id} className="rounded-2xl bg-card border border-border p-4 shadow-soft">
               {q.customer_name && (
                 <div className="text-sm font-semibold text-foreground mb-2 truncate">
