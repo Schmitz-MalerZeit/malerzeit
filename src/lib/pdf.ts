@@ -157,14 +157,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     y += 6;
   }
 
-  // ───────── Titel "Unverbindliche Preisorientierung" (zuerst) ─────────
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(primary[0], primary[1], primary[2]);
-  doc.text("Unverbindliche Preisorientierung", margin, y + 4);
-  y += 14;
-
-  // ───────── Empfänger-Anschrift + Datum rechts ─────────
+  // ───────── Empfänger-Anschrift ─────────
   const recYStart = y;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
@@ -179,12 +172,18 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     lines.forEach((ln, i) => doc.text(ln, margin, recYStart + i * 5.2));
     recLineCount = lines.length;
   }
-  // Rechts: Datum
+  y = recYStart + Math.max(recLineCount, 1) * 5.2 + 12;
+
+  // ───────── Titel "Unverbindliche Preisorientierung" + Datum (gleiche Höhe) ─────────
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(primary[0], primary[1], primary[2]);
+  doc.text("Unverbindliche Preisorientierung", margin, y);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(40, 40, 40);
-  doc.text(d.date, pageW - margin, recYStart, { align: "right" });
-
-  y = recYStart + Math.max(recLineCount, 1) * 5.2 + 8;
+  doc.text(d.date, pageW - margin, y, { align: "right", baseline: "alphabetic" });
+  y += 12;
 
   // ───────── Anrede ─────────
   doc.setFont("helvetica", "normal");
