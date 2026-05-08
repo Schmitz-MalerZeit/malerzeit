@@ -94,9 +94,49 @@ export default function Quotes() {
   }, []);
 
 
+  const reopenInResult = (q: any) => {
+    const reconstructed = {
+      savedQuoteId: q.id,
+      description: q.description || "",
+      customer: {
+        name: q.customer_name || "",
+        address: q.customer_address || "",
+        postal_code: q.customer_postal_code || "",
+        city: q.customer_city || "",
+        phone: q.customer_phone || "",
+        email: q.customer_email || "",
+      },
+      answers: {},
+      ai: {
+        line_items: Array.isArray(q.line_items) ? q.line_items : [],
+        sections: Array.isArray(q.sections) ? q.sections : [],
+        customer_text: q.customer_text || "",
+        whatsapp_text: q.whatsapp_text || "",
+        whatsapp_edited: !!q.whatsapp_text,
+        estimated_hours: Number(q.estimated_hours) || 0,
+        estimated_material_cost: Number(q.estimated_material) || 0,
+        estimated_labor_cost: 0,
+        pricing: {
+          net_amount: Number(q.net_amount) || 0,
+          vat_amount: Number(q.vat_amount) || 0,
+          gross_amount: Number(q.gross_amount) || 0,
+          vat_rate: Number(q.vat_rate) || 19,
+          labor_cost: 0,
+          material_cost: 0,
+        },
+        surcharge: { mode: "percent", value: 0 },
+      },
+      pdf_storage_path: q.pdf_storage_path || null,
+      pdf_filename: q.pdf_filename || null,
+    };
+    localStorage.setItem("currentQuote", JSON.stringify(reconstructed));
+    sessionStorage.removeItem("currentQuotePdf");
+    nav("/quote/result");
+  };
+
   const openSavedPdf = async (q: any) => {
     if (!q.pdf_storage_path) {
-      toast.info("Für diesen älteren Vorschlag wurde noch keine PDF-Datei gespeichert.");
+      reopenInResult(q);
       return;
     }
     const fileName = q.pdf_filename || `Preisorientierung_${new Date(q.created_at).toISOString().slice(0, 10)}.pdf`;
@@ -242,7 +282,7 @@ export default function Quotes() {
                 >
                   {openingId === q.id
                     ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF öffnen" : "Noch kein PDF gespeichert"}</>}
+                    : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF öffnen" : "Öffnen & PDF erstellen"}</>}
                 </Button>
                 <Button
                   type="button"
