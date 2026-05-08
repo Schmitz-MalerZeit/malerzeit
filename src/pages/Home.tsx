@@ -33,6 +33,13 @@ export default function Home() {
   const [firstName, setFirstName] = useState<string>("");
   const [addonOpen, setAddonOpen] = useState(false);
 
+  const startNewQuote = () => {
+    localStorage.removeItem("quoteDraft.v1");
+    localStorage.removeItem("currentQuote");
+    sessionStorage.removeItem("currentQuotePdf");
+    nav("/quote/new");
+  };
+
   useEffect(() => {
     supabase.from("profiles").select("contact_person, signatory_name").maybeSingle().then(({ data }) => {
       const full = ((data?.signatory_name || "").trim() || (data?.contact_person || "").trim());
@@ -189,7 +196,7 @@ export default function Home() {
         })()}
 
         <div className="space-y-3">
-          <Tile primary icon={FileText} title={t("home.ctaNew")} subtitle={t("home.ctaNewSub")} onClick={() => nav("/quote/new")} />
+          <Tile primary icon={FileText} title={t("home.ctaNew")} subtitle={t("home.ctaNewSub")} onClick={startNewQuote} />
           <Tile icon={FolderOpen} title={t("home.ctaQuotes")} subtitle={t("home.ctaQuotesSub")} onClick={() => nav("/quotes")} />
           <Tile icon={CreditCard} title={t("home.ctaBilling")} subtitle={t("home.ctaBillingSub")} onClick={() => nav("/billing")} />
           <Tile icon={UserIcon} title={t("home.ctaProfile")} subtitle={t("home.ctaProfileSub")} onClick={() => nav("/profile")} />
