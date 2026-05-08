@@ -49,13 +49,36 @@ const DESCRIPTION_PLACEHOLDER = `Bitte gib die Infos strukturiert ein, z. B.:
 
 Je präziser deine Angaben, desto genauer die Kalkulation.`;
 
+const DRAFT_KEY = "quoteDraft.v1";
+
+type Draft = {
+  description: string;
+  customer: { name: string; address: string; postal_code: string; city: string; phone: string; email: string };
+  answers: Record<string, string>;
+  questions: string[];
+  step: "input" | "questions" | "loading";
+};
+
+const loadDraft = (): Draft | null => {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (!d || typeof d !== "object") return null;
+    return d as Draft;
+  } catch { return null; }
+};
+
 export default function QuoteNew() {
   const nav = useNavigate();
-  const [description, setDescription] = useState("");
-  const [customer, setCustomer] = useState({ name: "", address: "", postal_code: "", city: "", phone: "", email: "" });
-  const [step, setStep] = useState<"input" | "questions" | "loading">("input");
-  const [questions, setQuestions] = useState<string[]>([]);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const initial = loadDraft();
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [customer, setCustomer] = useState(initial?.customer ?? { name: "", address: "", postal_code: "", city: "", phone: "", email: "" });
+  const [step, setStep] = useState<"input" | "questions" | "loading">(
+    initial?.step === "questions" ? "questions" : "input"
+  );
+  const [questions, setQuestions] = useState<string[]>(initial?.questions ?? []);
+  const [answers, setAnswers] = useState<Record<string, string>>(initial?.answers ?? {});
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState({ material_markup: 15, quality_level: "standard", vat_rate: 19 });
   const [hourlyRates, setHourlyRates] = useState<{ label: string; rate: number; is_default: boolean }[]>([]);
@@ -68,6 +91,19 @@ export default function QuoteNew() {
     reason: "plz_city_mismatch" | "street_not_in_plz";
   } | null>(null);
   const subState = useSubscription();
+
+  // ───────── Draft autosave ─────────
+  // Persist all entered data to localStorage so it survives tab suspension on
+  // iOS/Android (switching to another app, screen lock, low-memory eviction).
+  // Cleared explicitly when the quote is successfully sent to the result page.
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        description, customer, answers, questions, step,
+      } satisfies Draft));
+    } catch { /* quota exceeded – ignore */ }
+  }, [description, customer, answers, questions, step]);
+
 
   useEffect(() => {
     (async () => {
