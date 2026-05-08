@@ -107,6 +107,7 @@ export default function Quotes() {
         city: q.customer_city || "",
         phone: q.customer_phone || "",
         email: q.customer_email || "",
+        project_label: q.project_label || "",
       },
       answers: {},
       ai: {
