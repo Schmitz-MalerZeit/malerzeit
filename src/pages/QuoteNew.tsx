@@ -254,6 +254,7 @@ export default function QuoteNew() {
           description, answers, ai: resp, customer,
         }));
         sessionStorage.removeItem("currentQuotePdf"); // invalidate old cached PDF
+        try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
         nav("/quote/result");
       }
     } catch (err: any) {
