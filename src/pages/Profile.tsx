@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Upload, ImageIcon, Eye } from "lucide-react";
+import { Loader2, Upload, ImageIcon, Eye, Trash2 } from "lucide-react";
 import { extractDominantColors, PDF_COLOR_PALETTE } from "@/lib/colorExtractor";
 import { VoiceInput } from "@/components/VoiceInput";
 import { LetterheadPreview } from "@/components/LetterheadPreview";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canUseLogoInPdf, getTier } from "@/lib/planFeatures";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useNavigate } from "react-router-dom";
 
 const VOICE_FIELDS = new Set(["company_name", "contact_person", "address", "city"]);
 const appendText = (prev: string, add: string) =>
