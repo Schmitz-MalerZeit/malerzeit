@@ -376,6 +376,8 @@ export default function Quotes() {
             </div>
           ))}
         </div>
+        )}
+        </>
       )}
 
       <AlertDialog open={!!deleteCandidate} onOpenChange={(o) => { if (!o && !deleting) setDeleteCandidate(null); }}>
