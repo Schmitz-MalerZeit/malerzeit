@@ -173,8 +173,6 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   // Rechts oben: Datum (klassisches Meta-Block-Format)
   const metaX = pageW - margin;
   doc.setFontSize(9.5);
-  doc.setTextColor(80, 80, 80);
-  doc.text("Angebotsdatum:", metaX - 28, recYStart, { align: "right" });
   doc.setTextColor(40, 40, 40);
   doc.text(d.date, metaX, recYStart, { align: "right" });
 
