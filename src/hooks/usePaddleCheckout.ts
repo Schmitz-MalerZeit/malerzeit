@@ -25,6 +25,7 @@ export function usePaddleCheckout() {
           allowLogout: false,
           variant: "one-page",
           locale: "de",
+          showAddDiscounts: true,
         },
       });
     } finally {
