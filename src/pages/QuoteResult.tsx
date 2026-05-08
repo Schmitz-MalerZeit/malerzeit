@@ -1257,6 +1257,44 @@ export default function QuoteResult() {
           )}
         </div>
 
+        <div className="rounded-2xl bg-card border border-border p-4 shadow-soft space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm inline-flex items-center gap-1.5">
+              <Calculator className="h-4 w-4 text-primary" /> Kalkulationsbasis
+            </h3>
+            <span className="text-xs text-muted-foreground">erscheint nicht im PDF</span>
+          </div>
+          <div className="text-xs space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Kalkulierte Stunden</span>
+              <span className="font-medium text-foreground">
+                {Number(ai.estimated_hours || 0).toLocaleString("de-DE", { maximumFractionDigits: 1 })} Std
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Lohnkosten (netto)</span>
+              <span className="font-medium text-foreground">{fmt(Number(p.labor_cost) || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Material inkl. Aufschlag (netto)</span>
+              <span className="font-medium text-foreground">{fmt(Number(p.material_cost) || 0)}</span>
+            </div>
+            {Array.isArray(ai.sections) && ai.sections.length > 0 && ai.sections.some((s: any) => Number(s?.hours) > 0) && (
+              <div className="border-t border-border/60 pt-2 mt-2 space-y-1">
+                <div className="text-muted-foreground">Pro Bereich:</div>
+                {ai.sections.map((s: any, i: number) => (
+                  <div key={i} className="flex justify-between pl-2">
+                    <span className="text-foreground">{s.title}</span>
+                    <span className="text-muted-foreground">
+                      {Number(s.hours || 0).toLocaleString("de-DE", { maximumFractionDigits: 1 })} Std
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="rounded-2xl gradient-primary text-primary-foreground p-5 shadow-elevated">
           <div className="flex justify-between text-sm mb-2"><span>Netto</span><span className="font-medium">{fmt(effNet)}</span></div>
           <div className="flex justify-between text-sm mb-3"><span>MwSt. ({vatRate}%)</span><span className="font-medium">{fmt(effVat)}</span></div>
