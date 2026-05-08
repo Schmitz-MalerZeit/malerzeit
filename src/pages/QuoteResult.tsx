@@ -75,7 +75,14 @@ export default function QuoteResult() {
   useEffect(() => {
     const raw = localStorage.getItem("currentQuote");
     if (!raw) { nav("/quote/new"); return; }
-    setData(JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    setData(parsed);
+    if (parsed?.savedQuoteId) {
+      setSavedQuoteId(parsed.savedQuoteId);
+      setSaved(true);
+    }
+    if (parsed?.pdf_storage_path) setLastSavedPdfPath(parsed.pdf_storage_path);
+    if (parsed?.pdf_filename) setLastFilename(parsed.pdf_filename);
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => setProfile(data));
     supabase.from("user_settings").select("*").maybeSingle().then(({ data }) => setSettings(data));
     supabase
