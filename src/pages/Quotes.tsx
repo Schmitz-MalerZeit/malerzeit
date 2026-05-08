@@ -27,6 +27,7 @@ const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency"
 export default function Quotes() {
   const nav = useNavigate();
   const [items, setItems] = useState<any[] | null>(null);
+  const [search, setSearch] = useState("");
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [pdfFlowOpen, setPdfFlowOpen] = useState(false);
   const [pdfFlow, setPdfFlow] = useState<PdfFlowState>({ phase: "idle" });
