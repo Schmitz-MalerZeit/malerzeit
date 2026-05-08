@@ -40,14 +40,25 @@ async function handleSubscriptionCreated(data: any, env: PaddleEnv) {
 }
 
 async function handleSubscriptionUpdated(data: any, env: PaddleEnv) {
-  const { id, status, currentBillingPeriod, scheduledChange } = data;
-  await getSupabase().from('subscriptions').update({
+  const { id, status, currentBillingPeriod, scheduledChange, items } = data;
+  const item = items?.[0];
+  const newPriceId = item?.price?.importMeta?.externalId;
+  const newProductId = item?.product?.importMeta?.externalId;
+
+  const patch: Record<string, unknown> = {
     status,
     current_period_start: currentBillingPeriod?.startsAt,
     current_period_end: currentBillingPeriod?.endsAt,
     cancel_at_period_end: scheduledChange?.action === 'cancel',
     updated_at: new Date().toISOString(),
-  }).eq('paddle_subscription_id', id).eq('environment', env);
+  };
+  // Only overwrite price/product if Paddle gives us human-readable IDs;
+  // otherwise we'd corrupt tier mapping after a portal-initiated plan change.
+  if (newPriceId) patch.price_id = newPriceId;
+  if (newProductId) patch.product_id = newProductId;
+
+  await getSupabase().from('subscriptions').update(patch)
+    .eq('paddle_subscription_id', id).eq('environment', env);
 }
 
 async function handleSubscriptionCanceled(data: any, env: PaddleEnv) {
