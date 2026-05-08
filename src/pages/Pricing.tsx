@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2, Sparkles, Info } from "lucide-react";
+import { Check, Loader2, Sparkles, Info, Tag } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/useAuth";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { isNativeApp } from "@/lib/platform";
 
 type TierId = "starter" | "profi" | "profiplus";
