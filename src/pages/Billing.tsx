@@ -200,12 +200,17 @@ export default function Billing() {
             <div className="pt-3 border-t border-border">
               <div className="flex justify-between text-sm mb-1.5">
                 <span className="text-muted-foreground">{t("billing.monthlyPdfUsage")}</span>
-                <span className="font-medium">{sub.pdfUsed} / {sub.pdfLimit}</span>
+                <span className="font-medium">{sub.pdfUsed} / {sub.effectiveLimit}</span>
               </div>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">
                 <div className="h-full bg-primary transition-all"
-                  style={{ width: `${Math.min(100, (sub.pdfUsed / Math.max(1, sub.pdfLimit)) * 100)}%` }} />
+                  style={{ width: `${Math.min(100, (sub.pdfUsed / Math.max(1, sub.effectiveLimit)) * 100)}%` }} />
               </div>
+              {sub.addonBonus > 0 && (
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  +{sub.addonBonus} Zusatz-PDFs aktiv (Basis: {sub.pdfLimit})
+                </p>
+              )}
             </div>
 
             {s.status === "past_due" && (
