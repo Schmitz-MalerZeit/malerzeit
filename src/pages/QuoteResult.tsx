@@ -728,6 +728,7 @@ export default function QuoteResult() {
       customer_city: data.customer?.city || null,
       customer_phone: data.customer?.phone || null,
       customer_email: data.customer?.email || null,
+      project_label: (data.customer as any)?.project_label || null,
       pdf_storage_path: path,
       pdf_filename: fileName,
       pdf_created_at: new Date().toISOString(),
