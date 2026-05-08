@@ -300,13 +300,13 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
       const items = (sec.items || []).filter((x) => typeof x === "string" && x.trim());
       if (!items.length) return;
       // Abschnitts-Überschrift
-      ensureSpace(12);
-      if (sIdx > 0) y += 2;
+      ensureSpace(14);
+      if (sIdx > 0) y += 4;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10.5);
       doc.setTextColor(primary[0], primary[1], primary[2]);
       doc.text(sec.title, margin, y);
-      y += 5;
+      y += 8;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10.5);
       doc.setTextColor(45, 45, 45);
