@@ -78,7 +78,7 @@ export default function Pricing() {
           nav("/billing");
         }
       } else {
-        await openCheckout({ priceId, customerEmail: user.email, userId: user.id });
+        await openCheckout({ priceId, customerEmail: user.email, userId: user.id, discountCode: discountCode || undefined });
       }
     } finally { setBusyId(null); }
   };
