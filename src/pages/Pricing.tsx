@@ -32,6 +32,22 @@ export default function Pricing() {
   const sub = useSubscription();
   const [billing, setBilling] = useState<"monthly" | "yearly">("yearly");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [discountCode, setDiscountCode] = useState<string>("");
+
+  useEffect(() => {
+    const c = searchParams.get("code");
+    if (c) {
+      const v = c.trim().toUpperCase();
+      setDiscountCode(v);
+      try { sessionStorage.setItem("promo_code", v); } catch {}
+    } else {
+      try {
+        const stored = sessionStorage.getItem("promo_code");
+        if (stored) setDiscountCode(stored);
+      } catch {}
+    }
+  }, [searchParams]);
 
   const locale = (i18n.resolvedLanguage || "de") === "en" ? "en-US" : "de-DE";
   const fmt = (n: number) =>
