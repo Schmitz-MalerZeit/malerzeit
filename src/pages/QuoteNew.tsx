@@ -68,7 +68,7 @@ const loadDraft = (): Draft | null => {
       const current = JSON.parse(currentRaw);
       return {
         description: current?.description ?? "",
-        customer: current?.customer ?? { name: "", address: "", postal_code: "", city: "", phone: "", email: "" },
+        customer: { name: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(current?.customer ?? {}) },
         answers: current?.answers ?? {},
         questions: [],
         step: "input",
