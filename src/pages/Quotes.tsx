@@ -282,7 +282,7 @@ export default function Quotes() {
                 >
                   {openingId === q.id
                     ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF öffnen" : "Noch kein PDF gespeichert"}</>}
+                    : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF öffnen" : "Öffnen & PDF erstellen"}</>}
                 </Button>
                 <Button
                   type="button"
