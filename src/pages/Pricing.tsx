@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2, Sparkles, Info } from "lucide-react";
+import { Check, Loader2, Sparkles, Info, Tag } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/useAuth";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { isNativeApp } from "@/lib/platform";
 
 type TierId = "starter" | "profi" | "profiplus";
@@ -32,6 +32,22 @@ export default function Pricing() {
   const sub = useSubscription();
   const [billing, setBilling] = useState<"monthly" | "yearly">("yearly");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [discountCode, setDiscountCode] = useState<string>("");
+
+  useEffect(() => {
+    const c = searchParams.get("code");
+    if (c) {
+      const v = c.trim().toUpperCase();
+      setDiscountCode(v);
+      try { sessionStorage.setItem("promo_code", v); } catch {}
+    } else {
+      try {
+        const stored = sessionStorage.getItem("promo_code");
+        if (stored) setDiscountCode(stored);
+      } catch {}
+    }
+  }, [searchParams]);
 
   const locale = (i18n.resolvedLanguage || "de") === "en" ? "en-US" : "de-DE";
   const fmt = (n: number) =>
@@ -62,7 +78,7 @@ export default function Pricing() {
           nav("/billing");
         }
       } else {
-        await openCheckout({ priceId, customerEmail: user.email, userId: user.id });
+        await openCheckout({ priceId, customerEmail: user.email, userId: user.id, discountCode: discountCode || undefined });
       }
     } finally { setBusyId(null); }
   };
@@ -70,6 +86,20 @@ export default function Pricing() {
   return (
     <AppShell title={t("pricing.title")}>
       <div className="space-y-6">
+        {discountCode && (
+          <div className="rounded-2xl bg-primary/5 border border-primary/30 p-4 text-sm flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-primary" />
+              <span>Rabattcode aktiv: <strong className="font-mono">{discountCode}</strong></span>
+            </div>
+            <button
+              onClick={() => { setDiscountCode(""); try { sessionStorage.removeItem("promo_code"); } catch {} }}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              entfernen
+            </button>
+          </div>
+        )}
         {sub.inTrial && (
           <div className="rounded-2xl bg-accent/10 border border-accent/30 p-5 text-sm">
             <div className="font-semibold mb-1 flex items-center gap-2">

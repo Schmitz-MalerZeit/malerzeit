@@ -23,6 +23,7 @@ import Pricing from "./pages/Pricing";
 import Billing from "./pages/Billing";
 import PdfActionView from "./pages/PdfActionView";
 import NotFound from "./pages/NotFound";
+import AdminDiscounts from "./pages/AdminDiscounts";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
             <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
             <Route path="/legal" element={<RequireAuth><Legal /></RequireAuth>} />
+            <Route path="/admin/discounts" element={<RequireAuth><AdminDiscounts /></RequireAuth>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

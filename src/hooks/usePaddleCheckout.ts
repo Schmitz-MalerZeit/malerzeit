@@ -9,6 +9,7 @@ export function usePaddleCheckout() {
     customerEmail?: string;
     userId?: string;
     successUrl?: string;
+    discountCode?: string;
   }) => {
     setLoading(true);
     try {
@@ -19,6 +20,7 @@ export function usePaddleCheckout() {
         items: [{ priceId: paddlePriceId, quantity: 1 }],
         customer: options.customerEmail ? { email: options.customerEmail } : undefined,
         customData: options.userId ? { userId: options.userId } : undefined,
+        discountCode: options.discountCode || undefined,
         settings: {
           displayMode: "overlay",
           successUrl: options.successUrl || `${window.location.origin}/billing?checkout=success`,
