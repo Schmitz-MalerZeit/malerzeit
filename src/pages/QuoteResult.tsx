@@ -190,6 +190,7 @@ export default function QuoteResult() {
       sessionStorage.removeItem("currentQuotePdf");
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }
       setPreviewBlob(null);
+      setPreviewBlobLang(null);
       setPdfQuotaConsumed(false);
       setSaved(false);
       setItemsDirty(false);
