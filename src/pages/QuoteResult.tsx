@@ -420,7 +420,7 @@ export default function QuoteResult() {
     toast.success(tr("WhatsApp-Text kopiert", "WhatsApp text copied"));
   };
 
-  const buildPDF = async () => {
+  const buildPDF = async (lang: "de" | "en") => {
     let logoDataUrl: string | undefined;
     let logoSize: { width: number; height: number } | undefined;
     if (logoAllowed && profile?.logo_url) {
