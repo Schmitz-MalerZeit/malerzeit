@@ -27,6 +27,7 @@ import {
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
 import { useTr, currentLocale } from "@/lib/tr";
+import i18n from "@/i18n";
 
 const fmt = (n: number) => n.toLocaleString(currentLocale(), { style: "currency", currency: "EUR" });
 
