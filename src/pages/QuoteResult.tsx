@@ -26,12 +26,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
+import { useTr, currentLocale } from "@/lib/tr";
 
-const fmt = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+const fmt = (n: number) => n.toLocaleString(currentLocale(), { style: "currency", currency: "EUR" });
 
 const blobToObjectUrl = (blob: Blob): string => URL.createObjectURL(blob);
 
 export default function QuoteResult() {
+  const tr = useTr();
   const nav = useNavigate();
   const [data, setData] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -189,9 +191,9 @@ export default function QuoteResult() {
       setPdfQuotaConsumed(false);
       setSaved(false);
       setItemsDirty(false);
-      toast.success("Preise neu berechnet");
+      toast.success(tr("Preise neu berechnet", "Prices recalculated"));
     } catch (e: any) {
-      toast.error(e.message || "Neuberechnung fehlgeschlagen");
+      toast.error(e.message || tr("Neuberechnung fehlgeschlagen", "Recalculation failed"));
     } finally {
       setRecalcBusy(false);
     }
@@ -227,7 +229,7 @@ export default function QuoteResult() {
   const confirmAddPosition = () => {
     if (!data) return;
     const desc = addDlg.description.trim();
-    if (!desc) { toast.error("Bitte eine Beschreibung eingeben."); return; }
+    if (!desc) { toast.error(tr("Bitte eine Beschreibung eingeben.", "Please enter a description.")); return; }
     const hours = Number((addDlg.hours || "0").replace(",", ".")) || 0;
     const materialNet = Number((addDlg.materialNet || "0").replace(",", ".")) || 0;
     const rate = hourlyRates.find((r) => r.id === addDlg.rateId);
@@ -287,7 +289,7 @@ export default function QuoteResult() {
     // date, so we don't want the "Preise neu berechnen" banner to appear.
     persistEdits(next);
     setAddDlg((s) => ({ ...s, open: false }));
-    toast.success("Position hinzugefügt");
+    toast.success(tr("Position hinzugefügt", "Item added"));
   };
 
   // ---- Section helpers (Räume/Bereiche) ----------------------------------
@@ -339,7 +341,7 @@ export default function QuoteResult() {
   };
   const addSection = () => {
     if (!data) return;
-    const next = [...(data.ai.sections || []), { title: "Neuer Bereich", items: [""] }];
+    const next = [...(data.ai.sections || []), { title: tr("Neuer Bereich", "New section"), items: [""] }];
     setSections(next);
   };
   const updateCustomerText = (value: string) => {
@@ -408,11 +410,11 @@ export default function QuoteResult() {
 
   const copyText = async () => {
     await navigator.clipboard.writeText(customerDisplay);
-    toast.success("Kundentext kopiert");
+    toast.success(tr("Kundentext kopiert", "Customer text copied"));
   };
   const copyWA = async () => {
     await navigator.clipboard.writeText(whatsappDisplay);
-    toast.success("WhatsApp-Text kopiert");
+    toast.success(tr("WhatsApp-Text kopiert", "WhatsApp text copied"));
   };
 
   const buildPDF = async () => {
@@ -482,12 +484,12 @@ export default function QuoteResult() {
         postalCode: data.customer.postal_code,
         city: data.customer.city,
       } : undefined,
-      date: new Date().toLocaleDateString("de-DE"),
+      date: new Date().toLocaleDateString(currentLocale()),
       lineItems: ai.line_items,
       sections: scaledSections,
       net: effNet, vat: effVat, gross: effGross, vatRate: vatRate,
       validityDays: settings?.quote_validity_days ?? 14,
-      closingText: settings?.closing_text ?? "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.",
+      closingText: settings?.closing_text ?? tr("Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.", "If our offer suits you, we look forward to your order confirmation."),
       signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name,
     });
   };
@@ -498,24 +500,24 @@ export default function QuoteResult() {
       console.error("consume_pdf_quota RPC error", error);
       const detail = [error.message, (error as any).details, (error as any).hint, (error as any).code]
         .filter(Boolean).join(" · ");
-      toast.error("Limit-Prüfung fehlgeschlagen", { description: detail || "Unbekannter Datenbank-Fehler" });
+      toast.error(tr("Limit-Prüfung fehlgeschlagen", "Limit check failed"), { description: detail || tr("Unbekannter Datenbank-Fehler", "Unknown database error") });
       return false;
     }
     const res = data as { ok: boolean; error?: string; limit?: number; used?: number; mode?: string };
     if (!res?.ok) {
       if (res?.error === "trial_exhausted") {
-        toast.error(`Test-PDFs aufgebraucht (${res.used}/${res.limit}). Wähle einen Tarif, um weiter PDFs herunterzuladen.`, {
-          action: { label: "Tarife", onClick: () => nav("/pricing") },
+        toast.error(tr(`Test-PDFs aufgebraucht (${res.used}/${res.limit}). Wähle einen Tarif, um weiter PDFs herunterzuladen.`, `Trial PDFs used up (${res.used}/${res.limit}). Choose a plan to keep downloading PDFs.`), {
+          action: { label: tr("Tarife", "Plans"), onClick: () => nav("/pricing") },
         });
       } else if (res?.error === "limit_reached") {
-        setAddonDialogContext(`Du hast ${res.used} von ${res.limit} KI-Angeboten in diesem Monat genutzt.`);
+        setAddonDialogContext(tr(`Du hast ${res.used} von ${res.limit} KI-Angeboten in diesem Monat genutzt.`, `You've used ${res.used} of ${res.limit} AI quotes this month.`));
         setAddonDialogOpen(true);
       } else if (res?.error === "no_active_plan") {
-        toast.error("Kein aktiver Tarif. Bitte wähle einen Plan.", {
-          action: { label: "Tarife", onClick: () => nav("/pricing") },
+        toast.error(tr("Kein aktiver Tarif. Bitte wähle einen Plan.", "No active plan. Please choose a plan."), {
+          action: { label: tr("Tarife", "Plans"), onClick: () => nav("/pricing") },
         });
       } else {
-        toast.error("PDF-Erstellung nicht erlaubt.");
+        toast.error(tr("PDF-Erstellung nicht erlaubt.", "PDF creation not allowed."));
       }
       return false;
     }
@@ -648,26 +650,24 @@ export default function QuoteResult() {
     const date = new Date().toISOString().slice(0, 10);
 
     const customerSlug = slugify(data.customer?.name || "");
-    if (customerSlug) return `Preisorientierung_${customerSlug}_${date}.pdf`;
+    const base = tr("Preisorientierung", "PriceEstimate");
+    if (customerSlug) return `${base}_${customerSlug}_${date}.pdf`;
 
-    // 1) Prefer the first AI-curated line item (already concise & relevant)
     const firstLine: string | undefined = ai?.line_items?.[0];
     if (firstLine) {
       const lineSlug = slugify(topKeywords(firstLine, 5));
-      if (lineSlug) return `Preisorientierung_${lineSlug}_${date}.pdf`;
+      if (lineSlug) return `${base}_${lineSlug}_${date}.pdf`;
     }
 
-    // 2) Fallback: keywords from the "Arbeiten" block of the description
     const workBlock = extractWorkBlock(data.description || "");
     const workSlug = slugify(topKeywords(workBlock, 5));
-    if (workSlug) return `Preisorientierung_${workSlug}_${date}.pdf`;
+    if (workSlug) return `${base}_${workSlug}_${date}.pdf`;
 
-    // 3) Last resort: first ~6 words of the raw description
     const firstWords = (data.description || "").split(/\s+/).slice(0, 6).join(" ");
     const descSlug = slugify(firstWords);
-    if (descSlug) return `Preisorientierung_${descSlug}_${date}.pdf`;
+    if (descSlug) return `${base}_${descSlug}_${date}.pdf`;
 
-    return `Preisorientierung_${date}.pdf`;
+    return `${base}_${date}.pdf`;
   };
 
   const ensureSavedQuoteWithPdf = async (
@@ -676,7 +676,7 @@ export default function QuoteResult() {
     onUploadProgress?: (loaded: number, total: number) => void,
   ): Promise<{ path: string; quoteId: string } | null> => {
     const { data: u } = await supabase.auth.getUser();
-    if (!u.user) throw new Error("Nicht angemeldet");
+    if (!u.user) throw new Error(tr("Nicht angemeldet", "Not signed in"));
 
     const safeName = fileName.replace(/[^A-Za-z0-9._-]+/g, "_");
     const path = `${u.user.id}/${Date.now()}_${safeName}`;
@@ -701,11 +701,11 @@ export default function QuoteResult() {
           onUploadProgress?.(blob.size, blob.size);
           resolve();
         } else {
-          reject(new Error(`Upload fehlgeschlagen (HTTP ${xhr.status}): ${xhr.responseText?.slice(0, 200) || ""}`));
+          reject(new Error(tr(`Upload fehlgeschlagen (HTTP ${xhr.status}): ${xhr.responseText?.slice(0, 200) || ""}`, `Upload failed (HTTP ${xhr.status}): ${xhr.responseText?.slice(0, 200) || ""}`)));
         }
       };
-      xhr.onerror = () => reject(new Error("Netzwerkfehler beim Upload"));
-      xhr.onabort = () => reject(new Error("Upload abgebrochen"));
+      xhr.onerror = () => reject(new Error(tr("Netzwerkfehler beim Upload", "Network error during upload")));
+      xhr.onabort = () => reject(new Error(tr("Upload abgebrochen", "Upload aborted")));
       xhr.send(blob);
     });
 
@@ -752,7 +752,7 @@ export default function QuoteResult() {
     const { data, error } = await supabase.storage
       .from("quote-pdfs")
       .createSignedUrl(path, 60 * 60);
-    if (error || !data?.signedUrl) throw error || new Error("PDF-Link konnte nicht erstellt werden");
+    if (error || !data?.signedUrl) throw error || new Error(tr("PDF-Link konnte nicht erstellt werden", "Could not create PDF link"));
     return data.signedUrl;
   };
 
@@ -760,7 +760,7 @@ export default function QuoteResult() {
 
 
   const buildPdfFlowMeta = (_fileName: string) => {
-    const subject = `Unverbindliche Preisorientierung${data.customer?.name ? " – " + data.customer.name : ""}`;
+    const subject = `${tr("Unverbindliche Preisorientierung", "Non-binding price estimate")}${data.customer?.name ? " – " + data.customer.name : ""}`;
     // E-Mail- und WhatsApp-Texte nutzen den Inhalt der PDF, ABER:
     //  - keine Schluss-Grußformel/Signatur (Mail-/WA-Apps haben eigene Signaturen)
     //  - Brutto-Preis fett hervorgehoben
@@ -793,8 +793,8 @@ export default function QuoteResult() {
 
   const guardPdfAccess = (): boolean => {
     if (pdfAllowed) return true;
-    toast.error("PDF-Download ist ab dem Profi-Tarif verfügbar.", {
-      action: { label: "Tarife ansehen", onClick: () => nav("/pricing") },
+    toast.error(tr("PDF-Download ist ab dem Profi-Tarif verfügbar.", "PDF download is available from the Pro plan."), {
+      action: { label: tr("Tarife ansehen", "View plans"), onClick: () => nav("/pricing") },
     });
     return false;
   };
@@ -805,7 +805,7 @@ export default function QuoteResult() {
     const meta = buildPdfFlowMeta(fileName);
     setPdfFlow({
       phase: "building",
-      step: "PDF wird zusammengebaut …",
+      step: tr("PDF wird zusammengebaut …", "Building PDF…"),
       progress: 5,
       fileName,
       ...meta,
@@ -832,7 +832,7 @@ export default function QuoteResult() {
       // 1) Build (or reuse) the PDF blob
       let blob: Blob | null = previewBlob;
       if (!blob) {
-        setPdfFlow((s) => ({ ...s, step: "PDF wird erstellt …" }));
+        setPdfFlow((s) => ({ ...s, step: tr("PDF wird erstellt …", "Creating PDF…") }));
         const pdf = await buildPDF();
         // 2) Quota only consumed once we have a buildable PDF
         const ok = await consumeQuota();
@@ -866,7 +866,7 @@ export default function QuoteResult() {
       setPdfFlow((s) => ({
         ...s,
         phase: "uploading",
-        step: "PDF wird hochgeladen …",
+        step: tr("PDF wird hochgeladen …", "Uploading PDF…"),
         progress: 0,
         loadedBytes: 0,
         totalBytes: blob!.size,
@@ -881,12 +881,12 @@ export default function QuoteResult() {
           ? { ...s, progress: pct, loadedBytes: loaded, totalBytes: total, etaSeconds: remaining }
           : s);
       });
-      if (!savedPdf?.path) throw new Error("PDF konnte nicht gespeichert werden");
+      if (!savedPdf?.path) throw new Error(tr("PDF konnte nicht gespeichert werden", "PDF could not be saved"));
 
       // 4) Sign URL for preview + sharing
       setPdfFlow((s) => ({
         ...s,
-        step: "Sicheren Link erstellen …",
+        step: tr("Sicheren Link erstellen …", "Creating secure link…"),
         progress: 98,
         etaSeconds: 1,
       }));
@@ -919,8 +919,8 @@ export default function QuoteResult() {
         if (canShareFile && file) {
           try {
             await navigator.share({ files: [file], title: fileName });
-            toast.message("Wähle WhatsApp im Teilen-Menü", {
-              description: "Die PDF wird dann als Datei mitgeschickt.",
+            toast.message(tr("Wähle WhatsApp im Teilen-Menü", "Choose WhatsApp from the share menu"), {
+              description: tr("Die PDF wird dann als Datei mitgeschickt.", "The PDF will be sent as a file."),
             });
             setPdfFlowOpen(false);
             setPdfFlow({ phase: "idle" });
@@ -928,7 +928,7 @@ export default function QuoteResult() {
             return;
           } catch (err) {
             if (!(err instanceof DOMException && err.name === "AbortError")) {
-              console.warn("WhatsApp File-Share fehlgeschlagen, Fallback wa.me:", err);
+              console.warn(tr("WhatsApp File-Share fehlgeschlagen, Fallback wa.me:", "WhatsApp file share failed, fallback wa.me:"), err);
             } else {
               return;
             }
@@ -952,10 +952,10 @@ export default function QuoteResult() {
           a.click();
           document.body.removeChild(a);
         } catch (err) {
-          console.warn("PDF-Vorab-Download fehlgeschlagen:", err);
+          console.warn(tr("PDF-Vorab-Download fehlgeschlagen:", "PDF pre-download failed:"), err);
         }
-        toast.message("PDF wurde heruntergeladen", {
-          description: "WhatsApp öffnet sich – hänge die PDF aus dem Download-Ordner an.",
+        toast.message(tr("PDF wurde heruntergeladen", "PDF was downloaded"), {
+          description: tr("WhatsApp öffnet sich – hänge die PDF aus dem Download-Ordner an.", "WhatsApp will open — attach the PDF from your downloads folder."),
         });
         const base = waPhone ? `https://wa.me/${waPhone}` : "https://wa.me/";
         const waUrl = `${base}?text=${encodeURIComponent(meta.whatsappText)}`;
@@ -976,7 +976,7 @@ export default function QuoteResult() {
       setPdfFlow((prev) => ({
         ...prev,
         phase: "error",
-        errorMessage: e?.message || "Unbekannter Fehler beim Erstellen der PDF.",
+        errorMessage: e?.message || tr("Unbekannter Fehler beim Erstellen der PDF.", "Unknown error while creating the PDF."),
         errorDetail: typeof e?.stack === "string" ? e.stack.split("\n").slice(0, 8).join("\n") : String(e),
       }));
     } finally {
@@ -1020,7 +1020,7 @@ export default function QuoteResult() {
     if (!silent) setBusy(true);
     try {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Nicht angemeldet");
+      if (!u.user) throw new Error(tr("Nicht angemeldet", "Not signed in"));
       const payload = {
         user_id: u.user.id,
         description: data.description,
@@ -1055,15 +1055,15 @@ export default function QuoteResult() {
       if (error) throw error;
       setSavedQuoteId(row.id);
       setSaved(true);
-      if (!silent) toast.success(savedQuoteId ? "Vorschlag aktualisiert" : "Vorschlag gespeichert");
+      if (!silent) toast.success(savedQuoteId ? tr("Vorschlag aktualisiert", "Quote updated") : tr("Vorschlag gespeichert", "Quote saved"));
     } catch (e: any) {
       if (!silent) toast.error(e.message);
-      else console.warn("Auto-Speichern fehlgeschlagen:", e?.message);
+      else console.warn(tr("Auto-Speichern fehlgeschlagen:", "Auto-save failed:"), e?.message);
     }
     finally { if (!silent) setBusy(false); }
   };
 
-  const headerTitle = data.customer?.name?.trim() || "Preisorientierung";
+  const headerTitle = data.customer?.name?.trim() || tr("Preisorientierung", "Price estimate");
 
   // Telefonnummer für WhatsApp normalisieren – nur ab Profi/Exklusiv aktiv.
 
@@ -1079,13 +1079,13 @@ export default function QuoteResult() {
           onClick={() => nav("/quote/new")}
           className="-ml-2 h-9 text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4 mr-1" /> Zurück zur Eingabe
+          <ArrowLeft className="h-4 w-4 mr-1" /> {tr("Zurück zur Eingabe", "Back to input")}
         </Button>
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-lg">Leistungen</h2>
+            <h2 className="font-semibold text-lg">{tr("Leistungen", "Services")}</h2>
             <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
-              <Pencil className="h-3 w-3" /> bearbeitbar
+              <Pencil className="h-3 w-3" /> {tr("bearbeitbar", "editable")}
             </span>
           </div>
           {Array.isArray(ai.sections) && ai.sections.length > 0 ? (
@@ -1098,13 +1098,13 @@ export default function QuoteResult() {
                       value={sec.title}
                       onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
                       className="flex-1 bg-transparent border-0 border-b border-border focus:border-primary focus:outline-none text-sm font-semibold text-foreground py-1"
-                      placeholder="Bereich (z. B. Wohnzimmer)"
+                      placeholder={tr("Bereich (z. B. Wohnzimmer)", "Section (e.g. Living room)")}
                     />
                     <button
                       type="button"
                       onClick={() => removeSection(sIdx)}
                       className="text-muted-foreground hover:text-destructive transition-colors"
-                      aria-label="Bereich entfernen"
+                      aria-label={tr("Bereich entfernen", "Remove section")}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -1123,7 +1123,7 @@ export default function QuoteResult() {
                           type="button"
                           onClick={() => removeSectionItem(sIdx, iIdx)}
                           className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
-                          aria-label="Position entfernen"
+                          aria-label={tr("Position entfernen", "Remove item")}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -1137,17 +1137,17 @@ export default function QuoteResult() {
                     onClick={() => openAddDialog(sIdx)}
                     className="h-8 text-xs"
                   >
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Position
+                    <Plus className="h-3.5 w-3.5 mr-1" /> {tr("Position", "Item")}
                   </Button>
                   {(typeof sec.net_amount === "number" || typeof sec.gross_amount === "number") && (
                     <div className="mt-2 pt-2 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-xs">
                       <span className="text-muted-foreground">
-                        Zwischensumme {sec.title}
-                        {typeof sec.hours === "number" && sec.hours > 0 ? ` · ${sec.hours.toLocaleString("de-DE")} Std` : ""}
-                        {typeof sec.net_amount === "number" ? ` · Netto ${fmt(sec.net_amount)}` : ""}
+                        {tr("Zwischensumme", "Subtotal")} {sec.title}
+                        {typeof sec.hours === "number" && sec.hours > 0 ? ` · ${sec.hours.toLocaleString(currentLocale())} ${tr("Std", "hrs")}` : ""}
+                        {typeof sec.net_amount === "number" ? ` · ${tr("Netto", "Net")} ${fmt(sec.net_amount)}` : ""}
                       </span>
                       {typeof sec.gross_amount === "number" && (
-                        <span className="font-semibold text-primary">Brutto {fmt(sec.gross_amount)}</span>
+                        <span className="font-semibold text-primary">{tr("Brutto", "Gross")} {fmt(sec.gross_amount)}</span>
                       )}
                     </div>
                   )}
@@ -1160,7 +1160,7 @@ export default function QuoteResult() {
                 onClick={addSection}
                 className="h-9"
               >
-                <Plus className="h-4 w-4 mr-1.5" /> Bereich hinzufügen
+                <Plus className="h-4 w-4 mr-1.5" /> {tr("Bereich hinzufügen", "Add section")}
               </Button>
             </div>
           ) : (
@@ -1179,7 +1179,7 @@ export default function QuoteResult() {
                       type="button"
                       onClick={() => removeLineItem(i)}
                       className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
-                      aria-label="Position entfernen"
+                      aria-label={tr("Position entfernen", "Remove item")}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -1193,7 +1193,7 @@ export default function QuoteResult() {
                 onClick={addLineItem}
                 className="mt-3 h-9"
               >
-                <Plus className="h-4 w-4 mr-1.5" /> Position hinzufügen
+                <Plus className="h-4 w-4 mr-1.5" /> {tr("Position hinzufügen", "Add item")}
               </Button>
             </>
           )}
@@ -1201,7 +1201,7 @@ export default function QuoteResult() {
           {itemsDirty && (
             <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <p className="text-xs text-foreground">
-                Du hast Positionen geändert. Lass die Preise neu berechnen, damit Stunden, Lohn und Material zur neuen Liste passen.
+                {tr("Du hast Positionen geändert. Lass die Preise neu berechnen, damit Stunden, Lohn und Material zur neuen Liste passen.", "You changed items. Recalculate prices so hours, labor and materials match the new list.")}
               </p>
               <Button
                 type="button"
@@ -1211,20 +1211,20 @@ export default function QuoteResult() {
                 className="h-9 shrink-0"
               >
                 {recalcBusy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Calculator className="h-4 w-4 mr-1.5" />}
-                Preise neu berechnen
+                {tr("Preise neu berechnen", "Recalculate prices")}
               </Button>
             </div>
           )}
         </div>
 
         <div className="rounded-xl bg-secondary/50 border border-border p-4 text-xs text-muted-foreground leading-relaxed">
-          Der ausgewiesene Preis berücksichtigt einen geschätzten Arbeitslohn sowie den voraussichtlichen Materialeinsatz auf Grundlage der angegebenen Informationen.
+          {tr("Der ausgewiesene Preis berücksichtigt einen geschätzten Arbeitslohn sowie den voraussichtlichen Materialeinsatz auf Grundlage der angegebenen Informationen.", "The price shown reflects estimated labor cost plus expected materials based on the information provided.")}
         </div>
 
         <div className="rounded-2xl bg-card border border-border p-4 shadow-soft space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm">Allgemeiner Aufschlag</h3>
-            <span className="text-xs text-muted-foreground">erscheint nicht im PDF</span>
+            <h3 className="font-semibold text-sm">{tr("Allgemeiner Aufschlag", "General surcharge")}</h3>
+            <span className="text-xs text-muted-foreground">{tr("erscheint nicht im PDF", "not shown in PDF")}</span>
           </div>
           <div className="grid grid-cols-[140px_1fr_28px] gap-2 items-center">
             <Select
@@ -1233,8 +1233,8 @@ export default function QuoteResult() {
             >
               <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="percent">Prozent (%)</SelectItem>
-                <SelectItem value="amount">Betrag (€ netto)</SelectItem>
+                <SelectItem value="percent">{tr("Prozent (%)", "Percent (%)")}</SelectItem>
+                <SelectItem value="amount">{tr("Betrag (€ netto)", "Amount (€ net)")}</SelectItem>
               </SelectContent>
             </Select>
             <Input
@@ -1253,7 +1253,7 @@ export default function QuoteResult() {
           </div>
           {surchargeNet > 0 && (
             <div className="text-xs flex justify-between border-t border-border/60 pt-2">
-              <span className="text-muted-foreground">Aufschlag (netto)</span>
+              <span className="text-muted-foreground">{tr("Aufschlag (netto)", "Surcharge (net)")}</span>
               <span className="font-medium text-foreground">{fmt(surchargeNet)}</span>
             </div>
           )}
@@ -1262,33 +1262,33 @@ export default function QuoteResult() {
         <div className="rounded-2xl bg-card border border-border p-4 shadow-soft space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-sm inline-flex items-center gap-1.5">
-              <Calculator className="h-4 w-4 text-primary" /> Kalkulationsbasis
+              <Calculator className="h-4 w-4 text-primary" /> {tr("Kalkulationsbasis", "Calculation basis")}
             </h3>
-            <span className="text-xs text-muted-foreground">erscheint nicht im PDF</span>
+            <span className="text-xs text-muted-foreground">{tr("erscheint nicht im PDF", "not shown in PDF")}</span>
           </div>
           <div className="text-xs space-y-1">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Kalkulierte Stunden</span>
+              <span className="text-muted-foreground">{tr("Kalkulierte Stunden", "Calculated hours")}</span>
               <span className="font-medium text-foreground">
-                {Number(ai.estimated_hours || 0).toLocaleString("de-DE", { maximumFractionDigits: 1 })} Std
+                {Number(ai.estimated_hours || 0).toLocaleString(currentLocale(), { maximumFractionDigits: 1 })} {tr("Std", "hrs")}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Lohnkosten (netto)</span>
+              <span className="text-muted-foreground">{tr("Lohnkosten (netto)", "Labor cost (net)")}</span>
               <span className="font-medium text-foreground">{fmt(Number(p.labor_cost) || 0)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Material inkl. Aufschlag (netto)</span>
+              <span className="text-muted-foreground">{tr("Material inkl. Aufschlag (netto)", "Materials incl. markup (net)")}</span>
               <span className="font-medium text-foreground">{fmt(Number(p.material_cost) || 0)}</span>
             </div>
             {Array.isArray(ai.sections) && ai.sections.length > 0 && ai.sections.some((s: any) => Number(s?.hours) > 0) && (
               <div className="border-t border-border/60 pt-2 mt-2 space-y-1">
-                <div className="text-muted-foreground">Pro Bereich:</div>
+                <div className="text-muted-foreground">{tr("Pro Bereich:", "Per section:")}</div>
                 {ai.sections.map((s: any, i: number) => (
                   <div key={i} className="flex justify-between pl-2">
                     <span className="text-foreground">{s.title}</span>
                     <span className="text-muted-foreground">
-                      {Number(s.hours || 0).toLocaleString("de-DE", { maximumFractionDigits: 1 })} Std
+                      {Number(s.hours || 0).toLocaleString(currentLocale(), { maximumFractionDigits: 1 })} {tr("Std", "hrs")}
                     </span>
                   </div>
                 ))}
@@ -1298,10 +1298,10 @@ export default function QuoteResult() {
         </div>
 
         <div className="rounded-2xl gradient-primary text-primary-foreground p-5 shadow-elevated">
-          <div className="flex justify-between text-sm mb-2"><span>Netto</span><span className="font-medium">{fmt(effNet)}</span></div>
-          <div className="flex justify-between text-sm mb-3"><span>MwSt. ({vatRate}%)</span><span className="font-medium">{fmt(effVat)}</span></div>
+          <div className="flex justify-between text-sm mb-2"><span>{tr("Netto", "Net")}</span><span className="font-medium">{fmt(effNet)}</span></div>
+          <div className="flex justify-between text-sm mb-3"><span>{tr("MwSt.", "VAT")} ({vatRate}%)</span><span className="font-medium">{fmt(effVat)}</span></div>
           <div className="border-t border-white/20 pt-3 flex justify-between items-baseline">
-            <span className="font-semibold">Brutto</span>
+            <span className="font-semibold">{tr("Brutto", "Gross")}</span>
             <span className="text-2xl font-bold">{fmt(effGross)}</span>
           </div>
         </div>
@@ -1310,13 +1310,13 @@ export default function QuoteResult() {
           <div>
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-semibold text-sm inline-flex items-center gap-1.5">
-                Kundentext
+                {tr("Kundentext", "Customer text")}
                 <span className="text-xs text-muted-foreground font-normal inline-flex items-center gap-1">
-                  <Pencil className="h-3 w-3" /> bearbeitbar
+                  <Pencil className="h-3 w-3" /> {tr("bearbeitbar", "editable")}
                 </span>
               </h3>
               <button onClick={copyText} className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:underline">
-                <Copy className="h-3.5 w-3.5" /> Kopieren
+                <Copy className="h-3.5 w-3.5" /> {tr("Kopieren", "Copy")}
               </button>
             </div>
             <Textarea
@@ -1329,7 +1329,7 @@ export default function QuoteResult() {
 
         {pdfAllowed && (
           <Button onClick={downloadPDF} disabled={busy} className="w-full h-12 gradient-primary text-primary-foreground border-0">
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FileDown className="h-4 w-4 mr-2" /> PDF jetzt erstellen</>}
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FileDown className="h-4 w-4 mr-2" /> {tr("PDF jetzt erstellen", "Create PDF now")}</>}
           </Button>
         )}
 
@@ -1342,10 +1342,10 @@ export default function QuoteResult() {
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : (
               <>
-                <MessageCircle className="h-4 w-4 mr-2" /> Per WhatsApp senden
+                <MessageCircle className="h-4 w-4 mr-2" /> {tr("Per WhatsApp senden", "Send via WhatsApp")}
                 {!whatsappAllowed && (
                   <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide rounded-full bg-primary/10 text-primary px-2 py-0.5">
-                    Profi
+                    {tr("Profi", "Pro")}
                   </span>
                 )}
               </>
@@ -1360,16 +1360,19 @@ export default function QuoteResult() {
                 <Sparkles className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-sm mb-1">Mehr Wirkung mit Profi</h3>
+                <h3 className="font-semibold text-sm mb-1">{tr("Mehr Wirkung mit Profi", "More impact with Pro")}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Dein PDF erscheint im Light-Tarif sauber mit deinen Firmen- und Adressdaten.
-                  Mit <strong className="text-foreground">Profi</strong> kommen dein eigenes Logo & deine Firmenfarben in den Briefkopf –
-                  und du kannst die PDF mit einem Tipp direkt per WhatsApp an den Kunden senden.
+                  {tr(
+                    "Dein PDF erscheint im Light-Tarif sauber mit deinen Firmen- und Adressdaten. Mit ",
+                    "On the Light plan your PDF already looks clean with your company and address details. With ",
+                  )}
+                  <strong className="text-foreground">{tr("Profi", "Pro")}</strong>
+                  {tr(" kommen dein eigenes Logo & deine Firmenfarben in den Briefkopf – und du kannst die PDF mit einem Tipp direkt per WhatsApp an den Kunden senden.", " your own logo and company colors appear in the letterhead — and you can send the PDF straight to your customer via WhatsApp with a single tap.")}
                 </p>
               </div>
             </div>
             <Button onClick={() => nav("/pricing")} variant="outline" className="w-full h-10">
-              Auf Profi upgraden
+              {tr("Auf Profi upgraden", "Upgrade to Pro")}
             </Button>
           </div>
         )}
@@ -1381,20 +1384,20 @@ export default function QuoteResult() {
                 <Lock className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-sm mb-1">PDF-Download im Light-Tarif</h3>
+                <h3 className="font-semibold text-sm mb-1">{tr("PDF-Download im Light-Tarif", "PDF download on the Light plan")}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Wähle einen Tarif, um PDF-Angebote zu erstellen und herunterzuladen.
+                  {tr("Wähle einen Tarif, um PDF-Angebote zu erstellen und herunterzuladen.", "Choose a plan to create and download PDF quotes.")}
                 </p>
               </div>
             </div>
             <Button onClick={() => nav("/pricing")} className="w-full h-11 gradient-primary text-primary-foreground border-0">
-              <Sparkles className="h-4 w-4 mr-2" /> Tarif wählen
+              <Sparkles className="h-4 w-4 mr-2" /> {tr("Tarif wählen", "Choose plan")}
             </Button>
           </div>
         )}
 
         <Button onClick={() => save()} disabled={busy || saved} variant={saved ? "secondary" : "default"} className="w-full h-12">
-          {saved ? <><Check className="h-4 w-4 mr-2" /> Gespeichert</> : <><Save className="h-4 w-4 mr-2" /> Vorschlag speichern</>}
+          {saved ? <><Check className="h-4 w-4 mr-2" /> {tr("Gespeichert", "Saved")}</> : <><Save className="h-4 w-4 mr-2" /> {tr("Vorschlag speichern", "Save quote")}</>}
         </Button>
       </div>
 
@@ -1440,14 +1443,13 @@ export default function QuoteResult() {
               <MessageCircle className="h-6 w-6 text-emerald-600" />
             </div>
             <AlertDialogTitle className="text-center">
-              WhatsApp-Versand ist Profi-exklusiv
+              {tr("WhatsApp-Versand ist Profi-exklusiv", "WhatsApp sending is Pro-only")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center leading-relaxed">
-              Mit dem <strong className="text-foreground">Profi</strong>-Tarif sendest du deine
-              Preisorientierung mit einem Tipp direkt per WhatsApp – inklusive persönlicher
-              Anrede deines Kunden und der PDF als Anhang.
+              {tr("Mit dem ", "With the ")}<strong className="text-foreground">{tr("Profi", "Pro")}</strong>
+              {tr("-Tarif sendest du deine Preisorientierung mit einem Tipp direkt per WhatsApp – inklusive persönlicher Anrede deines Kunden und der PDF als Anhang.", " plan you send your price estimate with a single tap directly via WhatsApp — including a personal greeting and the PDF attached.")}
               <br /><br />
-              Im Light-Tarif lädst du das PDF einfach herunter und teilst es selbst.
+              {tr("Im Light-Tarif lädst du das PDF einfach herunter und teilst es selbst.", "On the Light plan you just download the PDF and share it yourself.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:flex-col sm:space-x-0 gap-2">
@@ -1455,10 +1457,10 @@ export default function QuoteResult() {
               onClick={() => { setWhatsappUpgradeOpen(false); nav("/pricing"); }}
               className="w-full h-11 gradient-primary text-primary-foreground border-0"
             >
-              <Sparkles className="h-4 w-4 mr-2" /> Auf Profi upgraden
+              <Sparkles className="h-4 w-4 mr-2" /> {tr("Auf Profi upgraden", "Upgrade to Pro")}
             </AlertDialogAction>
             <AlertDialogCancel className="w-full h-10 mt-0">
-              Vielleicht später
+              {tr("Vielleicht später", "Maybe later")}
             </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1467,25 +1469,25 @@ export default function QuoteResult() {
       <Dialog open={addDlg.open} onOpenChange={(o) => setAddDlg((s) => ({ ...s, open: o }))}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Position hinzufügen</DialogTitle>
+            <DialogTitle>{tr("Position hinzufügen", "Add item")}</DialogTitle>
             <DialogDescription>
-              Stunden, Stundensatz und Materialkosten werden direkt in die Kalkulation übernommen.
+              {tr("Stunden, Stundensatz und Materialkosten werden direkt in die Kalkulation übernommen.", "Hours, hourly rate and material cost are added to the calculation directly.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="add-desc">Beschreibung</Label>
+              <Label htmlFor="add-desc">{tr("Beschreibung", "Description")}</Label>
               <Textarea
                 id="add-desc"
                 value={addDlg.description}
                 onChange={(e) => setAddDlg((s) => ({ ...s, description: e.target.value }))}
-                placeholder="z. B. Decke spachteln und streichen"
+                placeholder={tr("z. B. Decke spachteln und streichen", "e.g. fill and paint ceiling")}
                 rows={2}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="add-hours">Stunden</Label>
+                <Label htmlFor="add-hours">{tr("Stunden", "Hours")}</Label>
                 <Input
                   id="add-hours"
                   type="number"
@@ -1498,7 +1500,7 @@ export default function QuoteResult() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="add-material">Material netto (€)</Label>
+                <Label htmlFor="add-material">{tr("Material netto (€)", "Materials net (€)")}</Label>
                 <Input
                   id="add-material"
                   type="number"
@@ -1512,21 +1514,21 @@ export default function QuoteResult() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Stundensatz</Label>
+              <Label>{tr("Stundensatz", "Hourly rate")}</Label>
               {hourlyRates.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Noch keine Stundensätze hinterlegt. Bitte unter Profil → Stundensätze pflegen.
+                  {tr("Noch keine Stundensätze hinterlegt. Bitte unter Profil → Stundensätze pflegen.", "No hourly rates yet. Please set them under Profile → Hourly rates.")}
                 </p>
               ) : (
                 <Select
                   value={addDlg.rateId}
                   onValueChange={(v) => setAddDlg((s) => ({ ...s, rateId: v }))}
                 >
-                  <SelectTrigger><SelectValue placeholder="Stundensatz wählen" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={tr("Stundensatz wählen", "Pick hourly rate")} /></SelectTrigger>
                   <SelectContent>
                     {hourlyRates.map((r) => (
                       <SelectItem key={r.id} value={r.id}>
-                        {r.label} – {r.rate.toLocaleString("de-DE")} €/Std{r.is_default ? " (Standard)" : ""}
+                        {r.label} – {r.rate.toLocaleString(currentLocale())} €/{tr("Std", "hr")}{r.is_default ? ` (${tr("Standard", "default")})` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1543,17 +1545,17 @@ export default function QuoteResult() {
               const net = labor + matGross;
               return (
                 <div className="rounded-lg bg-secondary/40 p-3 text-xs space-y-1">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Lohn</span><span>{fmt(labor)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Material (inkl. {markup}% Aufschlag)</span><span>{fmt(matGross)}</span></div>
-                  <div className="flex justify-between font-semibold pt-1 border-t border-border/60"><span>Netto neue Position</span><span>{fmt(net)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{tr("Lohn", "Labor")}</span><span>{fmt(labor)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{tr(`Material (inkl. ${markup}% Aufschlag)`, `Materials (incl. ${markup}% markup)`)}</span><span>{fmt(matGross)}</span></div>
+                  <div className="flex justify-between font-semibold pt-1 border-t border-border/60"><span>{tr("Netto neue Position", "Net new item")}</span><span>{fmt(net)}</span></div>
                 </div>
               );
             })()}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAddDlg((s) => ({ ...s, open: false }))}>Abbrechen</Button>
+            <Button variant="ghost" onClick={() => setAddDlg((s) => ({ ...s, open: false }))}>{tr("Abbrechen", "Cancel")}</Button>
             <Button onClick={confirmAddPosition}>
-              <Plus className="h-4 w-4 mr-1.5" /> Hinzufügen
+              <Plus className="h-4 w-4 mr-1.5" /> {tr("Hinzufügen", "Add")}
             </Button>
           </DialogFooter>
         </DialogContent>
