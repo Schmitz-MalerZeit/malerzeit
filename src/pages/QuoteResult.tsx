@@ -805,7 +805,7 @@ export default function QuoteResult() {
     return false;
   };
 
-  const runPdfFlow = async (autoShareWhatsapp = false) => {
+  const runPdfFlow = async (autoShareWhatsapp = false, lang: "de" | "en" = (i18n.language?.toLowerCase().startsWith("en") ? "en" : "de")) => {
     // Open sheet immediately with "building" state — never a black screen.
     const fileName = filename();
     const meta = buildPdfFlowMeta(fileName);
