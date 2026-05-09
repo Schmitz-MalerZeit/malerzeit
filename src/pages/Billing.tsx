@@ -7,6 +7,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, ExternalLink, CreditCard, Sparkles, AlertCircle, FileText, Receipt, Download, RotateCw } from "lucide-react";
+import { useTr } from "@/lib/tr";
+import { FirstVisitTip } from "@/components/FirstVisitTip";
 
 interface Tx {
   id: string;
