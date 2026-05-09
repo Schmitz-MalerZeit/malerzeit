@@ -1339,10 +1339,28 @@ export default function QuoteResult() {
         </div>
 
         {pdfAllowed && (
-          <Button onClick={downloadPDF} disabled={busy} className="w-full h-12 gradient-primary text-primary-foreground border-0">
+          <Button onClick={() => downloadPDF()} disabled={busy} className="w-full h-12 gradient-primary text-primary-foreground border-0">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FileDown className="h-4 w-4 mr-2" /> {tr("PDF jetzt erstellen", "Create PDF now")}</>}
           </Button>
         )}
+
+        {pdfAllowed && (() => {
+          const appLangIsEn = i18n.language?.toLowerCase().startsWith("en");
+          const otherLang: "de" | "en" = appLangIsEn ? "de" : "en";
+          const label = otherLang === "de"
+            ? tr("PDF auf Deutsch erstellen", "Create PDF in German")
+            : tr("PDF auf Englisch erstellen", "Create PDF in English");
+          return (
+            <Button
+              onClick={() => downloadPDF(otherLang)}
+              disabled={busy}
+              variant="outline"
+              className="w-full h-12"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FileDown className="h-4 w-4 mr-2" /> {label}</>}
+            </Button>
+          );
+        })()}
 
         {pdfAllowed && (
           <Button
