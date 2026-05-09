@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,30 +13,14 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
+import { useTr } from "@/lib/tr";
 
 const VOICE_FIELDS = new Set(["company_name", "contact_person", "address", "city"]);
 const appendText = (prev: string, add: string) =>
   prev.trim().length === 0 ? add : `${prev.replace(/\s+$/, "")} ${add}`;
 
-const FIELDS: { k: string; l: string; type?: string; hint?: string }[] = [
-  { k: "company_name", l: "Firma" },
-  { k: "contact_person", l: "Inhaber / Ansprechpartner (optional)" },
-  {
-    k: "signatory_name",
-    l: "Zeichnungsberechtigte Person (optional)",
-    hint: "Diese Person erscheint am Ende jeder Preisorientierung unter „Mit freundlichen Grüßen“ – darunter automatisch der Firmenname. Praktisch, wenn z. B. ein Vorarbeiter im Auftrag des Betriebs unterzeichnet. Bleibt das Feld leer, wird der Inhaber bzw. der Firmenname verwendet.",
-  },
-  { k: "address", l: "Straße & Hausnummer" },
-  { k: "address_line2", l: "Adresszusatz (z. B. Gebäude B, c/o, 2. OG)" },
-  { k: "postal_code", l: "Postleitzahl" },
-  { k: "city", l: "Ort" },
-  { k: "phone", l: "Telefon", type: "tel" },
-  { k: "email", l: "E-Mail", type: "email" },
-  { k: "website", l: "Webseite", type: "url" },
-  { k: "vat_id", l: "Umsatzsteuer-ID" },
-];
-
 export default function Profile() {
+  const tr = useTr();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -51,6 +35,27 @@ export default function Profile() {
     phone: "", email: "", website: "", vat_id: "",
     logo_url: "", logo_primary_color: "", logo_secondary_color: "",
   });
+
+  const FIELDS: { k: string; l: string; type?: string; hint?: string }[] = useMemo(() => [
+    { k: "company_name", l: tr("Firma", "Company") },
+    { k: "contact_person", l: tr("Inhaber / Ansprechpartner (optional)", "Owner / contact person (optional)") },
+    {
+      k: "signatory_name",
+      l: tr("Zeichnungsberechtigte Person (optional)", "Authorized signatory (optional)"),
+      hint: tr(
+        "Diese Person erscheint am Ende jeder Preisorientierung unter „Mit freundlichen Grüßen“ – darunter automatisch der Firmenname. Praktisch, wenn z. B. ein Vorarbeiter im Auftrag des Betriebs unterzeichnet. Bleibt das Feld leer, wird der Inhaber bzw. der Firmenname verwendet.",
+        "This person appears at the end of every price estimate under \"Kind regards\" — followed automatically by the company name. Useful if e.g. a foreman signs on behalf of the company. If left empty, the owner or company name is used.",
+      ),
+    },
+    { k: "address", l: tr("Straße & Hausnummer", "Street & house number") },
+    { k: "address_line2", l: tr("Adresszusatz (z. B. Gebäude B, c/o, 2. OG)", "Address line 2 (e.g. building B, c/o, 2nd floor)") },
+    { k: "postal_code", l: tr("Postleitzahl", "Postal code") },
+    { k: "city", l: tr("Ort", "City") },
+    { k: "phone", l: tr("Telefon", "Phone"), type: "tel" },
+    { k: "email", l: tr("E-Mail", "Email"), type: "email" },
+    { k: "website", l: tr("Webseite", "Website"), type: "url" },
+    { k: "vat_id", l: tr("Umsatzsteuer-ID", "VAT ID") },
+  ], [tr]);
 
   useEffect(() => {
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => {
@@ -68,10 +73,10 @@ export default function Profile() {
     setSaving(true);
     try {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Nicht angemeldet");
+      if (!u.user) throw new Error(tr("Nicht angemeldet", "Not signed in"));
       const { error } = await supabase.from("profiles").update(p as any).eq("id", u.user.id);
       if (error) throw error;
-      toast.success("Profil gespeichert");
+      toast.success(tr("Profil gespeichert", "Profile saved"));
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
   };
@@ -80,18 +85,15 @@ export default function Profile() {
     setUploading(true);
     try {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Nicht angemeldet");
+      if (!u.user) throw new Error(tr("Nicht angemeldet", "Not signed in"));
 
-      // Defensive Validierung BEFORE Upload, damit defekte Dateien gar nicht erst
-      // im Storage landen und später die PDF-Pipeline torpedieren.
       if (!file.type.startsWith("image/")) {
-        throw new Error("Nur Bilddateien werden unterstützt (PNG, JPG, WEBP, SVG).");
+        throw new Error(tr("Nur Bilddateien werden unterstützt (PNG, JPG, WEBP, SVG).", "Only image files are supported (PNG, JPG, WEBP, SVG)."));
       }
       if (file.size > 5 * 1024 * 1024) {
-        throw new Error("Logo ist zu groß (max. 5 MB).");
+        throw new Error(tr("Logo ist zu groß (max. 5 MB).", "Logo is too large (max. 5 MB)."));
       }
 
-      // Endung sicher ableiten – fallback auf "png" für Mime-Types ohne klare Extension.
       const rawExt = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
       const ext = /^(png|jpe?g|webp|svg|gif|avif)$/.test(rawExt) ? rawExt : "png";
       const path = `${u.user.id}/logo.${ext}`;
@@ -100,8 +102,6 @@ export default function Profile() {
       const { data: pub } = supabase.storage.from("company-logos").getPublicUrl(path);
       const url = `${pub.publicUrl}?t=${Date.now()}`;
 
-      // Color-Extraction kann bei SVG/CORS-Problemen scheitern – wir behandeln
-      // das als nicht-fatalen Fehler und behalten dann die bisherigen Farben bei.
       let colors = { primary: p.logo_primary_color || "", secondary: p.logo_secondary_color || "" };
       try {
         const extracted = await extractDominantColors(url);
@@ -116,24 +116,27 @@ export default function Profile() {
       const isVector = ext === "svg";
       toast.success(
         isVector
-          ? "Logo hochgeladen – SVGs werden automatisch fürs PDF rasterisiert."
-          : "Logo hochgeladen – PDF passt sich an"
+          ? tr("Logo hochgeladen – SVGs werden automatisch fürs PDF rasterisiert.", "Logo uploaded — SVGs are automatically rasterized for the PDF.")
+          : tr("Logo hochgeladen – PDF passt sich an", "Logo uploaded — PDF will adapt"),
       );
     } catch (e: any) {
-      toast.error(e.message || "Logo-Upload fehlgeschlagen");
+      toast.error(e.message || tr("Logo-Upload fehlgeschlagen", "Logo upload failed"));
     }
     finally { setUploading(false); }
   };
 
-  if (loading) return <AppShell title="Firmenprofil"><div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div></AppShell>;
+  const title = tr("Firmenprofil", "Company profile");
+  if (loading) return <AppShell title={title}><div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div></AppShell>;
 
   return (
-    <AppShell title="Firmenprofil">
+    <AppShell title={title}>
       <div className="space-y-5">
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
-          <Label className="text-sm font-medium">Firmenlogo</Label>
+          <Label className="text-sm font-medium">{tr("Firmenlogo", "Company logo")}</Label>
           <p className="text-xs text-muted-foreground mt-1 mb-3">
-            Erscheint im PDF-Briefkopf. PDF-Download ist ab dem <strong className="text-foreground">Profi</strong>-Tarif verfügbar.
+            {tr("Erscheint im PDF-Briefkopf. PDF-Download ist ab dem ", "Appears in the PDF letterhead. PDF download is available from the ")}
+            <strong className="text-foreground">{tr("Profi", "Pro")}</strong>
+            {tr("-Tarif verfügbar.", " plan.")}
           </p>
           <div className="flex items-center gap-4 mt-3">
             <div className="h-20 w-20 rounded-xl bg-secondary flex items-center justify-center overflow-hidden border border-border">
@@ -144,13 +147,13 @@ export default function Profile() {
               <input type="file" accept="image/*" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }} />
               <div className="h-12 px-4 rounded-xl border border-input bg-background flex items-center justify-center gap-2 cursor-pointer hover:bg-secondary transition-base text-sm font-medium">
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4" /> Logo hochladen</>}
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4" /> {tr("Logo hochladen", "Upload logo")}</>}
               </div>
             </label>
           </div>
           <div className="mt-5 pt-4 border-t border-border">
             <div className="flex items-center justify-between gap-2 mb-2">
-              <Label className="text-sm font-medium">PDF-Farbe</Label>
+              <Label className="text-sm font-medium">{tr("PDF-Farbe", "PDF color")}</Label>
               {p.logo_url && (
                 <button
                   type="button"
@@ -158,17 +161,20 @@ export default function Profile() {
                     try {
                       const c = await extractDominantColors(p.logo_url);
                       setP((prev) => ({ ...prev, logo_primary_color: c.primary, logo_secondary_color: c.secondary }));
-                      toast.success("Farbe aus Logo neu abgeleitet");
-                    } catch { toast.error("Konnte Farbe nicht ableiten"); }
+                      toast.success(tr("Farbe aus Logo neu abgeleitet", "Color re-extracted from logo"));
+                    } catch { toast.error(tr("Konnte Farbe nicht ableiten", "Could not extract color")); }
                   }}
                   className="text-xs text-primary hover:underline"
                 >
-                  Aus Logo ableiten
+                  {tr("Aus Logo ableiten", "Extract from logo")}
                 </button>
               )}
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              Wird automatisch aus dem Logo abgeleitet (sanft, professionell). Du kannst sie jederzeit gegen einen kuratierten Profi-Ton tauschen.
+              {tr(
+                "Wird automatisch aus dem Logo abgeleitet (sanft, professionell). Du kannst sie jederzeit gegen einen kuratierten Profi-Ton tauschen.",
+                "Automatically derived from your logo (soft, professional). You can switch to a curated pro tone any time.",
+              )}
             </p>
             <div className="flex flex-wrap gap-2">
               {PDF_COLOR_PALETTE.map((sw) => {
@@ -188,7 +194,7 @@ export default function Profile() {
             </div>
             {p.logo_primary_color && (
               <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-                <span>Aktuell:</span>
+                <span>{tr("Aktuell:", "Current:")}</span>
                 <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: p.logo_primary_color }} />
                 <span className="h-4 w-4 rounded-full border border-border" style={{ backgroundColor: p.logo_secondary_color }} />
               </div>
@@ -199,10 +205,13 @@ export default function Profile() {
             <div className="mt-5 pt-5 border-t border-border">
               <div className="flex items-center gap-2 mb-2">
                 <Eye className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">PDF-Vorschau (Briefkopf)</span>
+                <span className="text-sm font-medium">{tr("PDF-Vorschau (Briefkopf)", "PDF preview (letterhead)")}</span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                So erscheinen Logo, Farben und Firmendaten oben auf jedem Angebots-PDF. Änderungen werden sofort übernommen.
+                {tr(
+                  "So erscheinen Logo, Farben und Firmendaten oben auf jedem Angebots-PDF. Änderungen werden sofort übernommen.",
+                  "This is how your logo, colors and company details appear at the top of every quote PDF. Changes apply instantly.",
+                )}
               </p>
               <LetterheadPreview
                 companyName={p.company_name}
@@ -231,7 +240,7 @@ export default function Profile() {
                   onChange={(e) => setP({ ...p, [k]: e.target.value })}
                   className="h-11 flex-1" />
                 {VOICE_FIELDS.has(k) && (
-                  <VoiceInput size="md" label={`${l} diktieren`}
+                  <VoiceInput size="md" label={tr(`${l} diktieren`, `Dictate ${l}`)}
                     onTranscript={(t) => setP((prev) => ({ ...prev, [k]: appendText(prev[k] || "", t) }))} />
                 )}
               </div>
@@ -241,41 +250,47 @@ export default function Profile() {
         </div>
 
         <Button onClick={save} disabled={saving} className="w-full h-12 gradient-primary text-primary-foreground border-0 font-semibold">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : tr("Speichern", "Save")}
         </Button>
 
         <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 mt-8">
           <h3 className="font-semibold text-destructive mb-1 flex items-center gap-2">
-            <Trash2 className="h-4 w-4" /> Konto löschen
+            <Trash2 className="h-4 w-4" /> {tr("Konto löschen", "Delete account")}
           </h3>
           <p className="text-xs text-muted-foreground mb-4">
-            Löscht dein Konto, alle Angebote, PDFs, dein Profil und Einstellungen unwiderruflich.
-            Aktive Abonnements werden vorher gekündigt.
+            {tr(
+              "Löscht dein Konto, alle Angebote, PDFs, dein Profil und Einstellungen unwiderruflich. Aktive Abonnements werden vorher gekündigt.",
+              "Permanently deletes your account, all quotes, PDFs, your profile and settings. Active subscriptions are cancelled first.",
+            )}
           </p>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="w-full h-11">
-                Konto endgültig löschen
+                {tr("Konto endgültig löschen", "Delete account permanently")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Konto endgültig löschen?</AlertDialogTitle>
+                <AlertDialogTitle>{tr("Konto endgültig löschen?", "Delete account permanently?")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Diese Aktion kann nicht rückgängig gemacht werden. Alle deine Daten werden sofort gelöscht
-                  und ein eventuell aktives Abo wird gekündigt. Tippe <strong>LÖSCHEN</strong> zum Bestätigen.
+                  {tr(
+                    "Diese Aktion kann nicht rückgängig gemacht werden. Alle deine Daten werden sofort gelöscht und ein eventuell aktives Abo wird gekündigt. Tippe ",
+                    "This action cannot be undone. All your data will be deleted immediately and any active subscription will be cancelled. Type ",
+                  )}
+                  <strong>{tr("LÖSCHEN", "DELETE")}</strong>
+                  {tr(" zum Bestätigen.", " to confirm.")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <Input
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="LÖSCHEN"
+                placeholder={tr("LÖSCHEN", "DELETE")}
                 className="h-11"
               />
               <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setConfirmText("")}>Abbrechen</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setConfirmText("")}>{tr("Abbrechen", "Cancel")}</AlertDialogCancel>
                 <AlertDialogAction
-                  disabled={confirmText !== "LÖSCHEN" || deleting}
+                  disabled={confirmText !== tr("LÖSCHEN", "DELETE") || deleting}
                   onClick={async (e) => {
                     e.preventDefault();
                     setDeleting(true);
@@ -283,16 +298,16 @@ export default function Profile() {
                       const { data, error } = await supabase.functions.invoke("delete-account");
                       if (error || data?.error) throw new Error(error?.message || data?.error);
                       await supabase.auth.signOut();
-                      toast.success("Konto gelöscht");
+                      toast.success(tr("Konto gelöscht", "Account deleted"));
                       nav("/auth", { replace: true });
                     } catch (err: any) {
-                      toast.error(err.message || "Löschung fehlgeschlagen");
+                      toast.error(err.message || tr("Löschung fehlgeschlagen", "Deletion failed"));
                       setDeleting(false);
                     }
                   }}
                   className="bg-destructive hover:bg-destructive/90"
                 >
-                  {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Endgültig löschen"}
+                  {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : tr("Endgültig löschen", "Delete permanently")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
