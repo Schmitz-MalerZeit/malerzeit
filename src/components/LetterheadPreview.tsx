@@ -223,7 +223,7 @@ export function LetterheadPreview({
           <span className="inline-flex items-center gap-1 align-middle">
             <span className="h-2 w-2 rounded-sm bg-neutral-300" /> {tr("leer", "empty")}
           </span>
-          {" "}— {tr(<>leere Felder erscheinen <strong>nicht</strong> im finalen PDF.</>, <>empty fields do <strong>not</strong> appear in the final PDF.</>)}
+          {" "}— {tr("leere Felder erscheinen ", "empty fields do ")}<strong>{tr("nicht", "not")}</strong>{tr(" im finalen PDF.", " appear in the final PDF.")}
         </p>
       )}
     </div>
