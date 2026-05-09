@@ -14,6 +14,7 @@ import { canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 import { useTr } from "@/lib/tr";
+import { FirstVisitTip } from "@/components/FirstVisitTip";
 
 const VOICE_FIELDS = new Set(["company_name", "contact_person", "address", "city"]);
 const appendText = (prev: string, add: string) =>
