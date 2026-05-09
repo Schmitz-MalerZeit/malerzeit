@@ -21,10 +21,6 @@ interface Props {
   className?: string;
 }
 
-/**
- * Name input with dropdown suggestions matching against previously entered customers.
- * Filtering: case-insensitive substring on the customer name; min 1 char.
- */
 export function CustomerAutocomplete({
   id, value, onChange, onSelectSuggestion, suggestions, placeholder, className,
 }: Props) {
