@@ -290,6 +290,23 @@ export default function Quotes() {
 
   return (
     <AppShell title={tr("Gespeicherte Vorschläge", "Saved quotes")}>
+      <FirstVisitTip
+        storageKey="quotes"
+        title={tr("Tipps zu gespeicherten Vorschlägen", "Tips for saved quotes")}
+      >
+        <p>{tr(
+          "Tippe auf einen Vorschlag, um ihn anzusehen, zu bearbeiten oder als zweite Variante neu zu kalkulieren.",
+          "Tap a quote to view, edit or recalculate it as a second version.",
+        )}</p>
+        <p>{tr(
+          "Über die Suche oben findest du Vorschläge schnell nach Kunde oder Bauvorhaben.",
+          "Use the search at the top to quickly find quotes by customer or project.",
+        )}</p>
+        <p>{tr(
+          "Du kannst aus jedem gespeicherten Vorschlag erneut ein PDF erstellen und es per WhatsApp oder E-Mail senden.",
+          "From every saved quote you can create a fresh PDF and send it via WhatsApp or email.",
+        )}</p>
+      </FirstVisitTip>
       {items === null && <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}
       {items && items.length === 0 && (
         <div className="text-center py-16">
