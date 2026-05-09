@@ -13,6 +13,8 @@
  *   {gueltigkeit}  – Anzahl Tage Gültigkeit
  */
 
+import { tr } from "@/lib/tr";
+
 export interface MessageTemplateVars {
   customerName?: string | null;
   lineItems?: string[];
@@ -65,7 +67,7 @@ export const renderMessageTemplate = (
   const sectioned = formatSections(vars.sections);
   const replacements: Record<string, string> = {
     kunde: customer,
-    anrede: customer ? `Hallo ${customer},` : "Hallo,",
+    anrede: customer ? tr(`Hallo ${customer},`, `Hello ${customer},`) : tr("Hallo,", "Hello,"),
     leistungen: sectioned || formatItems(vars.lineItems),
     preis: vars.grossFormatted || "",
     netto: vars.netFormatted || "",
@@ -86,13 +88,13 @@ export const renderMessageTemplate = (
   return out;
 };
 
-const closingGreetingRe = /mit\s+freundlichen\s+gr[üu](ß|ss)en/i;
+const closingGreetingRe = /(mit\s+freundlichen\s+gr[üu](ß|ss)en|kind\s+regards|best\s+regards)/i;
 
 export const ensureWhatsappTemplateSignature = (template: string): string => {
   const trimmed = (template || "").trim();
   if (!trimmed) return DEFAULT_WHATSAPP_TEMPLATE;
   if (closingGreetingRe.test(trimmed)) return trimmed;
-  return `${trimmed}\n\nMit freundlichen Grüßen\n{unterschrift}\n{firma}`;
+  return `${trimmed}\n\n${tr("Mit freundlichen Grüßen", "Kind regards")}\n{unterschrift}\n{firma}`;
 };
 
 export const ensureWhatsappSignature = (
@@ -102,7 +104,7 @@ export const ensureWhatsappSignature = (
   const trimmed = (text || "").trim();
   const company = (vars.companyName || "").trim();
   const signature = (vars.signatureName || "").trim() || company;
-  const signatureBlock = ["Mit freundlichen Grüßen", signature, company]
+  const signatureBlock = [tr("Mit freundlichen Grüßen", "Kind regards"), signature, company]
     .filter(Boolean)
     .join("\n");
   if (!trimmed) return signatureBlock;

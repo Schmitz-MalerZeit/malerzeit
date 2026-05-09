@@ -73,8 +73,8 @@ export const buildEmailMessageBody = (
 ): string => {
   let body = stripClosingSignature(customerText || "").trim();
   body = insertProjectLabel(body, opts.projectLabel, false);
-  if (opts.grossFormatted && !/gesamtpreis|brutto|preis|betrag/i.test(body)) {
-    body += `\n\nGesamtpreis (brutto): ${opts.grossFormatted}`;
+  if (opts.grossFormatted && !/gesamtpreis|brutto|preis|betrag|total|gross|net/i.test(body)) {
+    body += `\n\n${tr("Gesamtpreis (brutto):", "Total price (gross):")} ${opts.grossFormatted}`;
   }
   return body;
 };
@@ -93,8 +93,8 @@ export const buildWhatsappMessageBody = (
   // Grußformel + Unterschrift mitliefern (WhatsApp hat keine eigene Signatur).
   let body = (whatsappText || "").trim();
   body = insertProjectLabel(body, opts.projectLabel, true);
-  if (opts.grossFormatted && !/gesamtpreis|brutto|preis|betrag/i.test(body)) {
-    body += `\n\nGesamtpreis (brutto): ${opts.grossFormatted}`;
+  if (opts.grossFormatted && !/gesamtpreis|brutto|preis|betrag|total|gross|net/i.test(body)) {
+    body += `\n\n${tr("Gesamtpreis (brutto):", "Total price (gross):")} ${opts.grossFormatted}`;
   }
   return body;
 };
