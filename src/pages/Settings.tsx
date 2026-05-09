@@ -9,9 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Star, RefreshCw } from "lucide-react";
 import { DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/messageTemplate";
+import { useTr } from "@/lib/tr";
 
 const TEST_USER_ID = "4f497125-b2e8-46af-a6ef-477dbe7a8a0c";
-
 
 interface Rate {
   id?: string;
@@ -22,7 +22,11 @@ interface Rate {
   _new?: boolean;
 }
 
+const DEFAULT_CLOSING =
+  "Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.";
+
 export default function Settings() {
+  const tr = useTr();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [s, setS] = useState({
@@ -30,7 +34,7 @@ export default function Settings() {
     quality_level: "standard",
     vat_rate: 19,
     quote_validity_days: 14,
-    closing_text: "Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.",
+    closing_text: DEFAULT_CLOSING,
     email_template: DEFAULT_EMAIL_TEMPLATE,
     whatsapp_template: DEFAULT_WHATSAPP_TEMPLATE,
   });
@@ -52,7 +56,7 @@ export default function Settings() {
         quality_level: settings.quality_level,
         vat_rate: Number(settings.vat_rate),
         quote_validity_days: Number((settings as any).quote_validity_days ?? 14),
-        closing_text: (settings as any).closing_text ?? "Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.",
+        closing_text: (settings as any).closing_text ?? DEFAULT_CLOSING,
         email_template: (settings as any).email_template ?? DEFAULT_EMAIL_TEMPLATE,
         whatsapp_template: (settings as any).whatsapp_template ?? DEFAULT_WHATSAPP_TEMPLATE,
       });
@@ -64,18 +68,16 @@ export default function Settings() {
     })();
   }, []);
 
-  // Test-Reset: nur für den Entwickler-Account sichtbar. Ruft die geschützte
-  // RPC `reset_my_pdf_quota` auf, die serverseitig gegen die User-ID prüft.
   const resetQuota = async () => {
     setResetting(true);
     try {
       const { data, error } = await supabase.rpc("reset_my_pdf_quota" as any);
       if (error) throw error;
       const res = data as { ok: boolean; error?: string };
-      if (!res?.ok) throw new Error(res?.error || "Reset fehlgeschlagen");
-      toast.success("PDF-Kontingent zurückgesetzt");
+      if (!res?.ok) throw new Error(res?.error || tr("Reset fehlgeschlagen", "Reset failed"));
+      toast.success(tr("PDF-Kontingent zurückgesetzt", "PDF quota reset"));
     } catch (e: any) {
-      toast.error(e.message || "Reset fehlgeschlagen");
+      toast.error(e.message || tr("Reset fehlgeschlagen", "Reset failed"));
     } finally {
       setResetting(false);
     }
@@ -109,24 +111,20 @@ export default function Settings() {
     setSaving(true);
     try {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Nicht angemeldet");
+      if (!u.user) throw new Error(tr("Nicht angemeldet", "Not signed in"));
 
-      // Validate
       const clean = rates.filter(r => r.label.trim().length > 0);
-      if (clean.length === 0) throw new Error("Mindestens ein Stundensatz erforderlich");
+      if (clean.length === 0) throw new Error(tr("Mindestens ein Stundensatz erforderlich", "At least one hourly rate required"));
       if (!clean.some(r => r.is_default)) clean[0].is_default = true;
 
-      // Settings
       const { error: e1 } = await supabase.from("user_settings").update(s).eq("user_id", u.user.id);
       if (e1) throw e1;
 
-      // Delete removed
       if (removed.length) {
         const { error } = await supabase.from("hourly_rates").delete().in("id", removed);
         if (error) throw error;
       }
 
-      // Upsert rates
       for (let i = 0; i < clean.length; i++) {
         const r = clean[i];
         const payload = {
@@ -142,9 +140,8 @@ export default function Settings() {
         }
       }
       setRemoved([]);
-      toast.success("Einstellungen gespeichert");
+      toast.success(tr("Einstellungen gespeichert", "Settings saved"));
 
-      // Reload rates to get new IDs
       const { data: hr } = await supabase.from("hourly_rates").select("*").order("sort_order");
       setRates((hr || []).map((r: any) => ({
         id: r.id, label: r.label, rate: Number(r.rate),
@@ -154,18 +151,21 @@ export default function Settings() {
     finally { setSaving(false); }
   };
 
-  if (loading) return <AppShell title="Einstellungen"><div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div></AppShell>;
+  const title = tr("Einstellungen", "Settings");
+  if (loading) return <AppShell title={title}><div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div></AppShell>;
 
   return (
-    <AppShell title="Einstellungen">
+    <AppShell title={title}>
       <div className="space-y-5">
-        {/* Stundensätze */}
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
           <div className="flex items-center justify-between mb-1">
-            <h2 className="font-semibold">Stundensätze (netto)</h2>
+            <h2 className="font-semibold">{tr("Stundensätze (netto)", "Hourly rates (net)")}</h2>
           </div>
           <p className="text-xs text-muted-foreground mb-4">
-            Markiere den Standard-Satz mit dem Stern. Dieser wird verwendet, wenn du keinen anderen wählst.
+            {tr(
+              "Markiere den Standard-Satz mit dem Stern. Dieser wird verwendet, wenn du keinen anderen wählst.",
+              "Mark the default rate with the star. It's used when you don't pick another.",
+            )}
           </p>
 
           <div className="space-y-2.5">
@@ -177,12 +177,12 @@ export default function Settings() {
                   className={`shrink-0 h-10 w-10 rounded-lg border flex items-center justify-center transition-base ${
                     r.is_default ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground hover:border-primary/40"
                   }`}
-                  aria-label="Als Standard markieren"
+                  aria-label={tr("Als Standard markieren", "Mark as default")}
                 >
                   <Star className={`h-4 w-4 ${r.is_default ? "fill-current" : ""}`} />
                 </button>
                 <Input
-                  placeholder="Bezeichnung (z. B. Maler Geselle)"
+                  placeholder={tr("Bezeichnung (z. B. Maler Geselle)", "Label (e.g. journeyman painter)")}
                   value={r.label}
                   onChange={(e) => updateRate(i, { label: e.target.value })}
                   className="h-10 flex-1 min-w-0"
@@ -201,7 +201,7 @@ export default function Settings() {
                   type="button"
                   onClick={() => removeRate(i)}
                   className="shrink-0 h-10 w-10 rounded-lg border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 flex items-center justify-center transition-base"
-                  aria-label="Entfernen"
+                  aria-label={tr("Entfernen", "Remove")}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -213,46 +213,47 @@ export default function Settings() {
             type="button" variant="outline" onClick={addRate}
             className="w-full h-11 mt-4 border-dashed"
           >
-            <Plus className="h-4 w-4 mr-2" /> Stundensatz hinzufügen
+            <Plus className="h-4 w-4 mr-2" /> {tr("Stundensatz hinzufügen", "Add hourly rate")}
           </Button>
         </div>
 
-        {/* Allgemein */}
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft space-y-5">
           <div className="space-y-1.5">
-            <Label htmlFor="markup">Materialaufschlag (%)</Label>
+            <Label htmlFor="markup">{tr("Materialaufschlag (%)", "Material markup (%)")}</Label>
             <Input id="markup" type="number" step="1" min="0" value={s.material_markup}
               onChange={(e) => setS({ ...s, material_markup: Number(e.target.value) })} className="h-11" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="vat">Mehrwertsteuersatz (%)</Label>
+            <Label htmlFor="vat">{tr("Mehrwertsteuersatz (%)", "VAT rate (%)")}</Label>
             <Input id="vat" type="number" step="1" min="0" value={s.vat_rate}
               onChange={(e) => setS({ ...s, vat_rate: Number(e.target.value) })} className="h-11" />
           </div>
           <div className="space-y-1.5">
-            <Label>Qualitätsniveau</Label>
+            <Label>{tr("Qualitätsniveau", "Quality level")}</Label>
             <Select value={s.quality_level} onValueChange={(v) => setS({ ...s, quality_level: v })}>
               <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="standard">Standard</SelectItem>
-                <SelectItem value="hochwertig">Hochwertig</SelectItem>
-                <SelectItem value="premium">Premium</SelectItem>
+                <SelectItem value="standard">{tr("Standard", "Standard")}</SelectItem>
+                <SelectItem value="hochwertig">{tr("Hochwertig", "High quality")}</SelectItem>
+                <SelectItem value="premium">{tr("Premium", "Premium")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Preisorientierung-Texte */}
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft space-y-5">
           <div>
-            <h2 className="font-semibold">Preisorientierung</h2>
+            <h2 className="font-semibold">{tr("Preisorientierung", "Price estimate")}</h2>
             <p className="text-xs text-muted-foreground mt-1">
-              Diese Angaben erscheinen unten auf jeder PDF-Preisorientierung.
+              {tr(
+                "Diese Angaben erscheinen unten auf jeder PDF-Preisorientierung.",
+                "These details appear at the bottom of every PDF price estimate.",
+              )}
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="validity">Gültigkeit des Preises (Tage)</Label>
+            <Label htmlFor="validity">{tr("Gültigkeit des Preises (Tage)", "Price validity (days)")}</Label>
             <Input
               id="validity" type="number" step="1" min="1" max="365"
               value={s.quote_validity_days}
@@ -260,25 +261,31 @@ export default function Settings() {
               className="h-11"
             />
             <p className="text-[11px] text-muted-foreground">
-              Wird als „Diese Preisorientierung ist X Tage ab Angebotsdatum gültig." angezeigt.
+              {tr(
+                "Wird als „Diese Preisorientierung ist X Tage ab Angebotsdatum gültig.\" angezeigt.",
+                "Shown as \"This price estimate is valid for X days from the quote date.\"",
+              )}
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="closing">Abschlusssatz (PDF)</Label>
+            <Label htmlFor="closing">{tr("Abschlusssatz (PDF)", "Closing sentence (PDF)")}</Label>
             <Textarea
               id="closing" rows={3}
               value={s.closing_text}
               onChange={(e) => setS({ ...s, closing_text: e.target.value })}
-              placeholder="Sofern sich diese Preisorientierung in Ihrem Rahmen bewegt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot."
+              placeholder={DEFAULT_CLOSING}
             />
             <p className="text-[11px] text-muted-foreground">
-              Wird unter der Grußformel im PDF in kleinerer Schrift gezeigt.
+              {tr(
+                "Wird unter der Grußformel im PDF in kleinerer Schrift gezeigt.",
+                "Shown under the closing greeting in the PDF in smaller type.",
+              )}
             </p>
           </div>
 
           <div className="space-y-1.5 pt-2 border-t border-border">
-            <Label htmlFor="wa_tpl">WhatsApp-Vorlage</Label>
+            <Label htmlFor="wa_tpl">{tr("WhatsApp-Vorlage", "WhatsApp template")}</Label>
             <Textarea
               id="wa_tpl" rows={9}
               value={s.whatsapp_template}
@@ -287,8 +294,10 @@ export default function Settings() {
               className="font-mono text-xs leading-relaxed"
             />
             <p className="text-[11px] text-muted-foreground">
-              Wird beim Versenden per WhatsApp verwendet. Bitte in der Sie-Form formulieren.
-              Verfügbare Platzhalter:{" "}
+              {tr(
+                "Wird beim Versenden per WhatsApp verwendet. Bitte in der Sie-Form formulieren. Verfügbare Platzhalter: ",
+                "Used when sending via WhatsApp. Available placeholders: ",
+              )}
               <code className="text-[10px]">{"{kunde}"}</code>,{" "}
               <code className="text-[10px]">{"{anrede}"}</code>,{" "}
               <code className="text-[10px]">{"{leistungen}"}</code>,{" "}
@@ -302,22 +311,24 @@ export default function Settings() {
               type="button" variant="ghost" size="sm" className="h-8 text-xs"
               onClick={() => setS({ ...s, whatsapp_template: DEFAULT_WHATSAPP_TEMPLATE })}
             >
-              Auf Standard zurücksetzen
+              {tr("Auf Standard zurücksetzen", "Reset to default")}
             </Button>
           </div>
         </div>
 
         <Button onClick={save} disabled={saving} className="w-full h-12 gradient-primary text-primary-foreground border-0 font-semibold">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Speichern"}
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : tr("Speichern", "Save")}
         </Button>
 
         {currentUserId === TEST_USER_ID && (
           <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 space-y-3">
             <div>
-              <h2 className="font-semibold text-sm">🛠️ Test-Werkzeuge</h2>
+              <h2 className="font-semibold text-sm">🛠️ {tr("Test-Werkzeuge", "Test tools")}</h2>
               <p className="text-xs text-muted-foreground mt-1">
-                Nur für dich sichtbar. Setzt dein PDF-Kontingent zurück, damit du
-                die App ungestört testen kannst.
+                {tr(
+                  "Nur für dich sichtbar. Setzt dein PDF-Kontingent zurück, damit du die App ungestört testen kannst.",
+                  "Only visible to you. Resets your PDF quota so you can test the app freely.",
+                )}
               </p>
             </div>
             <Button
@@ -329,7 +340,7 @@ export default function Settings() {
             >
               {resetting
                 ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <><RefreshCw className="h-4 w-4 mr-2" /> PDF-Kontingent zurücksetzen</>}
+                : <><RefreshCw className="h-4 w-4 mr-2" /> {tr("PDF-Kontingent zurücksetzen", "Reset PDF quota")}</>}
             </Button>
           </div>
         )}
