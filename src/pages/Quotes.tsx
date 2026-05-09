@@ -20,11 +20,13 @@ import { ensureWhatsappSignature } from "@/lib/messageTemplate";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
+import { useTr, currentLocale } from "@/lib/tr";
 
-const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+const fmt = (n: number) => Number(n).toLocaleString(currentLocale(), { style: "currency", currency: "EUR" });
 
 
 export default function Quotes() {
+  const tr = useTr();
   const nav = useNavigate();
   const [items, setItems] = useState<any[] | null>(null);
   const [search, setSearch] = useState("");
