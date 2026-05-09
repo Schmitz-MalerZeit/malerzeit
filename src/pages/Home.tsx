@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation, Trans } from "react-i18next";
-import { FileText, FolderOpen, Settings as SettingsIcon, Scale, User as UserIcon, LogOut, Sparkles, CreditCard } from "lucide-react";
+import { FileText, FolderOpen, Settings as SettingsIcon, Scale, User as UserIcon, LogOut, Sparkles, CreditCard, HelpCircle } from "lucide-react";
+import { HelpDialog } from "@/components/HelpDialog";
 import { Logo } from "@/components/Logo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +10,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { AddonPurchaseDialog } from "@/components/AddonPurchaseDialog";
 import { toast } from "sonner";
 
-const Tile = ({ icon: Icon, title, subtitle, onClick, primary }: any) => (
-  <button onClick={onClick}
+const Tile = ({ icon: Icon, title, subtitle, onClick, primary, ...rest }: any) => (
+  <button onClick={onClick} {...rest}
     className={`w-full text-left rounded-2xl border p-5 transition-base shadow-soft hover:shadow-elevated active:scale-[0.99] ${
       primary ? "gradient-primary text-primary-foreground border-primary/30" : "bg-card border-border"
     }`}>
@@ -217,6 +218,7 @@ export default function Home() {
           <Tile icon={CreditCard} title={t("home.ctaBilling")} subtitle={t("home.ctaBillingSub")} onClick={() => nav("/billing")} />
           <Tile icon={UserIcon} title={t("home.ctaProfile")} subtitle={t("home.ctaProfileSub")} onClick={() => nav("/profile")} />
           <Tile icon={SettingsIcon} title={t("home.ctaSettings")} subtitle={t("home.ctaSettingsSub")} onClick={() => nav("/settings")} />
+          <HelpDialog trigger={<Tile icon={HelpCircle} title={t("home.ctaHelp")} subtitle={t("home.ctaHelpSub")} />} />
           <Tile icon={Scale} title={t("home.ctaLegal")} subtitle={t("home.ctaLegalSub")} onClick={() => nav("/legal")} />
         </div>
       </main>
