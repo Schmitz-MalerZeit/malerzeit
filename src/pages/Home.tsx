@@ -32,6 +32,20 @@ export default function Home() {
   const sub = useSubscription();
   const [firstName, setFirstName] = useState<string>("");
   const [addonOpen, setAddonOpen] = useState(false);
+  const [now, setNow] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const greetingKey = (() => {
+    const h = now.getHours();
+    if (h >= 5 && h < 11) return "Morning";
+    if (h >= 11 && h < 18) return "Day";
+    if (h >= 18 && h < 23) return "Evening";
+    return "Night";
+  })();
 
   const startNewQuote = () => {
     localStorage.removeItem("quoteDraft.v1");
@@ -72,7 +86,9 @@ export default function Home() {
             <Sparkles className="h-3.5 w-3.5" /> {t("home.badgeAi")}
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">
-            {firstName ? t("home.greetingPersonal", { name: firstName }) : t("home.greetingFallback")}
+            {firstName
+              ? t(`home.greeting${greetingKey}Personal`, { name: firstName, defaultValue: t("home.greetingPersonal", { name: firstName }) })
+              : t(`home.greeting${greetingKey}Fallback`, { defaultValue: t("home.greetingFallback") })}
           </h1>
           <p className="text-muted-foreground">{t("home.tagline")}</p>
         </div>
