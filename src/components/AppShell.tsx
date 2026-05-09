@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Logo } from "./Logo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { HelpDialog } from "./HelpDialog";
 
 interface Props {
   children: ReactNode;
@@ -33,7 +34,8 @@ export const AppShell = ({ children, title, showBack = true, showLogo = false }:
               {title}
             </h1>
           )}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <HelpDialog />
             <LanguageSwitcher variant="compact" />
           </div>
         </div>
