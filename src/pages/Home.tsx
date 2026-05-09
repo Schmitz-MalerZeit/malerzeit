@@ -86,7 +86,9 @@ export default function Home() {
             <Sparkles className="h-3.5 w-3.5" /> {t("home.badgeAi")}
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">
-            {firstName ? t("home.greetingPersonal", { name: firstName }) : t("home.greetingFallback")}
+            {firstName
+              ? t(`home.greeting${greetingKey}Personal`, { name: firstName, defaultValue: t("home.greetingPersonal", { name: firstName }) })
+              : t(`home.greeting${greetingKey}Fallback`, { defaultValue: t("home.greetingFallback") })}
           </h1>
           <p className="text-muted-foreground">{t("home.tagline")}</p>
         </div>
