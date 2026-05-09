@@ -129,6 +129,7 @@ export default function QuoteResult() {
       setPreviewBlobUrl(null);
     }
     setPreviewBlob(null);
+    setPreviewBlobLang(null);
     setPdfQuotaConsumed(false);
     // Mark as dirty: after edits the user can save again (UPDATE if a row
     // already exists, INSERT otherwise).
