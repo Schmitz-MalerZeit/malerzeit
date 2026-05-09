@@ -1,5 +1,7 @@
 import jsPDF from "jspdf";
 
+export type PdfLang = "de" | "en";
+
 export interface QuotePDFData {
   company: {
     name?: string;
@@ -28,9 +30,7 @@ export interface QuotePDFData {
   };
   date: string;
   lineItems: string[];
-  /** Optionale Gliederung in Räume/Bereiche. Wenn vorhanden und nicht leer,
-   *  wird statt der flachen Liste pro Bereich eine Überschrift mit den
-   *  zugehörigen Stichpunkten + Zwischensumme gerendert. */
+  /** Optionale Gliederung in Räume/Bereiche. */
   sections?: Array<{
     title: string;
     items: string[];
@@ -45,16 +45,67 @@ export interface QuotePDFData {
   vat: number;
   gross: number;
   vatRate: number;
-  /** Gültigkeit des Preises in Tagen, wird unten am Ende angezeigt. */
   validityDays?: number;
-  /** Individueller Abschlusssatz (z. B. "Sollte Ihnen unser Angebot zusagen …"). */
   closingText?: string;
-  /** Name unter "Mit freundlichen Grüßen". Fallback: Firmenname. */
   signatureName?: string;
+  /** Sprache des PDF-Dokuments (Standard: "de"). */
+  lang?: PdfLang;
 }
 
-const fmt = (n: number) =>
-  n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+const STRINGS = {
+  de: {
+    title: "Unverbindliche Preisorientierung",
+    salutation: "Sehr geehrte Damen und Herren,",
+    intro:
+      "vielen Dank für Ihre Anfrage. Gerne geben wir Ihnen nachfolgend eine unverbindliche Preisorientierung für die geplanten Arbeiten:",
+    services: "Leistungsbeschreibung",
+    carryDown: (net: string) => `Übertrag (Zwischensumme): Netto ${net}`,
+    carryUp: (net: string) => `Übertrag von vorheriger Seite: Netto ${net}`,
+    grossLabel: (g: string) => `Brutto ${g}`,
+    subtotal: "Zwischensumme",
+    hoursUnit: "Std",
+    netLabelInline: (n: string) => `Netto ${n}`,
+    net: "Netto",
+    vat: (rate: number) => `MwSt. (${rate}%)`,
+    total: "Gesamtbetrag",
+    disclaimer:
+      "Dieser Preis stellt eine unverbindliche Kostenschätzung dar und dient ausschließlich zur ersten Orientierung.",
+    validity: (days: number) =>
+      `Diese Preisorientierung ist ${days} Tage ab Angebotsdatum gültig.`,
+    regards: "Mit freundlichen Grüßen",
+    address: "Anschrift",
+    contact: "Kontakt",
+    vatId: (id: string) => `USt-IdNr.: ${id}`,
+    pageOf: (p: number, t: number) => `Seite ${p} von ${t}`,
+    locale: "de-DE",
+  },
+  en: {
+    title: "Non-binding price estimate",
+    salutation: "Dear Sir or Madam,",
+    intro:
+      "thank you for your inquiry. We are pleased to provide the following non-binding price estimate for the planned work:",
+    services: "Scope of services",
+    carryDown: (net: string) => `Carry-over (subtotal): Net ${net}`,
+    carryUp: (net: string) => `Carry-over from previous page: Net ${net}`,
+    grossLabel: (g: string) => `Gross ${g}`,
+    subtotal: "Subtotal",
+    hoursUnit: "hrs",
+    netLabelInline: (n: string) => `Net ${n}`,
+    net: "Net",
+    vat: (rate: number) => `VAT (${rate}%)`,
+    total: "Total amount",
+    disclaimer:
+      "This price is a non-binding cost estimate and serves only as initial guidance.",
+    validity: (days: number) =>
+      `This price estimate is valid for ${days} days from the quote date.`,
+    regards: "Kind regards",
+    address: "Address",
+    contact: "Contact",
+    vatId: (id: string) => `VAT ID: ${id}`,
+    pageOf: (p: number, t: number) => `Page ${p} of ${t}`,
+    locale: "en-US",
+  },
+} as const;
 
 const hexToRgb = (hex: string): [number, number, number] => {
   const h = hex.replace("#", "");
@@ -65,23 +116,19 @@ const hexToRgb = (hex: string): [number, number, number] => {
   ];
 };
 
-/**
- * Klares, minimalistisches Briefkopf-Layout (vgl. Referenz-PDF des Nutzers):
- *  - kein farbiger Header-Balken; viel Weißraum
- *  - Logo oben rechts (proportional in einer Bounding-Box)
- *  - links die Empfänger-Anschrift im klassischen DIN-Fensterumschlag-Bereich
- *  - rechts daneben Datum + Meta-Info
- *  - dünne Trennlinien statt farbiger Flächen
- *  - Pricing-Box (großer Button) mit Brutto bleibt visuell prominent
- *  - Footer mit Anschrift / Kontakt in 2 Spalten + Gültigkeit + Grußformel + Abschlusssatz
- */
 export function buildQuotePDF(d: QuotePDFData): jsPDF {
+  const lang: PdfLang = d.lang === "en" ? "en" : "de";
+  const L = STRINGS[lang];
+  const fmt = (n: number) =>
+    n.toLocaleString(L.locale, { style: "currency", currency: "EUR" });
+
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageW = 210;
   const pageH = 297;
   const margin = 18;
   const primary = hexToRgb(d.company.primaryColor || "#1a3a6c");
-  const secondary = hexToRgb(d.company.secondaryColor || "#4a4a4a");
+  // secondary kept for potential future use
+  hexToRgb(d.company.secondaryColor || "#4a4a4a");
 
   // ───────── Logo oben rechts ─────────
   const logoBox = { x: pageW - margin - 36, y: margin - 4, w: 36, h: 22 };
@@ -111,7 +158,6 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
           w = natW * scale;
           h = natH * scale;
         }
-        // rechtsbündig im Box-Bereich
         const x = logoBox.x + (logoBox.w - w);
         const y = logoBox.y + (logoBox.h - h) / 2;
         doc.addImage(src, imgFmt, x, y, w, h, undefined, "FAST");
@@ -136,8 +182,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     doc.text(initial, cx, cy + 1.8, { align: "center" });
   }
 
-  // ───────── Anschriften-Bereich (DIN-ähnlich) ─────────
-  // Sender-Mini-Zeile über der Empfängeradresse (klassische dünne Schrift)
+  // ───────── Sender-Mini-Zeile ─────────
   const senderMini = [
     d.company.name,
     d.company.address,
@@ -150,7 +195,6 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     doc.setFontSize(7.5);
     doc.setTextColor(120, 120, 120);
     doc.text(senderMini, margin, y);
-    // dünne Trennlinie unter der Mini-Zeile
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.2);
     doc.line(margin, y + 1.5, margin + 90, y + 1.5);
@@ -174,11 +218,11 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   }
   y = recYStart + Math.max(recLineCount, 1) * 5.2 + 12;
 
-  // ───────── Titel "Unverbindliche Preisorientierung" + Datum (gleiche Höhe) ─────────
+  // ───────── Titel + Datum ─────────
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(primary[0], primary[1], primary[2]);
-  doc.text("Unverbindliche Preisorientierung", margin, y);
+  doc.text(L.title, margin, y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(40, 40, 40);
@@ -189,26 +233,22 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
   doc.setTextColor(50, 50, 50);
-  doc.text("Sehr geehrte Damen und Herren,", margin, y);
+  doc.text(L.salutation, margin, y);
   y += 5;
-  doc.text(
-    "vielen Dank für Ihre Anfrage. Gerne geben wir Ihnen nachfolgend eine unverbindliche Preisorientierung für die geplanten Arbeiten:",
-    margin, y, { maxWidth: pageW - margin * 2 }
-  );
+  doc.text(L.intro, margin, y, { maxWidth: pageW - margin * 2 });
   y += 12;
 
-  // ───────── Leistungsbeschreibung Überschrift ─────────
+  // ───────── Leistungsbeschreibung ─────────
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(primary[0], primary[1], primary[2]);
-  doc.text("Leistungsbeschreibung", margin, y);
+  doc.text(L.services, margin, y);
   y += 2;
   doc.setDrawColor(220, 220, 220);
   doc.setLineWidth(0.3);
   doc.line(margin, y, pageW - margin, y);
   y += 6;
 
-  // ───────── Bauvorhaben-Bezeichnung (zwischen zwei Linien) ─────────
   const projectLabel = (d.customer?.projectLabel || "").trim();
   if (projectLabel) {
     doc.setFont("helvetica", "bold");
@@ -230,17 +270,12 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   const useSections = Array.isArray(d.sections) && d.sections.length > 0
     && d.sections.some((s) => s && s.title && Array.isArray(s.items) && s.items.length > 0);
 
-  // Bottom-Reserve: Footer (~22mm) + Sicherheitspuffer (~8mm) – damit
-  // Inhalt niemals in den Footer-Bereich läuft.
   const contentBottom = pageH - 32;
 
-  // Laufende Zwischensumme über bereits abgeschlossene Abschnitte hinweg
-  // (für „Übertrag" bei Seitenumbrüchen mitten in der Leistungsliste).
   let runningNet = 0;
   let runningGross = 0;
 
   const drawCarryDown = () => {
-    // Fuß der aktuellen Seite: „Übertrag" mit aktueller Zwischensumme.
     if (runningNet <= 0 && runningGross <= 0) return;
     doc.setDrawColor(220, 220, 220);
     doc.setLineWidth(0.2);
@@ -248,10 +283,10 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(9);
     doc.setTextColor(110, 110, 110);
-    doc.text(`Übertrag (Zwischensumme): Netto ${fmt(runningNet)}`, margin, contentBottom + 7);
+    doc.text(L.carryDown(fmt(runningNet)), margin, contentBottom + 7);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(primary[0], primary[1], primary[2]);
-    doc.text(`Brutto ${fmt(runningGross)}`, pageW - margin, contentBottom + 7, { align: "right" });
+    doc.text(L.grossLabel(fmt(runningGross)), pageW - margin, contentBottom + 7, { align: "right" });
   };
 
   const drawCarryUp = () => {
@@ -259,10 +294,10 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(9);
     doc.setTextColor(110, 110, 110);
-    doc.text(`Übertrag von vorheriger Seite: Netto ${fmt(runningNet)}`, margin, y);
+    doc.text(L.carryUp(fmt(runningNet)), margin, y);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(primary[0], primary[1], primary[2]);
-    doc.text(`Brutto ${fmt(runningGross)}`, pageW - margin, y, { align: "right" });
+    doc.text(L.grossLabel(fmt(runningGross)), pageW - margin, y, { align: "right" });
     doc.setDrawColor(220, 220, 220);
     doc.setLineWidth(0.2);
     doc.line(margin, y + 2, pageW - margin, y + 2);
@@ -281,7 +316,6 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     }
   };
 
-  // Renderhilfe: ein Stichpunkt mit Nummerierung
   const drawItem = (item: string, num: string) => {
     const lines = doc.splitTextToSize(item, pageW - margin * 2 - 8);
     ensureSpace(lines.length * 5.2);
@@ -299,7 +333,6 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     d.sections!.forEach((sec, sIdx) => {
       const items = (sec.items || []).filter((x) => typeof x === "string" && x.trim());
       if (!items.length) return;
-      // Abschnitts-Überschrift
       ensureSpace(14);
       if (sIdx > 0) y += 4;
       doc.setFont("helvetica", "bold");
@@ -314,7 +347,6 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
         counter += 1;
         drawItem(item, `${counter}.`);
       });
-      // Zwischensumme pro Bereich (Netto / Brutto)
       const hasSub =
         typeof sec.net_amount === "number" ||
         typeof sec.gross_amount === "number";
@@ -328,18 +360,17 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
         doc.setTextColor(90, 90, 90);
         const parts: string[] = [];
         if (typeof sec.hours === "number" && sec.hours > 0) {
-          parts.push(`${sec.hours.toLocaleString("de-DE")} Std`);
+          parts.push(`${sec.hours.toLocaleString(L.locale)} ${L.hoursUnit}`);
         }
-        if (typeof sec.net_amount === "number") parts.push(`Netto ${fmt(sec.net_amount)}`);
-        const left = `Zwischensumme ${sec.title}` + (parts.length ? ` · ${parts.join(" · ")}` : "");
+        if (typeof sec.net_amount === "number") parts.push(L.netLabelInline(fmt(sec.net_amount)));
+        const left = `${L.subtotal} ${sec.title}` + (parts.length ? ` · ${parts.join(" · ")}` : "");
         doc.text(left, margin + 8, y + 2);
         if (typeof sec.gross_amount === "number") {
           doc.setFont("helvetica", "bold");
           doc.setTextColor(primary[0], primary[1], primary[2]);
-          doc.text(`Brutto ${fmt(sec.gross_amount)}`, pageW - margin, y + 2, { align: "right" });
+          doc.text(L.grossLabel(fmt(sec.gross_amount)), pageW - margin, y + 2, { align: "right" });
         }
         y += 8;
-        // Laufende Summe für „Übertrag" aktualisieren
         if (typeof sec.net_amount === "number") runningNet += sec.net_amount;
         if (typeof sec.gross_amount === "number") runningGross += sec.gross_amount;
       }
@@ -352,7 +383,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
 
   y += 4;
 
-  // ───────── Pricing-Block (großer Button, beibehalten) ─────────
+  // ───────── Pricing-Block ─────────
   if (y > pageH - 80) { doc.addPage(); y = margin; }
   doc.setFillColor(primary[0], primary[1], primary[2]);
   doc.roundedRect(margin, y, pageW - margin * 2, 38, 4, 4, "F");
@@ -361,27 +392,25 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setFontSize(10);
   const labelX = margin + 6;
   const valueX = pageW - margin - 6;
-  doc.text("Netto", labelX, y + 9);
+  doc.text(L.net, labelX, y + 9);
   doc.text(fmt(d.net), valueX, y + 9, { align: "right" });
-  doc.text(`MwSt. (${d.vatRate}%)`, labelX, y + 17);
+  doc.text(L.vat(d.vatRate), labelX, y + 17);
   doc.text(fmt(d.vat), valueX, y + 17, { align: "right" });
   doc.setDrawColor(255, 255, 255);
   doc.setLineWidth(0.3);
   doc.line(labelX, y + 22, valueX, y + 22);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
-  doc.text("Gesamtbetrag", labelX, y + 31);
+  doc.text(L.total, labelX, y + 31);
   doc.text(fmt(d.gross), valueX, y + 31, { align: "right" });
   y += 46;
 
-  // ───────── Unverbindlichkeits-Hinweis (direkt unter dem Preisblock) ─────────
+  // ───────── Disclaimer ─────────
   if (y > pageH - 70) { doc.addPage(); y = margin; }
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9.5);
   doc.setTextColor(90, 90, 90);
-  const disclaimer =
-    "Dieser Preis stellt eine unverbindliche Kostenschätzung dar und dient ausschließlich zur ersten Orientierung.";
-  const disclaimerLines = doc.splitTextToSize(disclaimer, pageW - margin * 2);
+  const disclaimerLines = doc.splitTextToSize(L.disclaimer, pageW - margin * 2);
   doc.text(disclaimerLines, margin, y);
   y += disclaimerLines.length * 4.5 + 4;
 
@@ -391,20 +420,15 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(60, 60, 60);
-  doc.text(
-    `Diese Preisorientierung ist ${validityDays} Tage ab Angebotsdatum gültig.`,
-    margin, y,
-  );
+  doc.text(L.validity(validityDays), margin, y);
   y += 10;
 
   // ───────── Grußformel ─────────
   if (y > pageH - 45) { doc.addPage(); y = margin; }
   doc.setFontSize(10.5);
   doc.setTextColor(40, 40, 40);
-  doc.text("Mit freundlichen Grüßen", margin, y);
+  doc.text(L.regards, margin, y);
   y += 6;
-  // Zeichnungsberechtigte Person (Fallback: Inhaber/Ansprechpartner, sonst Firmenname).
-  // Darunter automatisch der Firmenname, wenn Unterzeichner ≠ Firma.
   const sigName = (d.signatureName || d.company.contact || d.company.name || "").trim();
   const companyName = (d.company.name || "").trim();
   if (sigName) {
@@ -424,7 +448,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     y += 4;
   }
 
-  // ───────── Abschluss-Satz (kleiner) ─────────
+  // ───────── Abschluss-Satz ─────────
   const closing = (d.closingText || "").trim();
   if (closing) {
     if (y > pageH - 30) { doc.addPage(); y = margin; }
@@ -436,7 +460,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     y += cl.length * 4.5;
   }
 
-  // ───────── Footer (Anschrift / Kontakt) – auf JEDER Seite ─────────
+  // ───────── Footer ─────────
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
@@ -446,11 +470,10 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     doc.line(margin, footerY - 4, pageW - margin, footerY - 4);
 
     const colW = (pageW - margin * 2) / 2;
-    // Spalte 1: Anschrift
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
     doc.setTextColor(60, 60, 60);
-    doc.text("Anschrift", margin, footerY);
+    doc.text(L.address, margin, footerY);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(110, 110, 110);
     const addrLines = [
@@ -461,11 +484,10 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     ].filter(Boolean) as string[];
     addrLines.forEach((ln, i) => doc.text(ln, margin, footerY + 3.5 + i * 3.2));
 
-    // Spalte 2: Kontakt
     const cx = margin + colW;
     doc.setFont("helvetica", "bold");
     doc.setTextColor(60, 60, 60);
-    doc.text("Kontakt", cx, footerY);
+    doc.text(L.contact, cx, footerY);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(110, 110, 110);
     const contactLines = [
@@ -473,16 +495,15 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
       d.company.email,
       d.company.phone,
       d.company.contact,
-      d.company.vatId ? `USt-IdNr.: ${d.company.vatId}` : undefined,
+      d.company.vatId ? L.vatId(d.company.vatId) : undefined,
     ].filter(Boolean) as string[];
     contactLines.forEach((ln, i) => doc.text(ln, cx, footerY + 3.5 + i * 3.2));
 
-    // Seitenzahl (nur bei mehr als einer Seite)
     if (totalPages > 1) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(120, 120, 120);
-      doc.text(`Seite ${p} von ${totalPages}`, pageW - margin, pageH - 8, { align: "right" });
+      doc.text(L.pageOf(p, totalPages), pageW - margin, pageH - 8, { align: "right" });
     }
   }
 
@@ -502,9 +523,6 @@ export async function urlToDataUrl(url: string): Promise<string | undefined> {
   } catch { return undefined; }
 }
 
-/**
- * Liest die natürlichen Pixelmaße eines Bildes – für proportionale PDF-Skalierung.
- */
 export async function getImageNaturalSize(
   src: string
 ): Promise<{ width: number; height: number } | undefined> {
@@ -527,10 +545,6 @@ export async function getImageNaturalSize(
   });
 }
 
-/**
- * Bereitet ein Logo für die Einbettung in jspdf vor (rasterisiert SVG/exotische
- * Formate über Canvas in PNG). Siehe ausführlichen Kommentar im vorherigen Stand.
- */
 export async function prepareLogoForPdf(
   src: string
 ): Promise<{ dataUrl: string; width: number; height: number } | undefined> {

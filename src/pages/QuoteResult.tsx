@@ -27,6 +27,7 @@ import {
 import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
 import { useTr, currentLocale } from "@/lib/tr";
+import i18n from "@/i18n";
 
 const fmt = (n: number) => n.toLocaleString(currentLocale(), { style: "currency", currency: "EUR" });
 
@@ -43,6 +44,7 @@ export default function QuoteResult() {
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewBlobLang, setPreviewBlobLang] = useState<"de" | "en" | null>(null);
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
   const [lastFilename, setLastFilename] = useState<string>("");
   const [lastSavedPdfPath, setLastSavedPdfPath] = useState<string | null>(null);
@@ -128,6 +130,7 @@ export default function QuoteResult() {
       setPreviewBlobUrl(null);
     }
     setPreviewBlob(null);
+    setPreviewBlobLang(null);
     setPdfQuotaConsumed(false);
     // Mark as dirty: after edits the user can save again (UPDATE if a row
     // already exists, INSERT otherwise).
@@ -188,6 +191,7 @@ export default function QuoteResult() {
       sessionStorage.removeItem("currentQuotePdf");
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }
       setPreviewBlob(null);
+      setPreviewBlobLang(null);
       setPdfQuotaConsumed(false);
       setSaved(false);
       setItemsDirty(false);
@@ -417,7 +421,7 @@ export default function QuoteResult() {
     toast.success(tr("WhatsApp-Text kopiert", "WhatsApp text copied"));
   };
 
-  const buildPDF = async () => {
+  const buildPDF = async (lang: "de" | "en") => {
     let logoDataUrl: string | undefined;
     let logoSize: { width: number; height: number } | undefined;
     if (logoAllowed && profile?.logo_url) {
@@ -484,13 +488,16 @@ export default function QuoteResult() {
         postalCode: data.customer.postal_code,
         city: data.customer.city,
       } : undefined,
-      date: new Date().toLocaleDateString(currentLocale()),
+      date: new Date().toLocaleDateString(lang === "en" ? "en-US" : "de-DE"),
       lineItems: ai.line_items,
       sections: scaledSections,
       net: effNet, vat: effVat, gross: effGross, vatRate: vatRate,
       validityDays: settings?.quote_validity_days ?? 14,
-      closingText: settings?.closing_text ?? tr("Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.", "If our offer suits you, we look forward to your order confirmation."),
+      closingText: settings?.closing_text ?? (lang === "en"
+        ? "If our offer suits you, we look forward to your order confirmation."
+        : "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage."),
       signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name,
+      lang,
     });
   };
 
@@ -799,7 +806,7 @@ export default function QuoteResult() {
     return false;
   };
 
-  const runPdfFlow = async (autoShareWhatsapp = false) => {
+  const runPdfFlow = async (autoShareWhatsapp = false, lang: "de" | "en" = (i18n.language?.toLowerCase().startsWith("en") ? "en" : "de")) => {
     // Open sheet immediately with "building" state — never a black screen.
     const fileName = filename();
     const meta = buildPdfFlowMeta(fileName);
@@ -830,10 +837,13 @@ export default function QuoteResult() {
 
     try {
       // 1) Build (or reuse) the PDF blob
-      let blob: Blob | null = previewBlob;
+      // Invalidate cached blob if it was built in a different language.
+      let blob: Blob | null = previewBlobLang === lang ? previewBlob : null;
       if (!blob) {
+        if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }
+        setPreviewBlob(null);
         setPdfFlow((s) => ({ ...s, step: tr("PDF wird erstellt …", "Creating PDF…") }));
-        const pdf = await buildPDF();
+        const pdf = await buildPDF(lang);
         // 2) Quota only consumed once we have a buildable PDF
         const ok = await consumeQuota();
         if (!ok) {
@@ -847,6 +857,7 @@ export default function QuoteResult() {
         blob = pdf.output("blob");
         const url = blobToObjectUrl(blob);
         setPreviewBlob(blob);
+        setPreviewBlobLang(lang);
         setPreviewBlobUrl(url);
         await cachePdfInSession(blob);
       } else if (!pdfQuotaConsumed) {
@@ -984,9 +995,9 @@ export default function QuoteResult() {
     }
   };
 
-  const downloadPDF = async () => {
+  const downloadPDF = async (lang?: "de" | "en") => {
     if (!guardPdfAccess()) return;
-    await runPdfFlow();
+    await runPdfFlow(false, lang);
   };
 
   const sendWhatsappDirect = () => {
@@ -1328,10 +1339,28 @@ export default function QuoteResult() {
         </div>
 
         {pdfAllowed && (
-          <Button onClick={downloadPDF} disabled={busy} className="w-full h-12 gradient-primary text-primary-foreground border-0">
+          <Button onClick={() => downloadPDF()} disabled={busy} className="w-full h-12 gradient-primary text-primary-foreground border-0">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FileDown className="h-4 w-4 mr-2" /> {tr("PDF jetzt erstellen", "Create PDF now")}</>}
           </Button>
         )}
+
+        {pdfAllowed && (() => {
+          const appLangIsEn = i18n.language?.toLowerCase().startsWith("en");
+          const otherLang: "de" | "en" = appLangIsEn ? "de" : "en";
+          const label = otherLang === "de"
+            ? tr("PDF auf Deutsch erstellen", "Create PDF in German")
+            : tr("PDF auf Englisch erstellen", "Create PDF in English");
+          return (
+            <Button
+              onClick={() => downloadPDF(otherLang)}
+              disabled={busy}
+              variant="outline"
+              className="w-full h-12"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FileDown className="h-4 w-4 mr-2" /> {label}</>}
+            </Button>
+          );
+        })()}
 
         {pdfAllowed && (
           <Button
