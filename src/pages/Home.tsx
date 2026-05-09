@@ -10,8 +10,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { AddonPurchaseDialog } from "@/components/AddonPurchaseDialog";
 import { toast } from "sonner";
 
-const Tile = ({ icon: Icon, title, subtitle, onClick, primary }: any) => (
-  <button onClick={onClick}
+const Tile = ({ icon: Icon, title, subtitle, onClick, primary, ...rest }: any) => (
+  <button onClick={onClick} {...rest}
     className={`w-full text-left rounded-2xl border p-5 transition-base shadow-soft hover:shadow-elevated active:scale-[0.99] ${
       primary ? "gradient-primary text-primary-foreground border-primary/30" : "bg-card border-border"
     }`}>
