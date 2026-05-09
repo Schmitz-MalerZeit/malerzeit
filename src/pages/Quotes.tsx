@@ -21,6 +21,7 @@ import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
 import { useTr, currentLocale } from "@/lib/tr";
+import { FirstVisitTip } from "@/components/FirstVisitTip";
 
 const fmt = (n: number) => Number(n).toLocaleString(currentLocale(), { style: "currency", currency: "EUR" });
 
