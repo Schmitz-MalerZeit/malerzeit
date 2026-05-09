@@ -32,6 +32,7 @@ const Tile = ({ icon: Icon, title, subtitle, onClick, primary, ...rest }: any) =
 export default function Home() {
   const nav = useNavigate();
   const { t, i18n } = useTranslation();
+  const tr = useTr();
   const sub = useSubscription();
   const [firstName, setFirstName] = useState<string>("");
   const [addonOpen, setAddonOpen] = useState(false);
