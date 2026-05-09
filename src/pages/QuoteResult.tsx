@@ -43,6 +43,7 @@ export default function QuoteResult() {
   const [busy, setBusy] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewBlobLang, setPreviewBlobLang] = useState<"de" | "en" | null>(null);
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
   const [lastFilename, setLastFilename] = useState<string>("");
   const [lastSavedPdfPath, setLastSavedPdfPath] = useState<string | null>(null);
