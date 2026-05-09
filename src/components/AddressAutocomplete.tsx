@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Loader2, MapPin } from "lucide-react";
+import { useTr } from "@/lib/tr";
 
 export interface AddressSuggestion {
   /** Just the street (no house number) */
@@ -155,6 +156,7 @@ async function searchPhoton(query: string, signal: AbortSignal): Promise<Address
 export function AddressAutocomplete({
   id, value, onChange, onSelectSuggestion, placeholder, className,
 }: Props) {
+  const tr = useTr();
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -334,7 +336,7 @@ export function AddressAutocomplete({
                 <div className="text-xs text-muted-foreground truncate">
                   {s.postalCode} {s.city}
                   {parsed.houseNumber && !s.houseNumberVerified && (
-                    <span className="ml-1 italic">· Hausnummer bitte prüfen</span>
+                    <span className="ml-1 italic">· {tr("Hausnummer bitte prüfen", "Please verify house number")}</span>
                   )}
                 </div>
               </div>
@@ -344,7 +346,7 @@ export function AddressAutocomplete({
       )}
       {open && !loading && suggestions.length === 0 && parsed.street.length >= 3 && (
         <div className="absolute z-50 left-0 right-0 mt-1 rounded-xl border border-border bg-popover shadow-lg p-3 text-xs text-muted-foreground">
-          Keine Adresse gefunden. Bitte Schreibweise prüfen.
+          {tr("Keine Adresse gefunden. Bitte Schreibweise prüfen.", "No address found. Please check the spelling.")}
         </div>
       )}
     </div>

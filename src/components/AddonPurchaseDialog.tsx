@@ -5,11 +5,11 @@ import { Loader2, Plus, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useNavigate } from "react-router-dom";
+import { useTr } from "@/lib/tr";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Optional context-Text, z.B. "Du hast 50 von 50 Angeboten in diesem Monat genutzt." */
   contextLine?: string;
 }
 
@@ -21,6 +21,7 @@ const PACKAGES: Array<{ priceId: string; pdfs: number; price: string; perPdf: st
 export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) {
   const { user } = useAuth();
   const nav = useNavigate();
+  const tr = useTr();
   const { openCheckout } = usePaddleCheckout();
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -45,11 +46,11 @@ export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            Zusätzliche PDFs nachladen
+            {tr("Zusätzliche PDFs nachladen", "Top up extra PDFs")}
           </DialogTitle>
           <DialogDescription>
-            {contextLine ?? "Erweitere dein monatliches Kontingent ohne Tarifwechsel."}
-            {" "}Die zusätzlichen PDFs gelten bis zum Monatsende.
+            {contextLine ?? tr("Erweitere dein monatliches Kontingent ohne Tarifwechsel.", "Top up your monthly quota without changing plans.")}
+            {" "}{tr("Die zusätzlichen PDFs gelten bis zum Monatsende.", "The extra PDFs are valid until the end of the month.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -71,7 +72,7 @@ export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) 
                     <span className="font-bold text-base">{pkg.pdfs} PDFs</span>
                     {pkg.recommended && (
                       <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
-                        Beliebt
+                        {tr("Beliebt", "Popular")}
                       </span>
                     )}
                   </div>
@@ -87,12 +88,15 @@ export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) 
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Tipp: Brauchst du regelmäßig mehr Angebote? Mit dem nächsthöheren Tarif sparst du langfristig.
+          {tr(
+            "Tipp: Brauchst du regelmäßig mehr Angebote? Mit dem nächsthöheren Tarif sparst du langfristig.",
+            "Tip: Need more quotes regularly? You'll save more long-term with the next higher plan.",
+          )}
         </p>
 
         <DialogFooter className="flex-col sm:flex-col gap-2">
           <Button variant="outline" onClick={() => { onOpenChange(false); nav("/pricing"); }} className="w-full">
-            Stattdessen Tarif wechseln
+            {tr("Stattdessen Tarif wechseln", "Change plan instead")}
           </Button>
         </DialogFooter>
       </DialogContent>
