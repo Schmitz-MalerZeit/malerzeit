@@ -124,6 +124,23 @@ export default function Billing() {
   return (
     <AppShell title={t("billing.title")}>
       <div className="space-y-5">
+        <FirstVisitTip
+          storageKey="billing"
+          title={tr("Tipps zu Abo & Rechnungen", "Subscription & invoices tips")}
+        >
+          <p>{tr(
+            "Hier siehst du deinen aktuellen Tarif, deine PDF-Nutzung im Monat und kannst jederzeit upgraden oder downgraden.",
+            "Here you see your current plan, your monthly PDF usage and you can up- or downgrade any time.",
+          )}</p>
+          <p>{tr(
+            "Brauchst du in einem Monat mehr PDFs als enthalten? Du kannst direkt zusätzliche PDF-Pakete dazubuchen.",
+            "Need more PDFs than included in a given month? You can buy extra PDF packs directly.",
+          )}</p>
+          <p>{tr(
+            "Alle bisherigen Rechnungen findest du als Download – praktisch für deine Buchhaltung.",
+            "All past invoices are available for download – handy for your bookkeeping.",
+          )}</p>
+        </FirstVisitTip>
         {sub.inTrial && !s && (
           <div className="rounded-2xl border border-accent/30 bg-accent/5 p-5">
             <div className="flex items-center gap-2 font-semibold mb-2">
