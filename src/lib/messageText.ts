@@ -11,6 +11,8 @@
  *    Vorlage selbst kann es bei Bedarf enthalten.
  */
 
+import { tr } from "@/lib/tr";
+
 /**
  * Entfernt typische Schluss-Grußformeln samt der darauffolgenden
  * Unterschriftszeile(n) am Ende eines Textes.
