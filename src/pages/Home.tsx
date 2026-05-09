@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation, Trans } from "react-i18next";
 import { FileText, FolderOpen, Settings as SettingsIcon, Scale, User as UserIcon, LogOut, Sparkles, CreditCard, HelpCircle } from "lucide-react";
 import { HelpDialog } from "@/components/HelpDialog";
+import { FirstVisitTip } from "@/components/FirstVisitTip";
+import { useTr } from "@/lib/tr";
 import { Logo } from "@/components/Logo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +32,7 @@ const Tile = ({ icon: Icon, title, subtitle, onClick, primary, ...rest }: any) =
 export default function Home() {
   const nav = useNavigate();
   const { t, i18n } = useTranslation();
+  const tr = useTr();
   const sub = useSubscription();
   const [firstName, setFirstName] = useState<string>("");
   const [addonOpen, setAddonOpen] = useState(false);
@@ -93,6 +96,24 @@ export default function Home() {
           </h1>
           <p className="text-muted-foreground">{t("home.tagline")}</p>
         </div>
+
+        <FirstVisitTip
+          storageKey="home"
+          title={tr("Willkommen bei Malerzeit – danke, dass du dabei bist!", "Welcome to Malerzeit – thanks for joining!")}
+        >
+          <p>{tr(
+            "Wir wünschen dir viel Vergnügen und vor allem viel Zeitersparnis bei deiner täglichen Angebotskalkulation.",
+            "We wish you lots of enjoyment and, above all, lots of saved time in your daily quote calculations.",
+          )}</p>
+          <p>{tr(
+            "Tipp: Richte zuerst dein Firmenprofil und deine Stundensätze ein – danach kannst du Angebote per Sprache oder Text in Sekunden erstellen.",
+            "Tip: First set up your company profile and hourly rates – then you can create quotes by voice or text in seconds.",
+          )}</p>
+          <p>{tr(
+            "Über das Fragezeichen oben oder die Kachel »Anleitung« findest du jederzeit eine Schritt-für-Schritt-Hilfe.",
+            "Use the question mark at the top or the »Guide« tile for a step-by-step walkthrough at any time.",
+          )}</p>
+        </FirstVisitTip>
 
         {!sub.loading && sub.inTrial && !sub.subscription && (
           <button

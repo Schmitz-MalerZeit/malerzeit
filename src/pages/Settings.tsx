@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Star, RefreshCw } from "lucide-react";
 import { DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/messageTemplate";
 import { useTr } from "@/lib/tr";
+import { FirstVisitTip } from "@/components/FirstVisitTip";
 
 const TEST_USER_ID = "4f497125-b2e8-46af-a6ef-477dbe7a8a0c";
 
@@ -156,6 +157,23 @@ export default function Settings() {
 
   return (
     <AppShell title={title}>
+      <FirstVisitTip
+        storageKey="settings"
+        title={tr("Tipps zu den Einstellungen", "Settings tips")}
+      >
+        <p>{tr(
+          "Pflege hier deine Stundensätze (Geselle, Azubi, Helfer …) – sie werden bei jeder Kalkulation automatisch verwendet.",
+          "Manage your hourly rates (journeyman, apprentice, helper …) here – they are used automatically in every calculation.",
+        )}</p>
+        <p>{tr(
+          "Materialaufschlag in % und MwSt-Satz prüfen, damit alle PDFs korrekt kalkuliert sind.",
+          "Check the material markup in % and the VAT rate so all PDFs calculate correctly.",
+        )}</p>
+        <p>{tr(
+          "Stundenlöhne werden niemals an die KI gesendet – sie bleiben nur lokal in deinen Einstellungen.",
+          "Hourly wages are never sent to the AI – they stay locally in your settings.",
+        )}</p>
+      </FirstVisitTip>
       <div className="space-y-5">
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
           <div className="flex items-center justify-between mb-1">

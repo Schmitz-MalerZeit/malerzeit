@@ -14,6 +14,7 @@ import { canUseLogoInPdf, getTier } from "@/lib/planFeatures";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 import { useTr } from "@/lib/tr";
+import { FirstVisitTip } from "@/components/FirstVisitTip";
 
 const VOICE_FIELDS = new Set(["company_name", "contact_person", "address", "city"]);
 const appendText = (prev: string, add: string) =>
@@ -130,6 +131,23 @@ export default function Profile() {
 
   return (
     <AppShell title={title}>
+      <FirstVisitTip
+        storageKey="profile"
+        title={tr("Tipps zum Firmenprofil", "Company profile tips")}
+      >
+        <p>{tr(
+          "Diese Daten erscheinen im Briefkopf jedes PDFs. Achte besonders auf den Firmennamen, die Adresse und das Logo.",
+          "These details appear in the letterhead of every PDF. Pay special attention to the company name, address and logo.",
+        )}</p>
+        <p>{tr(
+          "Der Unterzeichner-Name wird unter jedes Angebot gesetzt – ideal für die persönliche Note.",
+          "The signatory name is added under every quote – ideal for a personal touch.",
+        )}</p>
+        <p>{tr(
+          "Bankverbindung & Steuernummer einmal sauber pflegen – sie werden automatisch in jedes PDF übernommen.",
+          "Set bank details and tax number once – they are added to every PDF automatically.",
+        )}</p>
+      </FirstVisitTip>
       <div className="space-y-5">
         <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
           <Label className="text-sm font-medium">{tr("Firmenlogo", "Company logo")}</Label>
