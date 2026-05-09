@@ -218,6 +218,7 @@ export default function Home() {
           <Tile icon={CreditCard} title={t("home.ctaBilling")} subtitle={t("home.ctaBillingSub")} onClick={() => nav("/billing")} />
           <Tile icon={UserIcon} title={t("home.ctaProfile")} subtitle={t("home.ctaProfileSub")} onClick={() => nav("/profile")} />
           <Tile icon={SettingsIcon} title={t("home.ctaSettings")} subtitle={t("home.ctaSettingsSub")} onClick={() => nav("/settings")} />
+          <HelpDialog trigger={<Tile icon={HelpCircle} title={t("home.ctaHelp")} subtitle={t("home.ctaHelpSub")} />} />
           <Tile icon={Scale} title={t("home.ctaLegal")} subtitle={t("home.ctaLegalSub")} onClick={() => nav("/legal")} />
         </div>
       </main>
