@@ -30,6 +30,7 @@ export default function Billing() {
   const nav = useNavigate();
   const sub = useSubscription();
   const { t, i18n } = useTranslation();
+  const tr = useTr();
   const locale = (i18n.resolvedLanguage || "de") === "en" ? "en-US" : "de-DE";
   const fmtAmount = (n: number, c: string) =>
     n.toLocaleString(locale, { style: "currency", currency: c || "EUR" });
