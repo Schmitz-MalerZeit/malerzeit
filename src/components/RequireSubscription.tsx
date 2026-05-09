@@ -3,10 +3,6 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
-/**
- * Wraps premium routes. Allows access if user is in trial OR has active sub.
- * Redirects to /pricing otherwise.
- */
 export const RequireSubscription = ({ children }: { children: JSX.Element }) => {
   const { loading: authLoading } = useAuth();
   const sub = useSubscription();

@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from "react";
 import { ImageIcon, Check, Minus } from "lucide-react";
+import { useTr, currentLocale } from "@/lib/tr";
 
 interface Props {
   // Sender (eigene Firma)
@@ -41,9 +42,10 @@ export function LetterheadPreview({
   logoUrl, primaryColor, secondaryColor,
   customerName, customerAddress, customerPostalCode, customerCity,
 }: Props) {
+  const tr = useTr();
   const primary = primaryColor || DEFAULT_PRIMARY;
   const secondary = secondaryColor || DEFAULT_SECONDARY;
-  const today = new Date().toLocaleDateString("de-DE");
+  const today = new Date().toLocaleDateString(currentLocale());
   const [showFields, setShowFields] = useState(false);
   // Wenn das Logo nicht ladbar ist (defektes SVG, 404, CORS-Block), fallen wir
   // visuell auf den Initial-Fallback zurück – analog zum PDF-Renderer.
@@ -57,7 +59,7 @@ export function LetterheadPreview({
   const customerCityLine = [customerPostalCode, customerCity].filter(Boolean).join(" ");
   const leftRows: string[] = hasCustomer
     ? [customerName, customerAddress, customerCityLine].filter(Boolean) as string[]
-    : ["Max Mustermann", "Musterstraße 12", "12345 Musterstadt"];
+    : [tr("Max Mustermann", "John Sample"), tr("Musterstraße 12", "12 Sample Street"), tr("12345 Musterstadt", "12345 Sample City")];
   const isDemoCustomer = !hasCustomer;
 
   // RIGHT: sender (own company). The company name lives in the colored header band
@@ -78,13 +80,13 @@ export function LetterheadPreview({
   };
 
   const senderSchema: SenderRow[] = [
-    { field: "Ansprechpartner", label: "",       value: contact || "",        present: !!contact },
-    { field: "Straße",          label: "",       value: address || "",        present: !!address },
-    { field: "Adresszusatz",    label: "",       value: addressLine2 || "",   present: !!addressLine2 },
-    { field: "PLZ + Ort",       label: "",       value: companyCityLine,      present: !!companyCityLine },
-    { field: "Telefon",         label: "Tel.",   value: phone || "",          present: !!phone },
-    { field: "E-Mail",          label: "E-Mail", value: email || "",          present: !!email },
-    { field: "Webseite",        label: "Web",    value: website || "",        present: !!website },
+    { field: tr("Ansprechpartner", "Contact person"), label: "",       value: contact || "",        present: !!contact },
+    { field: tr("Straße", "Street"),                  label: "",       value: address || "",        present: !!address },
+    { field: tr("Adresszusatz", "Address line 2"),    label: "",       value: addressLine2 || "",   present: !!addressLine2 },
+    { field: tr("PLZ + Ort", "Postcode + city"),      label: "",       value: companyCityLine,      present: !!companyCityLine },
+    { field: tr("Telefon", "Phone"),                  label: tr("Tel.", "Tel."),   value: phone || "", present: !!phone },
+    { field: tr("E-Mail", "Email"),                   label: tr("E-Mail", "Email"), value: email || "", present: !!email },
+    { field: tr("Webseite", "Website"),               label: tr("Web", "Web"),     value: website || "", present: !!website },
   ];
   const visibleRows = senderSchema.filter(r => r.present);
   const filledCount = visibleRows.length;
@@ -98,8 +100,8 @@ export function LetterheadPreview({
       <div className="flex items-center justify-between gap-2 px-1">
         <p className="text-[11px] text-muted-foreground">
           {showFields
-            ? `Validierung: ${filledCount} von ${totalCount} Absender-Feldern befüllt.`
-            : "So erscheint dein Briefkopf im PDF."}
+            ? tr(`Validierung: ${filledCount} von ${totalCount} Absender-Feldern befüllt.`, `Validation: ${filledCount} of ${totalCount} sender fields filled.`)
+            : tr("So erscheint dein Briefkopf im PDF.", "This is how your letterhead will appear in the PDF.")}
         </p>
         <button
           type="button"
@@ -107,7 +109,7 @@ export function LetterheadPreview({
           className="text-[11px] font-medium text-primary hover:underline shrink-0"
           aria-pressed={showFields}
         >
-          {showFields ? "Marker ausblenden" : "Felder anzeigen"}
+          {showFields ? tr("Marker ausblenden", "Hide markers") : tr("Felder anzeigen", "Show fields")}
         </button>
       </div>
 
@@ -126,7 +128,7 @@ export function LetterheadPreview({
               <div
                 className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
                 style={{ backgroundColor: primary }}
-                title="Logo konnte nicht geladen werden – Initial-Fallback wird gezeigt"
+                title={tr("Logo konnte nicht geladen werden – Initial-Fallback wird gezeigt", "Logo could not be loaded – initial fallback shown")}
               >
                 {initial}
               </div>
@@ -139,7 +141,7 @@ export function LetterheadPreview({
           <div className="mt-12">
             <div className="text-[7px] text-neutral-400 truncate">
               {[companyName, address, [postalCode, city].filter(Boolean).join(" ")]
-                .filter(Boolean).join(" · ") || "Firmenname · Straße · PLZ Ort"}
+                .filter(Boolean).join(" · ") || tr("Firmenname · Straße · PLZ Ort", "Company · Street · ZIP City")}
             </div>
             <div className="h-px w-1/2 mt-0.5" style={{ backgroundColor: secondary, opacity: 0.3 }} />
           </div>
@@ -157,20 +159,20 @@ export function LetterheadPreview({
                   </div>
                 ))}
                 {isDemoCustomer && (
-                  <div className="text-[7px] text-neutral-400 mt-1">Beispiel-Empfänger</div>
+                  <div className="text-[7px] text-neutral-400 mt-1">{tr("Beispiel-Empfänger", "Example recipient")}</div>
                 )}
               </div>
             </div>
             <div className="text-right">
               <div className="text-[8px] text-neutral-500">
-                Angebotsdatum: <span className="text-neutral-700">{today}</span>
+                {tr("Angebotsdatum:", "Quote date:")} <span className="text-neutral-700">{today}</span>
               </div>
             </div>
           </div>
 
           {/* Titel */}
           <div className="mt-4 text-base font-bold leading-tight" style={{ color: primary }}>
-            Unverbindliche Preisorientierung
+            {tr("Unverbindliche Preisorientierung", "Non-binding price quote")}
           </div>
 
           {/* Leistungs-Skelett */}
@@ -187,7 +189,7 @@ export function LetterheadPreview({
           {showFields && (
             <div className="absolute bottom-2 left-4 right-4">
               <div className="text-[7px] font-bold tracking-wider" style={{ color: primary }}>
-                ABSENDER (Validierung)
+                {tr("ABSENDER (Validierung)", "SENDER (validation)")}
               </div>
               <div className="space-y-0.5 mt-1">
                 {senderSchema.map((row) => (
@@ -203,7 +205,7 @@ export function LetterheadPreview({
                       {row.field}
                     </span>
                     <span className={`truncate ${row.present ? "text-neutral-700" : "text-neutral-300 italic"}`}>
-                      {row.present ? row.value : "(leer)"}
+                      {row.present ? row.value : tr("(leer)", "(empty)")}
                     </span>
                   </div>
                 ))}
@@ -216,12 +218,12 @@ export function LetterheadPreview({
       {showFields && (
         <p className="text-[10px] text-muted-foreground px-1 leading-relaxed">
           <span className="inline-flex items-center gap-1 align-middle mr-2">
-            <span className="h-2 w-2 rounded-sm bg-emerald-500/80" /> befüllt
+            <span className="h-2 w-2 rounded-sm bg-emerald-500/80" /> {tr("befüllt", "filled")}
           </span>
           <span className="inline-flex items-center gap-1 align-middle">
-            <span className="h-2 w-2 rounded-sm bg-neutral-300" /> leer
+            <span className="h-2 w-2 rounded-sm bg-neutral-300" /> {tr("leer", "empty")}
           </span>
-          {" "}— leere Felder erscheinen <strong>nicht</strong> im finalen PDF.
+          {" "}— {tr("leere Felder erscheinen ", "empty fields do ")}<strong>{tr("nicht", "not")}</strong>{tr(" im finalen PDF.", " appear in the final PDF.")}
         </p>
       )}
     </div>

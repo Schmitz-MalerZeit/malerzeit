@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { voiceLock } from "@/lib/voiceLock";
+import { tr } from "@/lib/tr";
 
 interface VoiceInputProps {
   /** Called with the transcribed text. The component does not modify state itself. */
@@ -25,7 +26,7 @@ interface VoiceInputProps {
  * Click to start, click again to stop. While transcribing a spinner is shown.
  */
 export function VoiceInput({
-  onTranscript, mode = "append", size = "sm", label = "Spracheingabe", className, disabled,
+  onTranscript, mode = "append", size = "sm", label, className, disabled,
 }: VoiceInputProps) {
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -69,7 +70,7 @@ export function VoiceInput({
     if (disabled || busy) return;
     // Try to acquire global mic lock — only one VoiceInput can record/transcribe at a time.
     if (!voiceLock.acquire(idRef.current)) {
-      toast.info("Bitte erst die laufende Spracheingabe beenden.");
+      toast.info(tr("Bitte erst die laufende Spracheingabe beenden.", "Please stop the running voice input first."));
       return;
     }
     try {
@@ -88,7 +89,7 @@ export function VoiceInput({
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
         stopAll();
         if (blob.size < 800) {
-          toast.info("Aufnahme zu kurz");
+          toast.info(tr("Aufnahme zu kurz", "Recording too short"));
           voiceLock.release(idRef.current);
           return;
         }
@@ -100,10 +101,10 @@ export function VoiceInput({
           });
           if (error) throw error;
           const text = (data?.text || "").trim();
-          if (!text) { toast.info("Nichts erkannt – bitte erneut versuchen"); return; }
+          if (!text) { toast.info(tr("Nichts erkannt – bitte erneut versuchen", "Nothing recognized – please try again")); return; }
           onTranscript(text);
         } catch (e: any) {
-          toast.error(e?.message || "Transkription fehlgeschlagen");
+          toast.error(e?.message || tr("Transkription fehlgeschlagen", "Transcription failed"));
         } finally {
           setBusy(false);
           // Release lock only after transcription finishes — keeps other mics disabled
@@ -116,8 +117,8 @@ export function VoiceInput({
     } catch (e: any) {
       toast.error(
         e?.name === "NotAllowedError"
-          ? "Mikrofon-Zugriff verweigert. Bitte in den Browser-Einstellungen erlauben."
-          : "Mikrofon nicht verfügbar"
+          ? tr("Mikrofon-Zugriff verweigert. Bitte in den Browser-Einstellungen erlauben.", "Microphone access denied. Please allow it in your browser settings.")
+          : tr("Mikrofon nicht verfügbar", "Microphone not available")
       );
       stopAll();
       voiceLock.release(idRef.current);
@@ -142,8 +143,12 @@ export function VoiceInput({
       type="button"
       onClick={onClick}
       disabled={isDisabled}
-      title={recording ? "Aufnahme stoppen" : (otherActive ? "Eine andere Spracheingabe läuft gerade" : label)}
-      aria-label={recording ? "Aufnahme stoppen" : label}
+      title={recording
+        ? tr("Aufnahme stoppen", "Stop recording")
+        : (otherActive
+          ? tr("Eine andere Spracheingabe läuft gerade", "Another voice input is currently running")
+          : (label || tr("Spracheingabe", "Voice input")))}
+      aria-label={recording ? tr("Aufnahme stoppen", "Stop recording") : (label || tr("Spracheingabe", "Voice input"))}
       data-mode={mode}
       className={cn(
         "shrink-0 inline-flex items-center justify-center rounded-lg border transition-base",
