@@ -837,10 +837,13 @@ export default function QuoteResult() {
 
     try {
       // 1) Build (or reuse) the PDF blob
-      let blob: Blob | null = previewBlob;
+      // Invalidate cached blob if it was built in a different language.
+      let blob: Blob | null = previewBlobLang === lang ? previewBlob : null;
       if (!blob) {
+        if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }
+        setPreviewBlob(null);
         setPdfFlow((s) => ({ ...s, step: tr("PDF wird erstellt …", "Creating PDF…") }));
-        const pdf = await buildPDF();
+        const pdf = await buildPDF(lang);
         // 2) Quota only consumed once we have a buildable PDF
         const ok = await consumeQuota();
         if (!ok) {
@@ -854,6 +857,7 @@ export default function QuoteResult() {
         blob = pdf.output("blob");
         const url = blobToObjectUrl(blob);
         setPreviewBlob(blob);
+        setPreviewBlobLang(lang);
         setPreviewBlobUrl(url);
         await cachePdfInSession(blob);
       } else if (!pdfQuotaConsumed) {
