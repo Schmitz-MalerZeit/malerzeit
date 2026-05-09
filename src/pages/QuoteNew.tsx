@@ -18,6 +18,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTr } from "@/lib/tr";
 
 const appendText = (prev: string, add: string) =>
   prev.trim().length === 0 ? add : `${prev.replace(/\s+$/, "")}\n${add}`;
@@ -33,7 +34,7 @@ interface AIResp {
   pricing: { labor_cost: number; material_cost: number; net_amount: number; vat_amount: number; gross_amount: number; vat_rate: number };
 }
 
-const DESCRIPTION_PLACEHOLDER = `Bitte gib die Infos strukturiert ein, z. B.:
+const DESCRIPTION_PLACEHOLDER_DE = `Bitte gib die Infos strukturiert ein, z. B.:
 
 1) Arbeiten / Leistungsumfang
    - Wohnzimmer (ca. 25 m²): Tapete entfernen, Wände Q3 spachteln, Glattvlies, 2x streichen
@@ -48,6 +49,22 @@ const DESCRIPTION_PLACEHOLDER = `Bitte gib die Infos strukturiert ein, z. B.:
    - ca. 180 € (Vlies, Farbe, Spachtel, Kleinmaterial)
 
 Je präziser deine Angaben, desto genauer die Kalkulation.`;
+
+const DESCRIPTION_PLACEHOLDER_EN = `Please enter the info in a structured way, e.g.:
+
+1) Work / scope
+   - Living room (approx. 25 m²): remove wallpaper, skim walls Q3, smooth fleece, 2x paint
+   - Paint ceiling as well
+   - Indoor / occupied / normal access
+
+2) Crew & estimated hours
+   - Journeyman painter: 12 hrs at €55
+   - Apprentice (3rd year): 8 hrs at €28
+
+3) Estimated material cost (net, before markup)
+   - approx. €180 (fleece, paint, filler, small materials)
+
+The more precise your input, the more accurate the estimate.`;
 
 const DRAFT_KEY = "quoteDraft.v1";
 
@@ -81,6 +98,7 @@ const loadDraft = (): Draft | null => {
 };
 
 export default function QuoteNew() {
+  const tr = useTr();
   const nav = useNavigate();
   const initial = loadDraft();
   const [description, setDescription] = useState(initial?.description ?? "");
@@ -192,8 +210,11 @@ export default function QuoteNew() {
   const preflightLimit = (): boolean => {
     if (subState.pdfLimit > 0 && subState.pdfUsed >= subState.pdfLimit) {
       toast.error(
-        `Monatslimit erreicht (${subState.pdfUsed}/${subState.pdfLimit}). Bitte upgrade deinen Tarif.`,
-        { action: { label: "Upgrade", onClick: () => nav("/pricing") } }
+        tr(
+          `Monatslimit erreicht (${subState.pdfUsed}/${subState.pdfLimit}). Bitte upgrade deinen Tarif.`,
+          `Monthly limit reached (${subState.pdfUsed}/${subState.pdfLimit}). Please upgrade your plan.`,
+        ),
+        { action: { label: tr("Upgrade", "Upgrade"), onClick: () => nav("/pricing") } }
       );
       return false;
     }
@@ -271,9 +292,9 @@ export default function QuoteNew() {
     } catch (err: any) {
       const msg = String(err?.message || "");
       if (/load failed|failed to fetch|aborted|network/i.test(msg)) {
-        toast.error("Verbindung zur KI unterbrochen. Bitte Internet prüfen und erneut versuchen.");
+        toast.error(tr("Verbindung zur KI unterbrochen. Bitte Internet prüfen und erneut versuchen.", "Connection to the AI was lost. Please check your internet and try again."));
       } else {
-        toast.error(msg || "Fehler bei der KI-Analyse");
+        toast.error(msg || tr("Fehler bei der KI-Analyse", "AI analysis failed"));
       }
     } finally { setLoading(false); }
   };
@@ -326,7 +347,7 @@ export default function QuoteNew() {
     customer.postal_code.trim().length >= 4 &&
     customer.city.trim().length > 1;
 
-  const headerTitle = customer.name.trim() ? customer.name.trim() : "Neue Preisorientierung";
+  const headerTitle = customer.name.trim() ? customer.name.trim() : tr("Neue Preisorientierung", "New price estimate");
 
   if (step === "input") {
     return (
@@ -335,14 +356,14 @@ export default function QuoteNew() {
           <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
             <div className="flex items-center gap-2 mb-1">
               <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-              <h2 className="font-semibold">Kundendaten</h2>
+              <h2 className="font-semibold">{tr("Kundendaten", "Customer details")}</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Trage zuerst Name und Adresse ein – der Name erscheint oben als Überschrift und im PDF.
+              {tr("Trage zuerst Name und Adresse ein – der Name erscheint oben als Überschrift und im PDF.", "Enter the name and address first — the name appears as the headline and in the PDF.")}
             </p>
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="cust_name">Kundenname</Label>
+                <Label htmlFor="cust_name">{tr("Kundenname", "Customer name")}</Label>
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <CustomerAutocomplete
@@ -351,40 +372,40 @@ export default function QuoteNew() {
                       onChange={(v) => setCustomer((c) => ({ ...c, name: v }))}
                       onSelectSuggestion={handleSelectCustomer}
                       suggestions={pastCustomers}
-                      placeholder="z. B. Familie Müller"
+                      placeholder={tr("z. B. Familie Müller", "e.g. Smith family")}
                     />
                   </div>
-                  <VoiceInput size="md" label="Kundenname diktieren"
+                  <VoiceInput size="md" label={tr("Kundenname diktieren", "Dictate customer name")}
                     onTranscript={(t) => setCustomer((c) => ({ ...c, name: appendText(c.name, t) }))} />
                 </div>
                 {pastCustomers.length > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Tipp: Tippe los – bisherige Kunden werden vorgeschlagen.
+                    {tr("Tipp: Tippe los – bisherige Kunden werden vorgeschlagen.", "Tip: start typing — past customers will be suggested.")}
                   </p>
                 )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cust_project">
-                  Objekt / Bauvorhaben <span className="text-muted-foreground font-normal">(optional)</span>
+                  {tr("Objekt / Bauvorhaben", "Property / project")} <span className="text-muted-foreground font-normal">({tr("optional", "optional")})</span>
                 </Label>
                 <div className="flex gap-2">
                   <Input
                     id="cust_project"
                     value={customer.project_label}
                     onChange={(e) => setCustomer((c) => ({ ...c, project_label: e.target.value }))}
-                    placeholder="z. B. Mietwohnung Hauptstr. 5, WE 3. OG rechts"
+                    placeholder={tr("z. B. Mietwohnung Hauptstr. 5, WE 3. OG rechts", "e.g. rental flat Main St. 5, unit 3rd floor right")}
                     className="h-11 flex-1"
                     maxLength={200}
                   />
-                  <VoiceInput size="md" label="Objekt diktieren"
+                  <VoiceInput size="md" label={tr("Objekt diktieren", "Dictate property")}
                     onTranscript={(t) => setCustomer((c) => ({ ...c, project_label: appendText(c.project_label, t) }))} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Für abweichende Objektadresse (z. B. vermietete Wohnung), Wohnungsnummer, Stockwerk oder Bezeichnung der Baustelle.
+                  {tr("Für abweichende Objektadresse (z. B. vermietete Wohnung), Wohnungsnummer, Stockwerk oder Bezeichnung der Baustelle.", "For a differing property address (e.g. rented apartment), unit number, floor or site label.")}
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="cust_addr">Straße & Hausnummer</Label>
+                <Label htmlFor="cust_addr">{tr("Straße & Hausnummer", "Street & house number")}</Label>
                 <div className="flex gap-2">
                   <AddressAutocomplete
                     id="cust_addr"
@@ -392,45 +413,43 @@ export default function QuoteNew() {
                     onChange={(v) => setCustomer((c) => ({ ...c, address: v }))}
                     onSelectSuggestion={(s) => setCustomer((c) => ({
                       ...c,
-                      // Address has already been updated to "<street> <houseNumber>" by the
-                      // component; we only need to fill PLZ + Ort here.
                       postal_code: s.postalCode,
                       city: s.city,
                     }))}
-                    placeholder="Musterstraße 12"
+                    placeholder={tr("Musterstraße 12", "Sample Street 12")}
                   />
-                  <VoiceInput size="md" label="Adresse diktieren"
+                  <VoiceInput size="md" label={tr("Adresse diktieren", "Dictate address")}
                     onTranscript={(t) => setCustomer((c) => ({ ...c, address: appendText(c.address, t) }))} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Tipp: Tippe die Straße ein – PLZ &amp; Ort werden mitvorgeschlagen.
+                  {tr("Tipp: Tippe die Straße ein – PLZ & Ort werden mitvorgeschlagen.", "Tip: type the street — postcode & city will be suggested.")}
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5 col-span-1">
-                  <Label htmlFor="cust_plz">PLZ</Label>
+                  <Label htmlFor="cust_plz">{tr("PLZ", "Postcode")}</Label>
                   <Input id="cust_plz" value={customer.postal_code} inputMode="numeric" maxLength={5}
                     onChange={(e) => handlePlzChange(e.target.value)}
                     placeholder="12345" className="h-11" />
                 </div>
                 <div className="space-y-1.5 col-span-2">
                   <Label htmlFor="cust_city">
-                    Ort {plzLookupBusy && <span className="text-xs text-muted-foreground font-normal">(suche…)</span>}
+                    {tr("Ort", "City")} {plzLookupBusy && <span className="text-xs text-muted-foreground font-normal">({tr("suche…", "searching…")})</span>}
                   </Label>
                   <Input id="cust_city" value={customer.city}
                     onChange={(e) => setCustomer({ ...customer, city: e.target.value })}
-                    placeholder="Musterstadt" className="h-11" />
+                    placeholder={tr("Musterstadt", "Sample City")} className="h-11" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="cust_phone">Telefon <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Label htmlFor="cust_phone">{tr("Telefon", "Phone")} <span className="text-muted-foreground font-normal">({tr("optional", "optional")})</span></Label>
                   <Input id="cust_phone" type="tel" value={customer.phone}
                     onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
                     placeholder="0170 1234567" className="h-11" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="cust_email">E-Mail <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Label htmlFor="cust_email">{tr("E-Mail", "Email")} <span className="text-muted-foreground font-normal">({tr("optional", "optional")})</span></Label>
                   <Input id="cust_email" type="email" value={customer.email}
                     onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
                     placeholder="kunde@example.de" className="h-11" />
@@ -445,19 +464,22 @@ export default function QuoteNew() {
               <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
-              <h2 className="font-semibold">Arbeiten, Stunden & Material</h2>
+              <h2 className="font-semibold">{tr("Arbeiten, Stunden & Material", "Work, hours & materials")}</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              Beschreibe die Arbeiten, das eingesetzte Personal mit Stunden und Stundenlohn sowie den geschätzten Materialaufwand. Daraus berechnet die KI deinen Preis.
+              {tr(
+                "Beschreibe die Arbeiten, das eingesetzte Personal mit Stunden und Stundenlohn sowie den geschätzten Materialaufwand. Daraus berechnet die KI deinen Preis.",
+                "Describe the work, the crew with hours and hourly rate, plus estimated material cost. The AI uses this to calculate your price.",
+              )}
             </p>
             <div className="rounded-xl bg-secondary/50 border border-border p-3 mb-4 text-xs text-muted-foreground leading-relaxed">
-              <strong className="text-foreground">Tipp:</strong> Du kannst dein Angebot in Bereiche gliedern.
-              Schreib oder sag z. B. <em>„Wohnzimmer: Decke streichen, Wände Q3. Schlafzimmer: nur Decke. Flur: Tapete entfernen."</em>
-              Beim Diktieren funktioniert auch <em>„Wohnzimmer Doppelpunkt … nächster Raum Schlafzimmer Doppelpunkt …"</em>.
-              Im PDF erscheinen die Bereiche dann als eigene Abschnitte.
+              <strong className="text-foreground">{tr("Tipp:", "Tip:")}</strong> {tr("Du kannst dein Angebot in Bereiche gliedern.", "You can structure your quote into sections.")}{" "}
+              {tr("Schreib oder sag z. B. ", "Write or say e.g. ")}<em>{tr("„Wohnzimmer: Decke streichen, Wände Q3. Schlafzimmer: nur Decke. Flur: Tapete entfernen.\"", "\"Living room: paint ceiling, walls Q3. Bedroom: ceiling only. Hallway: remove wallpaper.\"")}</em>{" "}
+              {tr("Beim Diktieren funktioniert auch ", "When dictating, this also works: ")}<em>{tr("„Wohnzimmer Doppelpunkt … nächster Raum Schlafzimmer Doppelpunkt …\"", "\"Living room colon … next room bedroom colon …\"")}</em>.{" "}
+              {tr("Im PDF erscheinen die Bereiche dann als eigene Abschnitte.", "In the PDF the sections appear as their own blocks.")}
             </div>
             <Textarea
-              placeholder={DESCRIPTION_PLACEHOLDER}
+              placeholder={tr(DESCRIPTION_PLACEHOLDER_DE, DESCRIPTION_PLACEHOLDER_EN)}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="min-h-[280px] text-base resize-none font-mono text-sm leading-relaxed"
@@ -465,9 +487,9 @@ export default function QuoteNew() {
             />
             <div className="flex justify-between items-center mt-2">
               <div className="flex items-center gap-2">
-                <VoiceInput size="sm" label="Beschreibung diktieren"
+                <VoiceInput size="sm" label={tr("Beschreibung diktieren", "Dictate description")}
                   onTranscript={(t) => setDescription((d) => appendText(d, t))} />
-                <span className="text-xs text-muted-foreground">Diktieren – Text wird angehängt</span>
+                <span className="text-xs text-muted-foreground">{tr("Diktieren – Text wird angehängt", "Dictate — text is appended")}</span>
               </div>
               <span className="text-xs text-muted-foreground">{description.length}/4000</span>
             </div>
@@ -475,7 +497,7 @@ export default function QuoteNew() {
 
           {!customerComplete && (
             <p className="text-xs text-muted-foreground text-center">
-              Bitte zuerst die Kundendaten vollständig ausfüllen.
+              {tr("Bitte zuerst die Kundendaten vollständig ausfüllen.", "Please complete the customer details first.")}
             </p>
           )}
 
@@ -487,7 +509,7 @@ export default function QuoteNew() {
             {loading || validatingAddress ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <>Weiter <ArrowRight className="h-5 w-5 ml-2" /></>
+              <>{tr("Weiter", "Continue")} <ArrowRight className="h-5 w-5 ml-2" /></>
             )}
           </Button>
         </div>
@@ -495,25 +517,25 @@ export default function QuoteNew() {
         <AlertDialog open={!!addressMismatch} onOpenChange={(o) => { if (!o) setAddressMismatch(null); }}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Adresse prüfen</AlertDialogTitle>
+              <AlertDialogTitle>{tr("Adresse prüfen", "Check address")}</AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="space-y-2 text-sm">
                   <div>
                     {addressMismatch?.reason === "plz_city_mismatch"
-                      ? "PLZ und Ort passen nicht zur eingegebenen Straße."
-                      : "Die Straße konnte unter dieser PLZ nicht gefunden werden."}
+                      ? tr("PLZ und Ort passen nicht zur eingegebenen Straße.", "Postcode and city don't match the street entered.")
+                      : tr("Die Straße konnte unter dieser PLZ nicht gefunden werden.", "The street couldn't be found under this postcode.")}
                   </div>
                   {addressMismatch && (
                     <>
                       <div className="rounded-md border border-border p-2">
-                        <div className="text-xs text-muted-foreground">Eingegeben</div>
+                        <div className="text-xs text-muted-foreground">{tr("Eingegeben", "Entered")}</div>
                         <div className="font-medium">
                           {addressMismatch.current.postalCode} {addressMismatch.current.city || "—"}
                         </div>
                       </div>
                       {addressMismatch.suggested && (
                         <div className="rounded-md border border-primary/40 bg-primary/5 p-2">
-                          <div className="text-xs text-muted-foreground">Vorschlag (offiziell)</div>
+                          <div className="text-xs text-muted-foreground">{tr("Vorschlag (offiziell)", "Suggestion (official)")}</div>
                           <div className="font-medium">
                             {addressMismatch.suggested.postalCode} {addressMismatch.suggested.city}
                           </div>
@@ -525,12 +547,12 @@ export default function QuoteNew() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setAddressMismatch(null)}>Zurück & korrigieren</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setAddressMismatch(null)}>{tr("Zurück & korrigieren", "Back & correct")}</AlertDialogCancel>
               <AlertDialogAction onClick={keepAddressAndContinue} className="bg-secondary text-secondary-foreground hover:bg-secondary/80">
-                So lassen
+                {tr("So lassen", "Keep as is")}
               </AlertDialogAction>
               <AlertDialogAction onClick={applyAddressSuggestion}>
-                Übernehmen & weiter
+                {tr("Übernehmen & weiter", "Apply & continue")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -543,24 +565,24 @@ export default function QuoteNew() {
     <AppShell title={headerTitle}>
       <div className="space-y-5">
         <p className="text-sm text-muted-foreground">
-          Damit die Preisorientierung möglichst präzise wird, beantworte bitte kurz folgende Fragen:
+          {tr("Damit die Preisorientierung möglichst präzise wird, beantworte bitte kurz folgende Fragen:", "To make the price estimate as precise as possible, please briefly answer the following questions:")}
         </p>
         {questions.map((q, i) => (
           <div key={i} className="rounded-2xl bg-card border border-border p-4 shadow-soft">
             <Label className="text-sm font-medium mb-2 block">{q}</Label>
             <div className="flex gap-2">
-              <Input value={answers[q] || ""} onChange={(e) => setAnswers({ ...answers, [q]: e.target.value })} placeholder="Deine Antwort..." className="h-11 flex-1" />
-              <VoiceInput size="md" label="Antwort diktieren"
+              <Input value={answers[q] || ""} onChange={(e) => setAnswers({ ...answers, [q]: e.target.value })} placeholder={tr("Deine Antwort...", "Your answer...")} className="h-11 flex-1" />
+              <VoiceInput size="md" label={tr("Antwort diktieren", "Dictate answer")}
                 onTranscript={(t) => setAnswers((a) => ({ ...a, [q]: appendText(a[q] || "", t) }))} />
             </div>
           </div>
         ))}
         <Button onClick={() => callAI("finalize")} disabled={loading}
           className="w-full h-14 text-base font-semibold gradient-primary text-primary-foreground border-0 shadow-soft hover:shadow-glow transition-base">
-          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Preisorientierung erstellen <ArrowRight className="h-5 w-5 ml-2" /></>}
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{tr("Preisorientierung erstellen", "Create price estimate")} <ArrowRight className="h-5 w-5 ml-2" /></>}
         </Button>
         <Button variant="ghost" onClick={() => callAI("finalize")} disabled={loading} className="w-full">
-          Ohne Antworten fortfahren
+          {tr("Ohne Antworten fortfahren", "Continue without answers")}
         </Button>
       </div>
     </AppShell>

@@ -1,14 +1,22 @@
-const CUSTOMER_NOTICE =
-  "Hinweis: Diese unverbindliche Preisorientierung ist eine Schätzung auf Grundlage der vorliegenden Angaben. Wenn sie für Sie passt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.";
+import { tr } from "@/lib/tr";
 
-const WHATSAPP_NOTICE =
-  "Hinweis: Das ist eine unverbindliche Preisorientierung/Schätzung auf Grundlage der vorliegenden Angaben. Wenn das für Sie passt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.";
+const customerNotice = () =>
+  tr(
+    "Hinweis: Diese unverbindliche Preisorientierung ist eine Schätzung auf Grundlage der vorliegenden Angaben. Wenn sie für Sie passt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.",
+    "Note: This non-binding price estimate is based on the information provided. If it works for you, we'd be happy to prepare a binding written quote.",
+  );
+
+const whatsappNotice = () =>
+  tr(
+    "Hinweis: Das ist eine unverbindliche Preisorientierung/Schätzung auf Grundlage der vorliegenden Angaben. Wenn das für Sie passt, erstellen wir Ihnen gerne ein verbindliches schriftliches Angebot.",
+    "Note: This is a non-binding price estimate based on the information provided. If it works for you, we'd be happy to prepare a binding written quote.",
+  );
 
 const hasOrientationLanguage = (text: string) =>
-  /(unverbindlich|preisorientierung|preisschätzung|preisschaetzung|schätzung|schaetzung)/i.test(text);
+  /(unverbindlich|preisorientierung|preisschätzung|preisschaetzung|schätzung|schaetzung|non-binding|price estimate)/i.test(text);
 
 const hasBindingOfferLanguage = (text: string) =>
-  /verbindlich\w*\s+(schriftlich\w*\s+)?angebot/i.test(text);
+  /(verbindlich\w*\s+(schriftlich\w*\s+)?angebot|binding\s+(written\s+)?quote)/i.test(text);
 
 const ensureNotice = (text: string, notice: string) => {
   const trimmed = (text || "").trim();
@@ -16,9 +24,9 @@ const ensureNotice = (text: string, notice: string) => {
   return [trimmed, notice].filter(Boolean).join("\n\n");
 };
 
-export const ensureCustomerPriceOrientationText = (text: string) => ensureNotice(text, CUSTOMER_NOTICE);
+export const ensureCustomerPriceOrientationText = (text: string) => ensureNotice(text, customerNotice());
 
-export const ensureWhatsappPriceOrientationText = (text: string) => ensureNotice(text, WHATSAPP_NOTICE);
+export const ensureWhatsappPriceOrientationText = (text: string) => ensureNotice(text, whatsappNotice());
 
 /**
  * Normalize a German phone number for use with the wa.me deep link.

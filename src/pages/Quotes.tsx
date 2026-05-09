@@ -20,11 +20,13 @@ import { ensureWhatsappSignature } from "@/lib/messageTemplate";
 import { PdfFlowSheet, type PdfFlowState } from "@/components/PdfFlowSheet";
 import { useSubscription } from "@/hooks/useSubscription";
 import { canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
+import { useTr, currentLocale } from "@/lib/tr";
 
-const fmt = (n: number) => Number(n).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+const fmt = (n: number) => Number(n).toLocaleString(currentLocale(), { style: "currency", currency: "EUR" });
 
 
 export default function Quotes() {
+  const tr = useTr();
   const nav = useNavigate();
   const [items, setItems] = useState<any[] | null>(null);
   const [search, setSearch] = useState("");
@@ -48,15 +50,15 @@ export default function Quotes() {
         const { error: storageErr } = await supabase.storage
           .from("quote-pdfs")
           .remove([q.pdf_storage_path]);
-        if (storageErr) console.warn("PDF-Datei konnte nicht entfernt werden:", storageErr);
+        if (storageErr) console.warn(tr("PDF-Datei konnte nicht entfernt werden:", "PDF file could not be removed:"), storageErr);
       }
       const { error } = await supabase.from("quotes").delete().eq("id", q.id);
       if (error) throw error;
       setItems((prev) => (prev || []).filter((x) => x.id !== q.id));
-      toast.success("Vorschlag gelöscht");
+      toast.success(tr("Vorschlag gelöscht", "Quote deleted"));
       setDeleteCandidate(null);
     } catch (e: any) {
-      toast.error(e?.message || "Löschen fehlgeschlagen");
+      toast.error(e?.message || tr("Löschen fehlgeschlagen", "Delete failed"));
     } finally {
       setDeleting(false);
     }
@@ -79,10 +81,10 @@ export default function Quotes() {
       setItems((prev) => (prev || []).map((x) =>
         x.id === notesQuote.id ? { ...x, internal_notes: notesValue || null } : x,
       ));
-      toast.success("Notiz gespeichert");
+      toast.success(tr("Notiz gespeichert", "Note saved"));
       setNotesQuote(null);
     } catch (e: any) {
-      toast.error(e?.message || "Speichern fehlgeschlagen");
+      toast.error(e?.message || tr("Speichern fehlgeschlagen", "Save failed"));
     } finally {
       setNotesSaving(false);
     }
@@ -142,12 +144,12 @@ export default function Quotes() {
       reopenInResult(q);
       return;
     }
-    const fileName = q.pdf_filename || `Preisorientierung_${new Date(q.created_at).toISOString().slice(0, 10)}.pdf`;
-    const subject = `Unverbindliche Preisorientierung${q.customer_name ? " – " + q.customer_name : ""}`;
+    const fileName = q.pdf_filename || `${tr("Preisorientierung", "PriceEstimate")}_${new Date(q.created_at).toISOString().slice(0, 10)}.pdf`;
+    const subject = `${tr("Unverbindliche Preisorientierung", "Non-binding price estimate")}${q.customer_name ? " – " + q.customer_name : ""}`;
     const grossFormatted = q.gross_amount != null ? fmt(q.gross_amount) : undefined;
-    const baseEmail = ensureCustomerPriceOrientationText(q.customer_text || "Anbei erhalten Sie unsere unverbindliche Preisorientierung.");
+    const baseEmail = ensureCustomerPriceOrientationText(q.customer_text || tr("Anbei erhalten Sie unsere unverbindliche Preisorientierung.", "Please find attached our non-binding price estimate."));
     const baseWa = ensureWhatsappSignature(
-      ensureWhatsappPriceOrientationText(q.whatsapp_text || "Anbei unsere unverbindliche Preisorientierung/Schätzung."),
+      ensureWhatsappPriceOrientationText(q.whatsapp_text || tr("Anbei unsere unverbindliche Preisorientierung/Schätzung.", "Here's our non-binding price estimate.")),
       {
         companyName: profile?.company_name || "",
         signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name || "",
@@ -161,7 +163,7 @@ export default function Quotes() {
     setLastQuote(q);
     setPdfFlow({
       phase: "uploading",
-      step: "Sicheren Link erstellen …",
+      step: tr("Sicheren Link erstellen …", "Creating secure link…"),
       progress: 40,
       fileName, subject, emailBody, whatsappText, whatsappPhone,
     });
@@ -181,7 +183,7 @@ export default function Quotes() {
           .update({ pdf_storage_path: null, pdf_filename: null })
           .eq("id", q.id);
       } catch (cleanupErr) {
-        console.warn("Konnte verwaisten PDF-Pfad nicht bereinigen:", cleanupErr);
+        console.warn(tr("Konnte verwaisten PDF-Pfad nicht bereinigen:", "Could not clean orphaned PDF path:"), cleanupErr);
       }
       setItems((prev) => (prev || []).map((x) =>
         x.id === q.id ? { ...x, pdf_storage_path: null, pdf_filename: null } : x,
@@ -198,17 +200,17 @@ export default function Quotes() {
           await markPdfMissingInDb();
           setPdfFlowOpen(false);
           setPdfFlow({ phase: "idle" });
-          toast.info("Für diesen Vorschlag ist keine PDF-Datei mehr vorhanden.", {
-            description: "Bitte erstelle den Vorschlag bei Bedarf neu.",
+          toast.info(tr("Für diesen Vorschlag ist keine PDF-Datei mehr vorhanden.", "No PDF file is available for this quote anymore."), {
+            description: tr("Bitte erstelle den Vorschlag bei Bedarf neu.", "Please recreate the quote if needed."),
           });
           return;
         }
-        throw error || new Error("PDF konnte nicht geöffnet werden");
+        throw error || new Error(tr("PDF konnte nicht geöffnet werden", "PDF could not be opened"));
       }
 
       setPdfFlow((prev) => ({
         ...prev,
-        step: "PDF-Datei laden …",
+        step: tr("PDF-Datei laden …", "Loading PDF file…"),
         progress: 75,
       }));
       const response = await fetch(data.signedUrl);
@@ -217,12 +219,12 @@ export default function Quotes() {
           await markPdfMissingInDb();
           setPdfFlowOpen(false);
           setPdfFlow({ phase: "idle" });
-          toast.info("Für diesen Vorschlag ist keine PDF-Datei mehr vorhanden.", {
-            description: "Bitte erstelle den Vorschlag bei Bedarf neu.",
+          toast.info(tr("Für diesen Vorschlag ist keine PDF-Datei mehr vorhanden.", "No PDF file is available for this quote anymore."), {
+            description: tr("Bitte erstelle den Vorschlag bei Bedarf neu.", "Please recreate the quote if needed."),
           });
           return;
         }
-        throw new Error(`PDF-Datei konnte nicht geladen werden (${response.status})`);
+        throw new Error(tr(`PDF-Datei konnte nicht geladen werden (${response.status})`, `PDF file could not be loaded (${response.status})`));
       }
       const pdfBlob = await response.blob();
       setPdfFlow({
@@ -234,7 +236,7 @@ export default function Quotes() {
       setPdfFlow((prev) => ({
         ...prev,
         phase: "error",
-        errorMessage: e?.message || "PDF konnte nicht geöffnet werden",
+        errorMessage: e?.message || tr("PDF konnte nicht geöffnet werden", "PDF could not be opened"),
         errorDetail: typeof e?.stack === "string" ? e.stack.split("\n").slice(0, 8).join("\n") : String(e),
       }));
     } finally {
@@ -268,8 +270,8 @@ export default function Quotes() {
     if (q.created_at) {
       const d = new Date(q.created_at);
       parts.push(
-        d.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }),
-        d.toLocaleDateString("de-DE"),
+        d.toLocaleDateString(currentLocale(), { day: "2-digit", month: "long", year: "numeric" }),
+        d.toLocaleDateString(currentLocale()),
         d.toISOString().slice(0, 10),
         String(d.getFullYear()),
       );
@@ -286,12 +288,12 @@ export default function Quotes() {
   });
 
   return (
-    <AppShell title="Gespeicherte Vorschläge">
+    <AppShell title={tr("Gespeicherte Vorschläge", "Saved quotes")}>
       {items === null && <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}
       {items && items.length === 0 && (
         <div className="text-center py-16">
           <FolderOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">Noch keine Vorschläge gespeichert.</p>
+          <p className="text-muted-foreground">{tr("Noch keine Vorschläge gespeichert.", "No quotes saved yet.")}</p>
         </div>
       )}
       {items && items.length > 0 && (
@@ -302,7 +304,7 @@ export default function Quotes() {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Suchen: Name, Adresse, PLZ, Stadt, Datum, Leistung …"
+            placeholder={tr("Suchen: Name, Adresse, PLZ, Stadt, Datum, Leistung …", "Search: name, address, postcode, city, date, service…")}
             className="pl-9 pr-9 h-11"
           />
           {search && (
@@ -310,7 +312,7 @@ export default function Quotes() {
               type="button"
               onClick={() => setSearch("")}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground"
-              aria-label="Suche zurücksetzen"
+              aria-label={tr("Suche zurücksetzen", "Reset search")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -318,7 +320,7 @@ export default function Quotes() {
         </div>
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-sm text-muted-foreground">
-            Keine Vorschläge passen zu „{search}".
+            {tr(`Keine Vorschläge passen zu „${search}".`, `No quotes match "${search}".`)}
           </div>
         ) : (
         <div className="space-y-3">
@@ -328,7 +330,7 @@ export default function Quotes() {
                 type="button"
                 onClick={() => reopenInResult(q, false)}
                 className="w-full text-left -m-1 p-1 rounded-lg hover:bg-accent/40 transition-colors"
-                aria-label="Vorschlag bearbeiten"
+                aria-label={tr("Vorschlag bearbeiten", "Edit quote")}
               >
                 {q.customer_name && (
                   <div className="text-sm font-semibold text-foreground mb-2 truncate">
@@ -337,7 +339,7 @@ export default function Quotes() {
                 )}
                 <div className="flex justify-between items-start gap-3 mb-2">
                   <div className="text-xs text-muted-foreground">
-                    {new Date(q.created_at).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
+                    {new Date(q.created_at).toLocaleDateString(currentLocale(), { day: "2-digit", month: "long", year: "numeric" })}
                   </div>
                   <div className="text-base font-bold text-primary">{fmt(q.gross_amount)}</div>
                 </div>
@@ -346,7 +348,7 @@ export default function Quotes() {
                 )}
                 <p className="text-sm text-foreground line-clamp-2">{q.description}</p>
                 {Array.isArray(q.line_items) && q.line_items.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-2">{q.line_items.length} Leistungspositionen</p>
+                  <p className="text-xs text-muted-foreground mt-2">{q.line_items.length} {tr("Leistungspositionen", "line items")}</p>
                 )}
                 {q.internal_notes && (
                   <p className="text-xs text-muted-foreground mt-2 line-clamp-2 italic">
@@ -364,16 +366,16 @@ export default function Quotes() {
                 >
                   {openingId === q.id
                     ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF" : "PDF erstellen"}</>}
+                    : <><Eye className="h-4 w-4 mr-2" /> {q.pdf_storage_path ? "PDF" : tr("PDF erstellen", "Create PDF")}</>}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => reopenInResult(q, true)}
                   className="h-10"
-                  aria-label="Neue Version erstellen"
+                  aria-label={tr("Neue Version erstellen", "Create new version")}
                 >
-                  <Copy className="h-4 w-4 mr-2" /> Neue Version
+                  <Copy className="h-4 w-4 mr-2" /> {tr("Neue Version", "New version")}
                 </Button>
               </div>
               <div className="mt-2 grid grid-cols-3 gap-2">
@@ -383,7 +385,7 @@ export default function Quotes() {
                   onClick={() => reopenInResult(q, false)}
                   className="h-9 text-xs"
                 >
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" /> Bearbeiten
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" /> {tr("Bearbeiten", "Edit")}
                 </Button>
                 <Button
                   type="button"
@@ -391,7 +393,7 @@ export default function Quotes() {
                   onClick={() => openNotes(q)}
                   className={`h-9 text-xs ${q.internal_notes ? "text-primary border-primary/40" : ""}`}
                 >
-                  <StickyNote className="h-3.5 w-3.5 mr-1.5" /> Notiz
+                  <StickyNote className="h-3.5 w-3.5 mr-1.5" /> {tr("Notiz", "Note")}
                 </Button>
                 <Button
                   type="button"
@@ -399,7 +401,7 @@ export default function Quotes() {
                   onClick={() => setDeleteCandidate(q)}
                   className="h-9 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
-                  <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Löschen
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" /> {tr("Löschen", "Delete")}
                 </Button>
               </div>
             </div>
@@ -412,22 +414,22 @@ export default function Quotes() {
       <AlertDialog open={!!deleteCandidate} onOpenChange={(o) => { if (!o && !deleting) setDeleteCandidate(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Vorschlag wirklich löschen?</AlertDialogTitle>
+            <AlertDialogTitle>{tr("Vorschlag wirklich löschen?", "Really delete this quote?")}</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteCandidate?.customer_name
-                ? `„${deleteCandidate.customer_name}" wird unwiderruflich gelöscht`
-                : "Dieser Vorschlag wird unwiderruflich gelöscht"}
-              {deleteCandidate?.pdf_storage_path ? " – inklusive der gespeicherten PDF-Datei." : "."}
+                ? tr(`„${deleteCandidate.customer_name}" wird unwiderruflich gelöscht`, `"${deleteCandidate.customer_name}" will be deleted permanently`)
+                : tr("Dieser Vorschlag wird unwiderruflich gelöscht", "This quote will be deleted permanently")}
+              {deleteCandidate?.pdf_storage_path ? tr(" – inklusive der gespeicherten PDF-Datei.", " — including the stored PDF file.") : "."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{tr("Abbrechen", "Cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); if (deleteCandidate) void deleteQuote(deleteCandidate); }}
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ja, löschen"}
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : tr("Ja, löschen", "Yes, delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -436,25 +438,25 @@ export default function Quotes() {
       <Sheet open={!!notesQuote} onOpenChange={(o) => { if (!o && !notesSaving) setNotesQuote(null); }}>
         <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
           <SheetHeader>
-            <SheetTitle>Interne Notizen</SheetTitle>
+            <SheetTitle>{tr("Interne Notizen", "Internal notes")}</SheetTitle>
             <SheetDescription>
-              {notesQuote?.customer_name || "Vorschlag"} · nur intern sichtbar, erscheint nicht im PDF oder in Nachrichten.
+              {notesQuote?.customer_name || tr("Vorschlag", "Quote")} · {tr("nur intern sichtbar, erscheint nicht im PDF oder in Nachrichten.", "internal only — does not appear in PDF or messages.")}
             </SheetDescription>
           </SheetHeader>
           <div className="flex-1 py-4">
             <Textarea
               value={notesValue}
               onChange={(e) => setNotesValue(e.target.value)}
-              placeholder="Hinweise zum Kunden, gerechnete Aufschläge, Sondervereinbarungen …"
+              placeholder={tr("Hinweise zum Kunden, gerechnete Aufschläge, Sondervereinbarungen …", "Notes about the customer, applied surcharges, special agreements…")}
               className="min-h-[260px] resize-y text-sm"
             />
           </div>
           <SheetFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => setNotesQuote(null)} disabled={notesSaving}>
-              Abbrechen
+              {tr("Abbrechen", "Cancel")}
             </Button>
             <Button onClick={saveNotes} disabled={notesSaving}>
-              {notesSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4 mr-2" /> Speichern</>}
+              {notesSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="h-4 w-4 mr-2" /> {tr("Speichern", "Save")}</>}
             </Button>
           </SheetFooter>
         </SheetContent>
