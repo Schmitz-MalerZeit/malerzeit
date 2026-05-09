@@ -995,9 +995,9 @@ export default function QuoteResult() {
     }
   };
 
-  const downloadPDF = async () => {
+  const downloadPDF = async (lang?: "de" | "en") => {
     if (!guardPdfAccess()) return;
-    await runPdfFlow();
+    await runPdfFlow(false, lang);
   };
 
   const sendWhatsappDirect = () => {
