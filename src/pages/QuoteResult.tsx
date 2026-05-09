@@ -487,13 +487,16 @@ export default function QuoteResult() {
         postalCode: data.customer.postal_code,
         city: data.customer.city,
       } : undefined,
-      date: new Date().toLocaleDateString(currentLocale()),
+      date: new Date().toLocaleDateString(lang === "en" ? "en-US" : "de-DE"),
       lineItems: ai.line_items,
       sections: scaledSections,
       net: effNet, vat: effVat, gross: effGross, vatRate: vatRate,
       validityDays: settings?.quote_validity_days ?? 14,
-      closingText: settings?.closing_text ?? tr("Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.", "If our offer suits you, we look forward to your order confirmation."),
+      closingText: settings?.closing_text ?? (lang === "en"
+        ? "If our offer suits you, we look forward to your order confirmation."
+        : "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage."),
       signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name,
+      lang,
     });
   };
 
