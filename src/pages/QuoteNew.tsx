@@ -353,6 +353,23 @@ export default function QuoteNew() {
   if (step === "input") {
     return (
       <AppShell title={headerTitle}>
+        <FirstVisitTip
+          storageKey="quoteNew"
+          title={tr("Tipps zur Eingabe", "Input tips")}
+        >
+          <p>{tr(
+            "Am schnellsten geht es per Spracheingabe – tippe auf das Mikrofon und beschreibe das Vorhaben Raum für Raum.",
+            "The fastest way is voice input – tap the microphone and describe the project room by room.",
+          )}</p>
+          <p>{tr(
+            "Nenne pro Raum: Arbeiten, Personen mit Stunden und Materialkosten in Euro netto. Stundenlöhne nicht angeben – die kommen aus deinen Einstellungen.",
+            "For each room state: tasks, staff with hours and material cost in euros (net). Do not state hourly wages – those come from your settings.",
+          )}</p>
+          <p>{tr(
+            "Kunden werden automatisch gespeichert und stehen beim nächsten Mal als Vorschlag bereit.",
+            "Customers are saved automatically and appear as suggestions next time.",
+          )}</p>
+        </FirstVisitTip>
         <div className="space-y-5">
           <div className="rounded-2xl bg-card border border-border p-5 shadow-soft">
             <div className="flex items-center gap-2 mb-1">
