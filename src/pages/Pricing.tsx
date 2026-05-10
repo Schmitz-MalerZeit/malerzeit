@@ -86,7 +86,7 @@ export default function Pricing() {
   return (
     <AppShell title={t("pricing.title")}>
       <div className="space-y-6">
-        {discountCode && (
+        {discountCode ? (
           <div className="rounded-2xl bg-primary/5 border border-primary/30 p-4 text-sm flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 text-primary" />
@@ -99,6 +99,36 @@ export default function Pricing() {
               entfernen
             </button>
           </div>
+        ) : (
+          <details className="rounded-2xl bg-secondary/40 border border-border p-4 text-sm">
+            <summary className="cursor-pointer flex items-center gap-2 font-medium text-foreground">
+              <Tag className="h-4 w-4 text-primary" />
+              Rabattcode eingeben
+            </summary>
+            <form
+              className="mt-3 flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const input = (e.currentTarget.elements.namedItem("code") as HTMLInputElement);
+                const v = input.value.trim().toUpperCase();
+                if (!v) return;
+                setDiscountCode(v);
+                try { sessionStorage.setItem("promo_code", v); } catch {}
+              }}
+            >
+              <input
+                name="code"
+                type="text"
+                autoCapitalize="characters"
+                placeholder="z.B. WELCOME20"
+                className="flex-1 h-10 px-3 rounded-md border border-input bg-background font-mono text-sm uppercase placeholder:normal-case placeholder:font-sans"
+              />
+              <Button type="submit" variant="outline" size="sm" className="h-10">Anwenden</Button>
+            </form>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Wird beim Bezahlvorgang automatisch eingelöst.
+            </p>
+          </details>
         )}
         {sub.inTrial && (
           <div className="rounded-2xl bg-accent/10 border border-accent/30 p-5 text-sm">
