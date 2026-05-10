@@ -859,7 +859,7 @@ export default function QuoteResult() {
         // 2) Quota only consumed once per quote version. If this quote was
         // already counted (freshly created OR reopened from storage), do NOT
         // count it again — only edits/recalc reset pdfQuotaConsumed.
-        if (!pdfQuotaConsumed) {
+        if (shouldConsumeQuota({ pdfQuotaConsumed })) {
           const ok = await consumeQuota();
           if (!ok) {
             // Quota errors already toast; close sheet quietly.
@@ -876,7 +876,7 @@ export default function QuoteResult() {
         setPreviewBlobLang(lang);
         setPreviewBlobUrl(url);
         await cachePdfInSession(blob);
-      } else if (!pdfQuotaConsumed) {
+      } else if (shouldConsumeQuota({ pdfQuotaConsumed })) {
         const ok = await consumeQuota();
         if (!ok) {
           window.clearInterval(buildTimer);
