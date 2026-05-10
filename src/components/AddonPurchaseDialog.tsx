@@ -109,6 +109,18 @@ export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) 
           </Button>
         </DialogFooter>
       </DialogContent>
+      <ConfirmPurchaseDialog
+        open={pending !== null}
+        onOpenChange={(o) => { if (!o) setPending(null); }}
+        title={tr("Kauf bestätigen", "Confirm purchase")}
+        itemLabel={pending ? `${pending.pdfs} ${tr("zusätzliche PDFs", "extra PDFs")}` : ""}
+        priceLabel={pending ? `${pending.price} ${tr("einmalig", "one-time")}` : ""}
+        note={tr(
+          "Einmalige Zahlung. Die zusätzlichen PDFs gelten bis zum Ende des aktuellen Abrechnungszeitraums.",
+          "One-time payment. Extra PDFs are valid until the end of the current billing period.",
+        )}
+        onConfirm={confirmBuy}
+      />
     </Dialog>
   );
 }
