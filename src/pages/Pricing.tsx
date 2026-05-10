@@ -271,7 +271,7 @@ export default function Pricing() {
                   </div>
                 ) : (
                   <Button
-                    onClick={() => buy(tier)}
+                    onClick={() => requestBuy(tier)}
                     disabled={loading || isCurrent}
                     className={`w-full h-11 ${tier.highlight ? "gradient-primary text-primary-foreground border-0" : ""}`}
                     variant={tier.highlight ? "default" : "outline"}
