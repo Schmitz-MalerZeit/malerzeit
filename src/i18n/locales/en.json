@@ -140,7 +140,7 @@
   "pricing": {
     "title": "Plans",
     "heading": "Choose your plan",
-    "sub": "Fair cancellation terms. No hidden fees.",
+    "sub": "Rolling month from purchase day. Fair cancellation terms. No hidden fees.",
     "trialTitle": "Free trial",
     "trialBody": "Still <1>{{left}} of {{limit}} trial PDFs</1> left. Pick a plan afterwards to keep generating PDFs.",
     "trialUsedTitle": "Trial PDFs used up",
@@ -161,9 +161,9 @@
     "quotaInfoTitle": "What counts as an AI quote?",
     "quotaInfoBody": "Each time you generate a new AI quote it counts as one. PDF downloads, previews and re-opening older quotes do <1>not</1> count.",
     "quotaInfoMonthlyTitle": "Monthly vs. yearly",
-    "quotaInfoMonthlyBody": "The quota applies <1>per month</1> and resets at the start of each month – regardless of monthly or yearly billing. Unused quotes expire at month end.",
+    "quotaInfoMonthlyBody": "The quota applies to your <1>current billing period</1> and resets at the period rollover – on the same day you purchased (e.g. bought on the 14th → resets on the 14th of next month). Unused quotes expire at the end of the period.",
     "cancelTitle": "Cancellation terms",
-    "cancelMonthly": "<1>Monthly:</1> Cancel by the end of the current month – the subscription ends with the next month.",
+    "cancelMonthly": "<1>Monthly:</1> Cancel any time, effective at the end of your current billing period. The period always runs from your purchase day to the same day next month (bought on the 14th → ends on the 14th of next month) – not at calendar month-end.",
     "cancelYearly": "<1>Yearly:</1> Cancel up to <1>1 month before the end</1> of the contract year. Without cancellation it renews for another year.",
     "cancelFooter": "Payments are processed via Paddle. All prices incl. VAT.",
     "tiers": {

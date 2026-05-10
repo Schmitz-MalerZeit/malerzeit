@@ -140,7 +140,7 @@
   "pricing": {
     "title": "Tarife",
     "heading": "Wähle deinen Tarif",
-    "sub": "Faire Kündigungsfristen. Keine versteckten Kosten.",
+    "sub": "Rollierender Monat ab Kauftag. Faire Kündigungsfristen. Keine versteckten Kosten.",
     "trialTitle": "Kostenloser Test",
     "trialBody": "Noch <1>{{left}} von {{limit}} Test-PDFs</1> übrig. Wähle danach einen Tarif, um weiter PDFs zu erstellen.",
     "trialUsedTitle": "Test-PDFs aufgebraucht",
@@ -161,9 +161,9 @@
     "quotaInfoTitle": "Was sind KI-Angebote?",
     "quotaInfoBody": "Jedes Mal, wenn du ein neues Angebot per KI erstellen lässt, zählt das als ein KI-Angebot. PDF-Downloads, Vorschauen und das erneute Öffnen alter Angebote zählen <1>nicht</1> mit.",
     "quotaInfoMonthlyTitle": "Monatlich vs. Jährlich",
-    "quotaInfoMonthlyBody": "Das Kontingent gilt <1>pro Monat</1> und wird am Monatsanfang zurückgesetzt – unabhängig davon, ob du monatlich oder jährlich zahlst. Nicht genutzte Angebote verfallen am Monatsende.",
+    "quotaInfoMonthlyBody": "Das Kontingent gilt für deine <1>laufende Abrechnungsperiode</1> und wird zum Periodenwechsel zurückgesetzt – also genau an dem Tag, an dem du gekauft hast (z. B. Kauf am 14. → Reset am 14. des Folgemonats). Nicht genutzte Angebote verfallen am Periodenende.",
     "cancelTitle": "Kündigungsfristen",
-    "cancelMonthly": "<1>Monatlich:</1> Kündbar zum Ende des aktuellen Monats – das Abo endet dann zum Folgemonat.",
+    "cancelMonthly": "<1>Monatlich:</1> Jederzeit kündbar zum Ende der laufenden Abrechnungsperiode. Diese läuft immer vom Kauftag bis zum gleichen Tag im Folgemonat (Kauf am 14. → Abo endet am 14. des Folgemonats) – nicht zum Kalendermonatsende.",
     "cancelYearly": "<1>Jährlich:</1> Kündbar bis spätestens <1>1 Monat vor Ablauf</1> des Vertragsjahres. Ohne Kündigung verlängert sich der Vertrag um ein weiteres Jahr.",
     "cancelFooter": "Zahlungsabwicklung über Paddle. Alle Preise inkl. MwSt.",
     "tiers": {
