@@ -850,16 +850,20 @@ export default function QuoteResult() {
         setPreviewBlob(null);
         setPdfFlow((s) => ({ ...s, step: tr("PDF wird erstellt …", "Creating PDF…") }));
         const pdf = await buildPDF(lang);
-        // 2) Quota only consumed once we have a buildable PDF
-        const ok = await consumeQuota();
-        if (!ok) {
-          // Quota errors already toast; close sheet quietly.
-          window.clearInterval(buildTimer);
-          setPdfFlowOpen(false);
-          setPdfFlow({ phase: "idle" });
-          return;
+        // 2) Quota only consumed once per quote version. If this quote was
+        // already counted (freshly created OR reopened from storage), do NOT
+        // count it again — only edits/recalc reset pdfQuotaConsumed.
+        if (!pdfQuotaConsumed) {
+          const ok = await consumeQuota();
+          if (!ok) {
+            // Quota errors already toast; close sheet quietly.
+            window.clearInterval(buildTimer);
+            setPdfFlowOpen(false);
+            setPdfFlow({ phase: "idle" });
+            return;
+          }
+          setPdfQuotaConsumed(true);
         }
-        setPdfQuotaConsumed(true);
         blob = pdf.output("blob");
         const url = blobToObjectUrl(blob);
         setPreviewBlob(blob);
