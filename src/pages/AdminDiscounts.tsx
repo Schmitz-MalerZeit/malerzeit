@@ -44,9 +44,7 @@ function emptyForm() {
   return {
     code: "",
     description: "",
-    type: "percentage" as "percentage" | "flat",
     amount: "20",
-    currency_code: "EUR",
     recur: false,
     maximum_recurring_intervals: "" as string,
     usage_limit: "" as string,
@@ -54,6 +52,23 @@ function emptyForm() {
     restrict_to: [] as string[],
     enabled_for_checkout: true,
   };
+}
+
+function emptyGrant() {
+  return {
+    email: "",
+    priceId: "profi_monthly",
+    days: "30",
+  };
+}
+
+interface ManualGrant {
+  id: string;
+  user_id: string;
+  email: string | null;
+  price_id: string;
+  current_period_start: string | null;
+  current_period_end: string | null;
 }
 
 export default function AdminDiscounts() {
