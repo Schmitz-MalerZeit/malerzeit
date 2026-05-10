@@ -604,6 +604,7 @@ export default function QuoteNew() {
           {tr("Ohne Antworten fortfahren", "Continue without answers")}
         </Button>
       </div>
+      <AddonPurchaseDialog open={addonDialogOpen} onOpenChange={setAddonDialogOpen} contextLine={addonDialogContext} />
     </AppShell>
   );
 }
