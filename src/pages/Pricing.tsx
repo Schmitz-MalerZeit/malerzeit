@@ -9,6 +9,7 @@ import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { isNativeApp } from "@/lib/platform";
+import { ConfirmPurchaseDialog } from "@/components/ConfirmPurchaseDialog";
 
 type TierId = "starter" | "profi" | "profiplus";
 type Tier = {
@@ -34,6 +35,7 @@ export default function Pricing() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const [discountCode, setDiscountCode] = useState<string>("");
+  const [pendingTier, setPendingTier] = useState<Tier | null>(null);
 
   useEffect(() => {
     const c = searchParams.get("code");
@@ -53,8 +55,12 @@ export default function Pricing() {
   const fmt = (n: number) =>
     n.toLocaleString(locale, { style: "currency", currency: "EUR" });
 
-  const buy = async (tier: Tier) => {
+  const requestBuy = (tier: Tier) => {
     if (!user) { nav("/auth"); return; }
+    setPendingTier(tier);
+  };
+
+  const buy = async (tier: Tier) => {
     const priceId = `${tier.id}_${billing}`;
     setBusyId(priceId);
     try {
@@ -78,10 +84,21 @@ export default function Pricing() {
           nav("/billing");
         }
       } else {
-        await openCheckout({ priceId, customerEmail: user.email, userId: user.id, discountCode: discountCode || undefined });
+        await openCheckout({ priceId, customerEmail: user!.email, userId: user!.id, discountCode: discountCode || undefined });
       }
     } finally { setBusyId(null); }
   };
+
+  const confirmBuy = () => {
+    const tier = pendingTier;
+    setPendingTier(null);
+    if (tier) void buy(tier);
+  };
+
+  const hasActiveSub = !!(sub.subscription &&
+    ["active", "trialing", "past_due"].includes(sub.subscription.status) &&
+    !sub.subscription.cancel_at_period_end);
+
 
   return (
     <AppShell title={t("pricing.title")}>
@@ -254,7 +271,7 @@ export default function Pricing() {
                   </div>
                 ) : (
                   <Button
-                    onClick={() => buy(tier)}
+                    onClick={() => requestBuy(tier)}
                     disabled={loading || isCurrent}
                     className={`w-full h-11 ${tier.highlight ? "gradient-primary text-primary-foreground border-0" : ""}`}
                     variant={tier.highlight ? "default" : "outline"}
@@ -279,6 +296,28 @@ export default function Pricing() {
           <p className="pt-1">{t("pricing.cancelFooter")}</p>
         </div>
       </div>
+      <ConfirmPurchaseDialog
+        open={pendingTier !== null}
+        onOpenChange={(o) => { if (!o) setPendingTier(null); }}
+        title={hasActiveSub
+          ? t("pricing.confirmSwitchTitle", { defaultValue: "Tarifwechsel bestätigen" })
+          : t("pricing.confirmBuyTitle", { defaultValue: "Kostenpflichtigen Tarif bestätigen" })}
+        itemLabel={pendingTier
+          ? `${t(`pricing.tiers.${pendingTier.id}.name`)} (${billing === "monthly" ? t("pricing.monthly") : t("pricing.yearly")})`
+          : ""}
+        priceLabel={pendingTier
+          ? (billing === "monthly"
+              ? `${fmt(pendingTier.monthly)} ${t("pricing.perMonth")}`
+              : `${fmt(pendingTier.yearly)} / ${t("pricing.yearly")}`)
+          : ""}
+        note={hasActiveSub
+          ? t("pricing.confirmSwitchNote", { defaultValue: "Der Wechsel erfolgt sofort. Paddle berechnet die Differenz anteilig." })
+          : (billing === "yearly"
+              ? t("pricing.confirmBuyNoteYearly", { defaultValue: "Jährliche Zahlung. Verlängert sich automatisch, jederzeit kündbar." })
+              : t("pricing.confirmBuyNoteMonthly", { defaultValue: "Monatliche Zahlung. Verlängert sich automatisch, jederzeit kündbar." }))}
+        discountCode={!hasActiveSub ? discountCode || undefined : undefined}
+        onConfirm={confirmBuy}
+      />
     </AppShell>
   );
 }

@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useNavigate } from "react-router-dom";
 import { useTr } from "@/lib/tr";
+import { ConfirmPurchaseDialog } from "@/components/ConfirmPurchaseDialog";
 
 interface Props {
   open: boolean;
@@ -24,13 +25,21 @@ export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) 
   const tr = useTr();
   const { openCheckout } = usePaddleCheckout();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pending, setPending] = useState<typeof PACKAGES[number] | null>(null);
 
-  const buy = async (priceId: string) => {
+  const requestBuy = (pkg: typeof PACKAGES[number]) => {
     if (!user) { nav("/auth"); return; }
-    setBusyId(priceId);
+    setPending(pkg);
+  };
+
+  const confirmBuy = async () => {
+    if (!pending || !user) return;
+    const pkg = pending;
+    setPending(null);
+    setBusyId(pkg.priceId);
     try {
       await openCheckout({
-        priceId,
+        priceId: pkg.priceId,
         customerEmail: user.email,
         userId: user.id,
         successUrl: `${window.location.origin}/billing?addon=success`,
@@ -59,7 +68,7 @@ export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) 
             <button
               key={pkg.priceId}
               type="button"
-              onClick={() => buy(pkg.priceId)}
+              onClick={() => requestBuy(pkg)}
               disabled={busyId !== null}
               className={`w-full text-left rounded-xl border p-4 transition-base hover:border-primary hover:bg-primary/5 disabled:opacity-60 ${
                 pkg.recommended ? "border-primary/40 bg-primary/[0.03]" : "border-border bg-card"
@@ -100,6 +109,18 @@ export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) 
           </Button>
         </DialogFooter>
       </DialogContent>
+      <ConfirmPurchaseDialog
+        open={pending !== null}
+        onOpenChange={(o) => { if (!o) setPending(null); }}
+        title={tr("Kauf bestätigen", "Confirm purchase")}
+        itemLabel={pending ? `${pending.pdfs} ${tr("zusätzliche PDFs", "extra PDFs")}` : ""}
+        priceLabel={pending ? `${pending.price} ${tr("einmalig", "one-time")}` : ""}
+        note={tr(
+          "Einmalige Zahlung. Die zusätzlichen PDFs gelten bis zum Ende des aktuellen Abrechnungszeitraums.",
+          "One-time payment. Extra PDFs are valid until the end of the current billing period.",
+        )}
+        onConfirm={confirmBuy}
+      />
     </Dialog>
   );
 }
