@@ -15,20 +15,20 @@ import { toast } from "sonner";
 type Env = "sandbox" | "live";
 
 interface Discount {
-  id: string;
-  status: string;
-  description: string;
-  type: "percentage" | "flat" | "flat_per_seat";
-  amount: string;
-  currency_code?: string | null;
-  code?: string | null;
-  enabled_for_checkout: boolean;
-  recur: boolean;
-  maximum_recurring_intervals?: number | null;
-  usage_limit?: number | null;
+  id: string;                          // promotion code id (promo_...)
+  code: string;
+  status: "active" | "archived" | string;
+  percent_off: number | null;
+  amount_off: number | null;
+  currency: string | null;
+  duration: "once" | "repeating" | "forever";
+  duration_in_months?: number | null;
+  name: string | null;
   times_used: number;
-  restrict_to?: string[] | null;
-  expires_at?: string | null;
+  usage_limit: number | null;
+  expires_at: string | null;
+  restrict_to_products?: string[] | null;
+  created_at: string;
 }
 
 interface ManualGrant {
