@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useNavigate } from "react-router-dom";
 import { useTr } from "@/lib/tr";
+import { ConfirmPurchaseDialog } from "@/components/ConfirmPurchaseDialog";
 
 interface Props {
   open: boolean;
