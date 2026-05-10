@@ -140,7 +140,7 @@
   "pricing": {
     "title": "Plans",
     "heading": "Choose your plan",
-    "sub": "Fair cancellation terms. No hidden fees.",
+    "sub": "Rolling month from purchase day. Fair cancellation terms. No hidden fees.",
     "trialTitle": "Free trial",
     "trialBody": "Still <1>{{left}} of {{limit}} trial PDFs</1> left. Pick a plan afterwards to keep generating PDFs.",
     "trialUsedTitle": "Trial PDFs used up",
