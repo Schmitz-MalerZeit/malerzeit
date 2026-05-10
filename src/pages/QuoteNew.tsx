@@ -576,6 +576,7 @@ export default function QuoteNew() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <AddonPurchaseDialog open={addonDialogOpen} onOpenChange={setAddonDialogOpen} contextLine={addonDialogContext} />
       </AppShell>
     );
   }
