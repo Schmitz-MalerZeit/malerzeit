@@ -82,8 +82,10 @@ export default function Billing() {
   };
 
   useEffect(() => {
-    if (params.get("checkout") === "success") {
-      toast.success(t("billing.checkoutSuccess"));
+    if (params.get("checkout") === "success" || params.get("addon") === "success") {
+      toast.success(params.get("addon") === "success"
+        ? t("billing.addonSuccess", { defaultValue: "Zusätzliche PDFs verbucht." })
+        : t("billing.checkoutSuccess"));
       const id = setInterval(() => sub.refresh(), 2000);
       setTimeout(() => clearInterval(id), 12000);
     }
@@ -95,12 +97,8 @@ export default function Billing() {
       setTxLoading(true);
       const { data, error } = await supabase.functions.invoke("list-transactions");
       if (cancelled) return;
-      if (error) {
-        console.error(error);
-        setTxs([]);
-      } else {
-        setTxs((data?.transactions ?? []) as Tx[]);
-      }
+      if (error) { console.error(error); setTxs([]); }
+      else { setTxs((data?.transactions ?? []) as Tx[]); }
       setTxLoading(false);
     })();
     return () => { cancelled = true; };
@@ -109,11 +107,30 @@ export default function Billing() {
   const openPortal = async () => {
     setPortalLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
+      const { getPaddleEnvironment } = await import("@/lib/paddle");
+      const { data, error } = await supabase.functions.invoke("customer-portal", {
+        body: { environment: getPaddleEnvironment() },
+      });
       if (error || !data?.url) throw new Error("Portal nicht verfügbar");
       window.open(data.url, "_blank");
     } catch (e: any) { toast.error(e.message); }
     finally { setPortalLoading(false); }
+  };
+
+  const [reactivating, setReactivating] = useState(false);
+  const reactivate = async () => {
+    setReactivating(true);
+    try {
+      const { getPaddleEnvironment } = await import("@/lib/paddle");
+      const { data, error } = await supabase.functions.invoke("change-subscription", {
+        body: { action: "reactivate", environment: getPaddleEnvironment() },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "error");
+      toast.success(t("billing.reactivateSuccess", { defaultValue: "Kündigung zurückgenommen – dein Abo läuft weiter." }));
+      await sub.refresh();
+    } catch {
+      toast.error(t("billing.reactivateFailed", { defaultValue: "Reaktivierung fehlgeschlagen" }));
+    } finally { setReactivating(false); }
   };
 
   if (sub.loading) return <AppShell title={t("billing.title")}><div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div></AppShell>;
