@@ -15,20 +15,20 @@ import { toast } from "sonner";
 type Env = "sandbox" | "live";
 
 interface Discount {
-  id: string;
-  status: string;
-  description: string;
-  type: "percentage" | "flat" | "flat_per_seat";
-  amount: string;
-  currency_code?: string | null;
-  code?: string | null;
-  enabled_for_checkout: boolean;
-  recur: boolean;
-  maximum_recurring_intervals?: number | null;
-  usage_limit?: number | null;
+  id: string;                          // promotion code id (promo_...)
+  code: string;
+  status: "active" | "archived" | string;
+  percent_off: number | null;
+  amount_off: number | null;
+  currency: string | null;
+  duration: "once" | "repeating" | "forever";
+  duration_in_months?: number | null;
+  name: string | null;
   times_used: number;
-  restrict_to?: string[] | null;
-  expires_at?: string | null;
+  usage_limit: number | null;
+  expires_at: string | null;
+  restrict_to_products?: string[] | null;
+  created_at: string;
 }
 
 interface ManualGrant {
@@ -86,10 +86,10 @@ interface Affiliate {
   notes: string | null;
   commission_percent: number;
   discount_code: string;
-  paddle_discount_id: string;
+  stripe_promotion_code_id: string;
   environment: string;
   archived: boolean;
-  paddle_status?: string | null;
+  status?: string | null;
   times_used?: number;
   usage_limit?: number | null;
 }
@@ -240,33 +240,22 @@ export default function AdminDiscounts() {
     setSubmitting(true);
     const payload: any = {
       code: form.code.trim().toUpperCase(),
-      description: form.description.trim(),
-      type: "percentage",
-      amount: String(pct),
-      enabled_for_checkout: form.enabled_for_checkout,
+      name: form.description.trim(),
+      percent_off: pct,
       recur: form.recur,
     };
     if (form.recur && form.maximum_recurring_intervals)
       payload.maximum_recurring_intervals = Number(form.maximum_recurring_intervals);
-    if (form.usage_limit) payload.usage_limit = Number(form.usage_limit);
+    if (form.usage_limit) payload.max_redemptions = Number(form.usage_limit);
     if (form.expires_at) payload.expires_at = new Date(form.expires_at).toISOString();
-    if (form.restrict_to.length > 0) {
-      const resolved: string[] = [];
-      for (const ext of form.restrict_to) {
-        const { data } = await supabase.functions.invoke("get-paddle-price", {
-          body: { priceId: ext, environment: env },
-        });
-        if (data?.paddleId) resolved.push(data.paddleId);
-      }
-      payload.restrict_to = resolved;
-    }
+    if (form.restrict_to.length > 0) payload.restrict_to_lookups = form.restrict_to;
 
     const { data, error } = await supabase.functions.invoke("admin-discounts", {
       body: { action: "create", environment: env, payload },
     });
     setSubmitting(false);
     if (error || data?.error) {
-      toast.error("Anlegen fehlgeschlagen: " + (data?.error?.detail || data?.error || error?.message));
+      toast.error("Anlegen fehlgeschlagen: " + (data?.error || error?.message));
       return;
     }
     toast.success("Code angelegt");
@@ -456,13 +445,13 @@ export default function AdminDiscounts() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono font-bold text-base">{d.code || "(kein Code)"}</span>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-secondary">{d.status}</span>
-                          {d.recur && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">recurring</span>}
+                          {d.duration !== "once" && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{d.duration}{d.duration_in_months ? ` ${d.duration_in_months}M` : ""}</span>}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">{d.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{d.name}</p>
                         <p className="text-sm mt-1">
-                          {d.type === "percentage"
-                            ? `${d.amount} %`
-                            : `${(Number(d.amount) / 100).toFixed(2)} ${d.currency_code}`}
+                          {d.percent_off != null
+                            ? `${d.percent_off} %`
+                            : `${((d.amount_off ?? 0) / 100).toFixed(2)} ${(d.currency ?? "eur").toUpperCase()}`}
                           {" · "}Einlösungen: <strong>{d.times_used}</strong>{d.usage_limit ? ` / ${d.usage_limit}` : ""}
                           {d.expires_at && <> · läuft ab: {new Date(d.expires_at).toLocaleDateString("de-DE")}</>}
                         </p>
@@ -498,7 +487,7 @@ export default function AdminDiscounts() {
                 <Gift className="h-4 w-4" /> Nutzer manuell freischalten ({env === "sandbox" ? "Test" : "Live"})
               </h2>
               <p className="text-xs text-muted-foreground">
-                Schaltet vollen App-Zugang ohne Bezahlung frei. Endet automatisch nach Ablauf — keine Abbuchung, kein Paddle-Checkout.
+                Schaltet vollen App-Zugang ohne Bezahlung frei. Endet automatisch nach Ablauf — keine Abbuchung, kein Stripe-Checkout.
               </p>
 
               <div className="space-y-1.5">
@@ -581,7 +570,7 @@ export default function AdminDiscounts() {
                 <Users className="h-4 w-4" /> Neuen Affiliate / Influencer anlegen ({env === "sandbox" ? "Test" : "Live"})
               </h2>
               <p className="text-xs text-muted-foreground">
-                Legt automatisch einen einmaligen Paddle-Rabattcode an (gilt nur beim Erstkauf, verlängert sich nicht). Du verwaltest die Provision intern – Auszahlung erfolgt manuell anhand der Statistik unten.
+                Legt automatisch einen einmaligen Stripe-Rabattcode an (gilt nur beim Erstkauf, verlängert sich nicht). Du verwaltest die Provision intern – Auszahlung erfolgt manuell anhand der Statistik unten.
               </p>
 
               <div className="grid grid-cols-2 gap-3">

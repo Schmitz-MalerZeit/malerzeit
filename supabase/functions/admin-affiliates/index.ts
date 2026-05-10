@@ -1,17 +1,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { gatewayFetch, type PaddleEnv } from '../_shared/paddle.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
+import {
+  getStripeClient,
+  resolvePrice,
+  corsHeaders,
+  json,
+  type StripeEnv,
+} from '../_shared/stripe.ts';
 
 interface CreateBody {
   name: string;
@@ -21,17 +15,6 @@ interface CreateBody {
   discount_code: string;
   discount_percent: number;
   restrict_to_external?: string[];
-}
-
-async function resolveExternalIds(env: PaddleEnv, externalIds: string[]): Promise<string[]> {
-  const out: string[] = [];
-  for (const ext of externalIds) {
-    const r = await gatewayFetch(env, `/prices?external_id=${encodeURIComponent(ext)}`);
-    const j = await r.json();
-    const id = j?.data?.[0]?.id;
-    if (id) out.push(id);
-  }
-  return out;
 }
 
 Deno.serve(async (req) => {
@@ -56,40 +39,38 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const action = body?.action as string;
-    const env = (body?.environment ?? 'sandbox') as PaddleEnv;
-    if (env !== 'sandbox' && env !== 'live') return json({ error: 'invalid_environment' }, 400);
+    const env: StripeEnv = body?.environment === 'live' ? 'live' : 'sandbox';
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
+    const stripe = getStripeClient(env);
 
     if (action === 'list') {
       const { data, error } = await admin
-        .from('affiliates')
-        .select('*')
+        .from('affiliates').select('*')
         .eq('environment', env)
         .order('created_at', { ascending: false });
       if (error) return json({ error: error.message }, 500);
 
-      // Enrich with current Paddle stats per discount
       const enriched = await Promise.all((data ?? []).map(async (a: any) => {
         try {
-          const dr = await gatewayFetch(env, `/discounts/${a.paddle_discount_id}`);
-          const dj = await dr.json();
-          const d = dj?.data;
+          const pc = await stripe.promotionCodes.retrieve(a.stripe_promotion_code_id);
+          const coupon = await stripe.coupons.retrieve(
+            typeof pc.coupon === 'string' ? pc.coupon : pc.coupon.id,
+          );
           return {
             ...a,
-            paddle_status: d?.status ?? null,
-            times_used: d?.times_used ?? 0,
-            usage_limit: d?.usage_limit ?? null,
-            discount_percent: d?.amount ?? null,
+            paddle_status: pc.active ? 'active' : 'archived',
+            times_used: pc.times_redeemed ?? 0,
+            usage_limit: pc.max_redemptions ?? null,
+            discount_percent: coupon.percent_off ?? null,
           };
         } catch {
           return { ...a, paddle_status: null, times_used: 0 };
         }
       }));
-
       return json({ data: enriched });
     }
 
@@ -98,28 +79,31 @@ Deno.serve(async (req) => {
       const { data: aff } = await admin.from('affiliates').select('*').eq('id', id).maybeSingle();
       if (!aff) return json({ error: 'not_found' }, 404);
 
-      // List completed transactions that used this discount (paginate up to 200)
-      let after: string | undefined;
+      // Count successful charges via promotion code metadata is not directly possible;
+      // use coupon's times_redeemed and sum the charges that referenced this promo via
+      // checkout sessions. Simpler: list checkout sessions in last year and filter.
       let totalGross = 0;
       let txCount = 0;
-      for (let page = 0; page < 5; page++) {
-        const qs = new URLSearchParams({
-          status: 'completed',
-          per_page: '50',
-          'discount_id': aff.paddle_discount_id,
+      // Iterate completed sessions paginated
+      let starting_after: string | undefined;
+      for (let page = 0; page < 4; page++) {
+        const list = await stripe.checkout.sessions.list({
+          limit: 100,
+          starting_after,
+          expand: ['data.total_details'],
         });
-        if (after) qs.set('after', after);
-        const r = await gatewayFetch(env, `/transactions?${qs.toString()}`);
-        const j = await r.json();
-        const items = j?.data ?? [];
-        for (const t of items) {
-          // total in lowest denomination, before tax+fees? use details.totals.total
-          const total = Number(t?.details?.totals?.total ?? t?.totals?.total ?? 0);
-          totalGross += total;
+        for (const s of list.data) {
+          if (s.status !== 'complete') continue;
+          // promo code resolution: discounts → promotion_code id
+          const usedPromo = s.discounts?.some((d: any) =>
+            (typeof d.promotion_code === 'string' ? d.promotion_code : d.promotion_code?.id) === aff.stripe_promotion_code_id,
+          );
+          if (!usedPromo) continue;
+          totalGross += s.amount_total ?? 0;
           txCount += 1;
         }
-        after = j?.meta?.pagination?.next ? new URL(j.meta.pagination.next).searchParams.get('after') ?? undefined : undefined;
-        if (!after) break;
+        if (!list.has_more) break;
+        starting_after = list.data[list.data.length - 1]?.id;
       }
       const commissionDue = (totalGross * Number(aff.commission_percent)) / 100;
       return json({
@@ -141,33 +125,36 @@ Deno.serve(async (req) => {
 
       const code = p.discount_code.trim().toUpperCase();
 
-      // Resolve restrict_to externals → Paddle price IDs
-      let restrict_to: string[] | undefined;
+      // Optional restrict_to: map our internal lookup keys → Stripe product IDs
+      const productIds: string[] = [];
       if (p.restrict_to_external?.length) {
-        restrict_to = await resolveExternalIds(env, p.restrict_to_external);
+        for (const lookup of p.restrict_to_external) {
+          try {
+            const price = await resolvePrice(env, lookup);
+            const pid = typeof price.product === 'string' ? price.product : price.product.id;
+            if (pid && !productIds.includes(pid)) productIds.push(pid);
+          } catch (e) {
+            console.warn('cannot resolve restrict_to lookup', lookup, e);
+          }
+        }
       }
 
-      // Create Paddle discount: percentage, NOT recurring (one-time on first purchase)
-      const discountBody: Record<string, unknown> = {
-        description: `Affiliate ${p.name}`,
-        type: 'percentage',
-        amount: String(discountPct),
-        code,
-        enabled_for_checkout: true,
-        recur: false,
-        custom_data: { affiliate_name: p.name, commission_percent: commission },
-      };
-      if (restrict_to?.length) discountBody.restrict_to = restrict_to;
-
-      const dr = await gatewayFetch(env, '/discounts', {
-        method: 'POST',
-        body: JSON.stringify(discountBody),
+      // 1. Create coupon (one-time, percentage off)
+      const coupon = await stripe.coupons.create({
+        percent_off: discountPct,
+        duration: 'once',
+        name: `Affiliate ${p.name}`,
+        ...(productIds.length ? { applies_to: { products: productIds } } : {}),
+        metadata: { affiliate_name: p.name, commission_percent: String(commission) },
       });
-      const dj = await dr.json();
-      if (!dr.ok || !dj?.data?.id) {
-        return json({ error: 'paddle_create_failed', detail: dj }, 500);
-      }
-      const paddleId = dj.data.id as string;
+
+      // 2. Create promotion code (the human-readable code customers type)
+      const pc = await stripe.promotionCodes.create({
+        coupon: coupon.id,
+        code,
+        active: true,
+        metadata: { affiliate_name: p.name },
+      });
 
       const { data: row, error: insErr } = await admin.from('affiliates').insert({
         name: p.name.trim(),
@@ -175,7 +162,7 @@ Deno.serve(async (req) => {
         notes: p.notes?.trim() || null,
         commission_percent: commission,
         discount_code: code,
-        paddle_discount_id: paddleId,
+        stripe_promotion_code_id: pc.id,
         environment: env,
       }).select('*').maybeSingle();
 
@@ -187,11 +174,11 @@ Deno.serve(async (req) => {
       const id = body?.id as string;
       const { data: aff } = await admin.from('affiliates').select('*').eq('id', id).maybeSingle();
       if (!aff) return json({ error: 'not_found' }, 404);
-      // Archive Paddle discount too
-      await gatewayFetch(env, `/discounts/${aff.paddle_discount_id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'archived' }),
-      });
+      try {
+        await stripe.promotionCodes.update(aff.stripe_promotion_code_id, { active: false });
+      } catch (e) {
+        console.warn('promotion code deactivate failed', e);
+      }
       await admin.from('affiliates').update({ archived: true }).eq('id', id);
       return json({ ok: true });
     }

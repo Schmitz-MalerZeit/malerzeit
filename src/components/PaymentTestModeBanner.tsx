@@ -1,9 +1,9 @@
-import { getPaddleEnvironment } from "@/lib/paddle";
+import { getStripeEnvironment } from "@/lib/stripe";
 import { useTr } from "@/lib/tr";
 
 export function PaymentTestModeBanner() {
   const tr = useTr();
-  if (getPaddleEnvironment() !== "sandbox") return null;
+  if (getStripeEnvironment() !== "sandbox") return null;
   return (
     <div className="w-full bg-orange-100 border-b border-orange-300 px-4 py-2 text-center text-xs text-orange-800">
       {tr(

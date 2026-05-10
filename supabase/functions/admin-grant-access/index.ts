@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
         .from('subscriptions')
         .select('*')
         .eq('environment', environment)
-        .like('paddle_subscription_id', 'manual_%')
+        .like('stripe_subscription_id', 'manual_%')
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) return json({ error: error.message }, 500);
@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     if (action === 'revoke') {
       const id = body.id as string;
       if (!id) return json({ error: 'missing_id' }, 400);
-      const { error } = await admin.from('subscriptions').delete().eq('id', id).like('paddle_subscription_id', 'manual_%');
+      const { error } = await admin.from('subscriptions').delete().eq('id', id).like('stripe_subscription_id', 'manual_%');
       if (error) return json({ error: error.message }, 500);
       return json({ ok: true });
     }
@@ -104,8 +104,8 @@ Deno.serve(async (req) => {
       const subId = `manual_${crypto.randomUUID()}`;
       const { error } = await admin.from('subscriptions').insert({
         user_id: targetId,
-        paddle_subscription_id: subId,
-        paddle_customer_id: `manual_${targetId}`,
+        stripe_subscription_id: subId,
+        stripe_customer_id: `manual_${targetId}`,
         product_id: VALID_PRICES[priceId],
         price_id: priceId,
         status: 'active',

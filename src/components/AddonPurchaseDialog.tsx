@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useNavigate } from "react-router-dom";
 import { useTr } from "@/lib/tr";
 import { ConfirmPurchaseDialog } from "@/components/ConfirmPurchaseDialog";
@@ -23,7 +23,7 @@ export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) 
   const { user } = useAuth();
   const nav = useNavigate();
   const tr = useTr();
-  const { openCheckout } = usePaddleCheckout();
+  const { openCheckout } = useStripeCheckout();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [pending, setPending] = useState<typeof PACKAGES[number] | null>(null);
 
