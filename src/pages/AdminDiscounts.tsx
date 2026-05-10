@@ -86,10 +86,10 @@ interface Affiliate {
   notes: string | null;
   commission_percent: number;
   discount_code: string;
-  paddle_discount_id: string;
+  stripe_promotion_code_id: string;
   environment: string;
   archived: boolean;
-  paddle_status?: string | null;
+  status?: string | null;
   times_used?: number;
   usage_limit?: number | null;
 }
@@ -487,7 +487,7 @@ export default function AdminDiscounts() {
                 <Gift className="h-4 w-4" /> Nutzer manuell freischalten ({env === "sandbox" ? "Test" : "Live"})
               </h2>
               <p className="text-xs text-muted-foreground">
-                Schaltet vollen App-Zugang ohne Bezahlung frei. Endet automatisch nach Ablauf — keine Abbuchung, kein Paddle-Checkout.
+                Schaltet vollen App-Zugang ohne Bezahlung frei. Endet automatisch nach Ablauf — keine Abbuchung, kein Stripe-Checkout.
               </p>
 
               <div className="space-y-1.5">
@@ -570,7 +570,7 @@ export default function AdminDiscounts() {
                 <Users className="h-4 w-4" /> Neuen Affiliate / Influencer anlegen ({env === "sandbox" ? "Test" : "Live"})
               </h2>
               <p className="text-xs text-muted-foreground">
-                Legt automatisch einen einmaligen Paddle-Rabattcode an (gilt nur beim Erstkauf, verlängert sich nicht). Du verwaltest die Provision intern – Auszahlung erfolgt manuell anhand der Statistik unten.
+                Legt automatisch einen einmaligen Stripe-Rabattcode an (gilt nur beim Erstkauf, verlängert sich nicht). Du verwaltest die Provision intern – Auszahlung erfolgt manuell anhand der Statistik unten.
               </p>
 
               <div className="grid grid-cols-2 gap-3">
