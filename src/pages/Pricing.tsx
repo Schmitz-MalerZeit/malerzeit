@@ -64,22 +64,28 @@ export default function Pricing() {
     const priceId = `${tier.id}_${billing}`;
     setBusyId(priceId);
     try {
-      const hasActiveSub = sub.subscription &&
-        ["active", "trialing", "past_due"].includes(sub.subscription.status) &&
-        !sub.subscription.cancel_at_period_end;
+      const s = sub.subscription;
+      const pEnd = s?.current_period_end ? new Date(s.current_period_end) : null;
+      const stillInPeriod = !!pEnd && pEnd > new Date();
+      const isActiveLike = !!s && ["active", "trialing", "past_due"].includes(s.status) && !s.cancel_at_period_end;
+      // canceled-but-still-in-grace OR scheduled-cancel: reactivate instead of new checkout
+      const canReactivate = !!s && stillInPeriod && (s.cancel_at_period_end || s.status === "canceled");
 
-      if (hasActiveSub) {
-        // Switch existing subscription via Paddle API instead of creating a new one
+      if (isActiveLike || canReactivate) {
         const { supabase } = await import("@/integrations/supabase/client");
+        const { getPaddleEnvironment } = await import("@/lib/paddle");
+        const samePlan = s?.price_id === priceId;
+        const action = canReactivate && samePlan ? "reactivate" : "change";
         const { data, error } = await supabase.functions.invoke("change-subscription", {
-          body: { newPriceId: priceId },
+          body: { action, newPriceId: priceId, environment: getPaddleEnvironment() },
         });
+        const { toast } = await import("sonner");
         if (error || data?.error) {
-          const { toast } = await import("sonner");
           toast.error(t("pricing.switchFailed", { defaultValue: "Tarifwechsel fehlgeschlagen" }));
         } else {
-          const { toast } = await import("sonner");
-          toast.success(t("pricing.switchSuccess", { defaultValue: "Tarif gewechselt – anteilige Berechnung erfolgt automatisch." }));
+          toast.success(action === "reactivate"
+            ? t("pricing.reactivateSuccess", { defaultValue: "Abo reaktiviert – läuft ohne Kündigung weiter." })
+            : t("pricing.switchSuccess", { defaultValue: "Tarif gewechselt – anteilige Berechnung erfolgt automatisch." }));
           await sub.refresh();
           nav("/billing");
         }
@@ -95,9 +101,13 @@ export default function Pricing() {
     if (tier) void buy(tier);
   };
 
-  const hasActiveSub = !!(sub.subscription &&
-    ["active", "trialing", "past_due"].includes(sub.subscription.status) &&
-    !sub.subscription.cancel_at_period_end);
+  const sCur = sub.subscription;
+  const pEndCur = sCur?.current_period_end ? new Date(sCur.current_period_end) : null;
+  const stillInPeriodCur = !!pEndCur && pEndCur > new Date();
+  const hasActiveSub = !!(sCur &&
+    ["active", "trialing", "past_due"].includes(sCur.status) &&
+    !sCur.cancel_at_period_end);
+  const canReactivateAny = !!sCur && stillInPeriodCur && (sCur.cancel_at_period_end || sCur.status === "canceled");
 
 
   return (
