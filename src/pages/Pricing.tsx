@@ -296,6 +296,28 @@ export default function Pricing() {
           <p className="pt-1">{t("pricing.cancelFooter")}</p>
         </div>
       </div>
+      <ConfirmPurchaseDialog
+        open={pendingTier !== null}
+        onOpenChange={(o) => { if (!o) setPendingTier(null); }}
+        title={hasActiveSub
+          ? t("pricing.confirmSwitchTitle", { defaultValue: "Tarifwechsel bestätigen" })
+          : t("pricing.confirmBuyTitle", { defaultValue: "Kostenpflichtigen Tarif bestätigen" })}
+        itemLabel={pendingTier
+          ? `${t(`pricing.tiers.${pendingTier.id}.name`)} (${billing === "monthly" ? t("pricing.monthly") : t("pricing.yearly")})`
+          : ""}
+        priceLabel={pendingTier
+          ? (billing === "monthly"
+              ? `${fmt(pendingTier.monthly)} ${t("pricing.perMonth")}`
+              : `${fmt(pendingTier.yearly)} / ${t("pricing.yearly")}`)
+          : ""}
+        note={hasActiveSub
+          ? t("pricing.confirmSwitchNote", { defaultValue: "Der Wechsel erfolgt sofort. Paddle berechnet die Differenz anteilig." })
+          : (billing === "yearly"
+              ? t("pricing.confirmBuyNoteYearly", { defaultValue: "Jährliche Zahlung. Verlängert sich automatisch, jederzeit kündbar." })
+              : t("pricing.confirmBuyNoteMonthly", { defaultValue: "Monatliche Zahlung. Verlängert sich automatisch, jederzeit kündbar." }))}
+        discountCode={!hasActiveSub ? discountCode || undefined : undefined}
+        onConfirm={confirmBuy}
+      />
     </AppShell>
   );
 }
