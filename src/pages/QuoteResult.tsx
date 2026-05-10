@@ -143,7 +143,7 @@ export default function QuoteResult() {
     }
     setPreviewBlob(null);
     setPreviewBlobLang(null);
-    setPdfQuotaConsumed(false);
+    setPdfQuotaConsumed(quotaConsumedAfterEdit());
     // Mark as dirty: after edits the user can save again (UPDATE if a row
     // already exists, INSERT otherwise).
     setSaved(false);
@@ -204,7 +204,7 @@ export default function QuoteResult() {
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }
       setPreviewBlob(null);
       setPreviewBlobLang(null);
-      setPdfQuotaConsumed(false);
+      setPdfQuotaConsumed(quotaConsumedAfterEdit());
       setSaved(false);
       setItemsDirty(false);
       toast.success(tr("Preise neu berechnet", "Prices recalculated"));
