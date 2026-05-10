@@ -117,10 +117,18 @@ export default function Pricing() {
             </button>
           </div>
         ) : (
-          <details className="rounded-2xl bg-secondary/40 border border-border p-4 text-sm">
-            <summary className="cursor-pointer flex items-center gap-2 font-medium text-foreground">
-              <Tag className="h-4 w-4 text-primary" />
-              Rabattcode eingeben
+          <details className="group rounded-2xl bg-gradient-to-br from-accent/15 via-primary/10 to-accent/5 border-2 border-accent/40 p-4 text-sm shadow-soft ring-1 ring-accent/20">
+            <summary className="cursor-pointer flex items-center gap-2 font-semibold text-foreground list-none">
+              <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-accent/20 text-accent shrink-0">
+                <Tag className="h-4 w-4" />
+              </span>
+              <span className="flex-1">
+                Rabattcode? Jetzt eingeben & sparen
+                <span className="block text-xs font-normal text-muted-foreground mt-0.5">
+                  Hast du einen Aktions- oder Gutscheincode? Hier einlösen, bevor du einen Tarif wählst.
+                </span>
+              </span>
+              <span className="text-xs font-medium text-accent group-open:hidden shrink-0">Öffnen</span>
             </summary>
             <form
               className="mt-3 flex gap-2"
@@ -138,12 +146,12 @@ export default function Pricing() {
                 type="text"
                 autoCapitalize="characters"
                 placeholder="z.B. WELCOME20"
-                className="flex-1 h-10 px-3 rounded-md border border-input bg-background font-mono text-sm uppercase placeholder:normal-case placeholder:font-sans"
+                className="flex-1 h-10 px-3 rounded-md border-2 border-accent/40 bg-background font-mono text-sm uppercase placeholder:normal-case placeholder:font-sans focus:outline-none focus:border-accent"
               />
-              <Button type="submit" variant="outline" size="sm" className="h-10">Anwenden</Button>
+              <Button type="submit" size="sm" className="h-10 bg-accent text-accent-foreground hover:bg-accent/90">Anwenden</Button>
             </form>
             <p className="mt-2 text-xs text-muted-foreground">
-              Wird beim Bezahlvorgang automatisch eingelöst.
+              Der Rabatt wird beim Bezahlvorgang automatisch auf den gewählten Tarif angerechnet.
             </p>
           </details>
         )}
