@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     if (action === 'revoke') {
       const id = body.id as string;
       if (!id) return json({ error: 'missing_id' }, 400);
-      const { error } = await admin.from('subscriptions').delete().eq('id', id).like('paddle_subscription_id', 'manual_%');
+      const { error } = await admin.from('subscriptions').delete().eq('id', id).like('stripe_subscription_id', 'manual_%');
       if (error) return json({ error: error.message }, 500);
       return json({ ok: true });
     }
