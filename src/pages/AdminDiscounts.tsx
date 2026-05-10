@@ -154,10 +154,77 @@ export default function AdminDiscounts() {
     setGrants((data?.data ?? []) as ManualGrant[]);
   };
 
+  const loadAffiliates = async () => {
+    setAffLoading(true);
+    const { data, error } = await supabase.functions.invoke("admin-affiliates", {
+      body: { action: "list", environment: env },
+    });
+    setAffLoading(false);
+    if (error) { toast.error("Fehler beim Laden"); return; }
+    setAffiliates((data?.data ?? []) as Affiliate[]);
+    setAffStats({});
+  };
+
+  const loadAffStats = async (id: string) => {
+    setAffStats(s => ({ ...s, [id]: "loading" }));
+    const { data, error } = await supabase.functions.invoke("admin-affiliates", {
+      body: { action: "stats", environment: env, id },
+    });
+    if (error || !data) {
+      setAffStats(s => { const n = { ...s }; delete n[id]; return n; });
+      toast.error("Statistik konnte nicht geladen werden");
+      return;
+    }
+    setAffStats(s => ({ ...s, [id]: data as AffStats }));
+  };
+
+  const createAffiliate = async () => {
+    if (!affForm.name.trim() || !affForm.discount_code.trim()) {
+      toast.error("Name und Code sind Pflicht"); return;
+    }
+    const commission = Number(affForm.commission_percent);
+    const discount = Number(affForm.discount_percent);
+    if (!(commission > 0 && commission <= 100)) { toast.error("Provision 1–100%"); return; }
+    if (!(discount > 0 && discount <= 100)) { toast.error("Rabatt 1–100%"); return; }
+    setCreatingAff(true);
+    const { data, error } = await supabase.functions.invoke("admin-affiliates", {
+      body: {
+        action: "create",
+        environment: env,
+        name: affForm.name.trim(),
+        email: affForm.email.trim() || undefined,
+        notes: affForm.notes.trim() || undefined,
+        commission_percent: commission,
+        discount_code: affForm.discount_code.trim().toUpperCase(),
+        discount_percent: discount,
+        restrict_to_external: affForm.restrict_to.length ? affForm.restrict_to : undefined,
+      },
+    });
+    setCreatingAff(false);
+    if (error || data?.error) {
+      toast.error("Anlegen fehlgeschlagen: " + (data?.error?.detail?.error?.detail || data?.error || error?.message));
+      return;
+    }
+    toast.success("Affiliate angelegt");
+    setAffForm(emptyAffiliate());
+    void loadAffiliates();
+  };
+
+  const archiveAffiliate = async (id: string) => {
+    if (!confirm("Affiliate archivieren? Der Rabattcode wird ebenfalls deaktiviert.")) return;
+    const { error } = await supabase.functions.invoke("admin-affiliates", {
+      body: { action: "archive", environment: env, id },
+    });
+    if (error) return toast.error("Fehler");
+    toast.success("Archiviert");
+    void loadAffiliates();
+  };
+
   useEffect(() => {
     if (!isAdmin) return;
     if (section === "codes") void loadCodes();
-    else void loadGrants();
+    else if (section === "grants") void loadGrants();
+    else void loadAffiliates();
   }, [isAdmin, env, section]);
 
   const submit = async () => {
