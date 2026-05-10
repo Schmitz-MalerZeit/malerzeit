@@ -456,13 +456,13 @@ export default function AdminDiscounts() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono font-bold text-base">{d.code || "(kein Code)"}</span>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-secondary">{d.status}</span>
-                          {d.recur && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">recurring</span>}
+                          {d.duration !== "once" && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{d.duration}{d.duration_in_months ? ` ${d.duration_in_months}M` : ""}</span>}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">{d.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{d.name}</p>
                         <p className="text-sm mt-1">
-                          {d.type === "percentage"
-                            ? `${d.amount} %`
-                            : `${(Number(d.amount) / 100).toFixed(2)} ${d.currency_code}`}
+                          {d.percent_off != null
+                            ? `${d.percent_off} %`
+                            : `${((d.amount_off ?? 0) / 100).toFixed(2)} ${(d.currency ?? "eur").toUpperCase()}`}
                           {" · "}Einlösungen: <strong>{d.times_used}</strong>{d.usage_limit ? ` / ${d.usage_limit}` : ""}
                           {d.expires_at && <> · läuft ab: {new Date(d.expires_at).toLocaleDateString("de-DE")}</>}
                         </p>
