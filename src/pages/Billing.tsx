@@ -257,6 +257,20 @@ export default function Billing() {
               </div>
             )}
 
+            {(s.cancel_at_period_end || s.status === "canceled") && s.current_period_end && new Date(s.current_period_end) > new Date() && (
+              <div className="rounded-lg bg-accent/10 border border-accent/30 p-3 text-xs space-y-2">
+                <p className="text-foreground">
+                  {t("billing.scheduledCancelHint", {
+                    defaultValue: "Dein Abo ist gekündigt und endet am {{date}}. Du kannst die Kündigung mit einem Klick zurücknehmen.",
+                    date: new Date(s.current_period_end).toLocaleDateString(locale),
+                  })}
+                </p>
+                <Button onClick={reactivate} disabled={reactivating} size="sm" className="w-full h-9 gradient-primary text-primary-foreground border-0">
+                  {reactivating ? <Loader2 className="h-4 w-4 animate-spin" /> : t("billing.reactivate", { defaultValue: "Kündigung zurücknehmen" })}
+                </Button>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-2 pt-2">
               <Button variant="outline" onClick={() => nav("/pricing")} className="h-11">
                 {t("billing.changePlan")}
