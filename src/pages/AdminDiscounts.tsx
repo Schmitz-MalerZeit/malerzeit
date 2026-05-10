@@ -339,10 +339,11 @@ export default function AdminDiscounts() {
           </TabsList>
         </Tabs>
 
-        <Tabs value={section} onValueChange={(v) => setSection(v as "codes" | "grants")}>
-          <TabsList className="grid grid-cols-2 w-full">
+        <Tabs value={section} onValueChange={(v) => setSection(v as "codes" | "grants" | "affiliates")}>
+          <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="codes">Rabattcodes</TabsTrigger>
             <TabsTrigger value="grants">Gratis-Zugang</TabsTrigger>
+            <TabsTrigger value="affiliates">Affiliates</TabsTrigger>
           </TabsList>
 
           {/* === RABATTCODES === */}
