@@ -213,13 +213,11 @@ export default function QuoteNew() {
   // their 3 free PDFs are used up — only the actual PDF download is blocked server-side.
   const preflightLimit = (): boolean => {
     if (subState.pdfLimit > 0 && subState.pdfUsed >= subState.pdfLimit) {
-      toast.error(
-        tr(
-          `Monatslimit erreicht (${subState.pdfUsed}/${subState.pdfLimit}). Bitte upgrade deinen Tarif.`,
-          `Monthly limit reached (${subState.pdfUsed}/${subState.pdfLimit}). Please upgrade your plan.`,
-        ),
-        { action: { label: tr("Upgrade", "Upgrade"), onClick: () => nav("/pricing") } }
-      );
+      setAddonDialogContext(tr(
+        `Monatslimit erreicht (${subState.pdfUsed}/${subState.pdfLimit}). Lade jetzt zusätzliche PDFs nach oder wechsle in einen größeren Tarif.`,
+        `Monthly limit reached (${subState.pdfUsed}/${subState.pdfLimit}). Top up extra PDFs now or upgrade to a bigger plan.`,
+      ));
+      setAddonDialogOpen(true);
       return false;
     }
     return true;
