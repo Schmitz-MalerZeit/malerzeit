@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { getPaddleClient, type PaddleEnv } from '../_shared/paddle.ts';
+import { getStripeClient, type StripeEnv } from '../_shared/stripe.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,17 +26,19 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // 1) Cancel all active Paddle subscriptions
+    // 1) Cancel all active Stripe subscriptions
     const { data: subs } = await admin.from('subscriptions')
-      .select('paddle_subscription_id, environment, status')
+      .select('stripe_subscription_id, environment, status')
       .eq('user_id', user.id);
     for (const s of subs ?? []) {
       if (s.status === 'canceled') continue;
+      const subId = s.stripe_subscription_id as string;
+      if (!subId || subId.startsWith('manual_')) continue;
       try {
-        const paddle = getPaddleClient((s.environment as PaddleEnv) || 'sandbox');
-        await paddle.subscriptions.cancel(s.paddle_subscription_id as string, { effectiveFrom: 'immediately' });
+        const stripe = getStripeClient((s.environment as StripeEnv) || 'sandbox');
+        await stripe.subscriptions.cancel(subId);
       } catch (e) {
-        console.warn('cancel sub failed', s.paddle_subscription_id, e);
+        console.warn('cancel sub failed', subId, e);
       }
     }
 
