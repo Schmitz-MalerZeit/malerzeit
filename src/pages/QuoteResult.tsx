@@ -85,7 +85,13 @@ export default function QuoteResult() {
       setSavedQuoteId(parsed.savedQuoteId);
       setSaved(true);
     }
-    if (parsed?.pdf_storage_path) setLastSavedPdfPath(parsed.pdf_storage_path);
+    if (parsed?.pdf_storage_path) {
+      setLastSavedPdfPath(parsed.pdf_storage_path);
+      // Reopening an existing quote that already has a stored PDF must NOT
+      // count again toward the monthly PDF quota. Editing the quote will
+      // reset this flag via persistEdits/recalcPrices.
+      setPdfQuotaConsumed(true);
+    }
     if (parsed?.pdf_filename) setLastFilename(parsed.pdf_filename);
     supabase.from("profiles").select("*").maybeSingle().then(({ data }) => setProfile(data));
     supabase.from("user_settings").select("*").maybeSingle().then(({ data }) => setSettings(data));
