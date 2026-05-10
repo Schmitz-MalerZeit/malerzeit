@@ -25,13 +25,21 @@ export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) 
   const tr = useTr();
   const { openCheckout } = usePaddleCheckout();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pending, setPending] = useState<typeof PACKAGES[number] | null>(null);
 
-  const buy = async (priceId: string) => {
+  const requestBuy = (pkg: typeof PACKAGES[number]) => {
     if (!user) { nav("/auth"); return; }
-    setBusyId(priceId);
+    setPending(pkg);
+  };
+
+  const confirmBuy = async () => {
+    if (!pending || !user) return;
+    const pkg = pending;
+    setPending(null);
+    setBusyId(pkg.priceId);
     try {
       await openCheckout({
-        priceId,
+        priceId: pkg.priceId,
         customerEmail: user.email,
         userId: user.id,
         successUrl: `${window.location.origin}/billing?addon=success`,
