@@ -28,6 +28,11 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
 import { useTr, currentLocale } from "@/lib/tr";
 import i18n from "@/i18n";
+import {
+  initialQuotaConsumedForQuote,
+  shouldConsumeQuota,
+  quotaConsumedAfterEdit,
+} from "@/lib/pdfQuota";
 
 const fmt = (n: number) => n.toLocaleString(currentLocale(), { style: "currency", currency: "EUR" });
 
@@ -87,9 +92,10 @@ export default function QuoteResult() {
     }
     if (parsed?.pdf_storage_path) {
       setLastSavedPdfPath(parsed.pdf_storage_path);
-      // Reopening an existing quote that already has a stored PDF must NOT
-      // count again toward the monthly PDF quota. Editing the quote will
-      // reset this flag via persistEdits/recalcPrices.
+    }
+    // Reopening a quote that already has a stored PDF must NOT count again
+    // toward the monthly quota. Editing/recalc will reset this flag.
+    if (initialQuotaConsumedForQuote(parsed)) {
       setPdfQuotaConsumed(true);
     }
     if (parsed?.pdf_filename) setLastFilename(parsed.pdf_filename);
@@ -137,7 +143,7 @@ export default function QuoteResult() {
     }
     setPreviewBlob(null);
     setPreviewBlobLang(null);
-    setPdfQuotaConsumed(false);
+    setPdfQuotaConsumed(quotaConsumedAfterEdit());
     // Mark as dirty: after edits the user can save again (UPDATE if a row
     // already exists, INSERT otherwise).
     setSaved(false);
@@ -198,7 +204,7 @@ export default function QuoteResult() {
       if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); }
       setPreviewBlob(null);
       setPreviewBlobLang(null);
-      setPdfQuotaConsumed(false);
+      setPdfQuotaConsumed(quotaConsumedAfterEdit());
       setSaved(false);
       setItemsDirty(false);
       toast.success(tr("Preise neu berechnet", "Prices recalculated"));
@@ -853,7 +859,7 @@ export default function QuoteResult() {
         // 2) Quota only consumed once per quote version. If this quote was
         // already counted (freshly created OR reopened from storage), do NOT
         // count it again — only edits/recalc reset pdfQuotaConsumed.
-        if (!pdfQuotaConsumed) {
+        if (shouldConsumeQuota({ pdfQuotaConsumed })) {
           const ok = await consumeQuota();
           if (!ok) {
             // Quota errors already toast; close sheet quietly.
@@ -870,7 +876,7 @@ export default function QuoteResult() {
         setPreviewBlobLang(lang);
         setPreviewBlobUrl(url);
         await cachePdfInSession(blob);
-      } else if (!pdfQuotaConsumed) {
+      } else if (shouldConsumeQuota({ pdfQuotaConsumed })) {
         const ok = await consumeQuota();
         if (!ok) {
           window.clearInterval(buildTimer);
