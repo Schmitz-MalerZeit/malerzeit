@@ -140,7 +140,7 @@
   "pricing": {
     "title": "Tarife",
     "heading": "Wähle deinen Tarif",
-    "sub": "Faire Kündigungsfristen. Keine versteckten Kosten.",
+    "sub": "Rollierender Monat ab Kauftag. Faire Kündigungsfristen. Keine versteckten Kosten.",
     "trialTitle": "Kostenloser Test",
     "trialBody": "Noch <1>{{left}} von {{limit}} Test-PDFs</1> übrig. Wähle danach einen Tarif, um weiter PDFs zu erstellen.",
     "trialUsedTitle": "Test-PDFs aufgebraucht",
