@@ -9,6 +9,7 @@ import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { isNativeApp } from "@/lib/platform";
+import { ConfirmPurchaseDialog } from "@/components/ConfirmPurchaseDialog";
 
 type TierId = "starter" | "profi" | "profiplus";
 type Tier = {
