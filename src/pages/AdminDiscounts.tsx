@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Archive, Copy, Link2, Gift, Trash2 } from "lucide-react";
+import { Loader2, Plus, Archive, Copy, Link2, Gift, Trash2, Users, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
@@ -67,11 +67,45 @@ function emptyGrant() {
   return { email: "", priceId: "profi_monthly", days: "30" };
 }
 
+function emptyAffiliate() {
+  return {
+    name: "",
+    email: "",
+    notes: "",
+    commission_percent: "20",
+    discount_code: "",
+    discount_percent: "15",
+    restrict_to: [] as string[],
+  };
+}
+
+interface Affiliate {
+  id: string;
+  name: string;
+  email: string | null;
+  notes: string | null;
+  commission_percent: number;
+  discount_code: string;
+  paddle_discount_id: string;
+  environment: string;
+  archived: boolean;
+  paddle_status?: string | null;
+  times_used?: number;
+  usage_limit?: number | null;
+}
+
+interface AffStats {
+  transactions: number;
+  gross_total_cents: number;
+  commission_cents: number;
+  commission_percent: number;
+}
+
 export default function AdminDiscounts() {
   const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [env, setEnv] = useState<Env>("sandbox");
-  const [section, setSection] = useState<"codes" | "grants">("codes");
+  const [section, setSection] = useState<"codes" | "grants" | "affiliates">("codes");
 
   const [items, setItems] = useState<Discount[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,6 +116,12 @@ export default function AdminDiscounts() {
   const [grantsLoading, setGrantsLoading] = useState(false);
   const [grantForm, setGrantForm] = useState(emptyGrant());
   const [granting, setGranting] = useState(false);
+
+  const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
+  const [affLoading, setAffLoading] = useState(false);
+  const [affForm, setAffForm] = useState(emptyAffiliate());
+  const [creatingAff, setCreatingAff] = useState(false);
+  const [affStats, setAffStats] = useState<Record<string, AffStats | "loading">>({});
 
   useEffect(() => {
     if (!user) return;
@@ -114,10 +154,77 @@ export default function AdminDiscounts() {
     setGrants((data?.data ?? []) as ManualGrant[]);
   };
 
+  const loadAffiliates = async () => {
+    setAffLoading(true);
+    const { data, error } = await supabase.functions.invoke("admin-affiliates", {
+      body: { action: "list", environment: env },
+    });
+    setAffLoading(false);
+    if (error) { toast.error("Fehler beim Laden"); return; }
+    setAffiliates((data?.data ?? []) as Affiliate[]);
+    setAffStats({});
+  };
+
+  const loadAffStats = async (id: string) => {
+    setAffStats(s => ({ ...s, [id]: "loading" }));
+    const { data, error } = await supabase.functions.invoke("admin-affiliates", {
+      body: { action: "stats", environment: env, id },
+    });
+    if (error || !data) {
+      setAffStats(s => { const n = { ...s }; delete n[id]; return n; });
+      toast.error("Statistik konnte nicht geladen werden");
+      return;
+    }
+    setAffStats(s => ({ ...s, [id]: data as AffStats }));
+  };
+
+  const createAffiliate = async () => {
+    if (!affForm.name.trim() || !affForm.discount_code.trim()) {
+      toast.error("Name und Code sind Pflicht"); return;
+    }
+    const commission = Number(affForm.commission_percent);
+    const discount = Number(affForm.discount_percent);
+    if (!(commission > 0 && commission <= 100)) { toast.error("Provision 1–100%"); return; }
+    if (!(discount > 0 && discount <= 100)) { toast.error("Rabatt 1–100%"); return; }
+    setCreatingAff(true);
+    const { data, error } = await supabase.functions.invoke("admin-affiliates", {
+      body: {
+        action: "create",
+        environment: env,
+        name: affForm.name.trim(),
+        email: affForm.email.trim() || undefined,
+        notes: affForm.notes.trim() || undefined,
+        commission_percent: commission,
+        discount_code: affForm.discount_code.trim().toUpperCase(),
+        discount_percent: discount,
+        restrict_to_external: affForm.restrict_to.length ? affForm.restrict_to : undefined,
+      },
+    });
+    setCreatingAff(false);
+    if (error || data?.error) {
+      toast.error("Anlegen fehlgeschlagen: " + (data?.error?.detail?.error?.detail || data?.error || error?.message));
+      return;
+    }
+    toast.success("Affiliate angelegt");
+    setAffForm(emptyAffiliate());
+    void loadAffiliates();
+  };
+
+  const archiveAffiliate = async (id: string) => {
+    if (!confirm("Affiliate archivieren? Der Rabattcode wird ebenfalls deaktiviert.")) return;
+    const { error } = await supabase.functions.invoke("admin-affiliates", {
+      body: { action: "archive", environment: env, id },
+    });
+    if (error) return toast.error("Fehler");
+    toast.success("Archiviert");
+    void loadAffiliates();
+  };
+
   useEffect(() => {
     if (!isAdmin) return;
     if (section === "codes") void loadCodes();
-    else void loadGrants();
+    else if (section === "grants") void loadGrants();
+    else void loadAffiliates();
   }, [isAdmin, env, section]);
 
   const submit = async () => {
@@ -232,10 +339,11 @@ export default function AdminDiscounts() {
           </TabsList>
         </Tabs>
 
-        <Tabs value={section} onValueChange={(v) => setSection(v as "codes" | "grants")}>
-          <TabsList className="grid grid-cols-2 w-full">
+        <Tabs value={section} onValueChange={(v) => setSection(v as "codes" | "grants" | "affiliates")}>
+          <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="codes">Rabattcodes</TabsTrigger>
             <TabsTrigger value="grants">Gratis-Zugang</TabsTrigger>
+            <TabsTrigger value="affiliates">Affiliates</TabsTrigger>
           </TabsList>
 
           {/* === RABATTCODES === */}
@@ -459,6 +567,140 @@ export default function AdminDiscounts() {
                       <Button size="sm" variant="outline" onClick={() => revoke(g.id)}>
                         <Trash2 className="h-3.5 w-3.5 mr-1" /> Widerrufen
                       </Button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </TabsContent>
+
+          {/* === AFFILIATES === */}
+          <TabsContent value="affiliates" className="space-y-6 mt-6">
+            <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Users className="h-4 w-4" /> Neuen Affiliate / Influencer anlegen ({env === "sandbox" ? "Test" : "Live"})
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Legt automatisch einen einmaligen Paddle-Rabattcode an (gilt nur beim Erstkauf, verlängert sich nicht). Du verwaltest die Provision intern – Auszahlung erfolgt manuell anhand der Statistik unten.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Name *</Label>
+                  <Input value={affForm.name} onChange={(e) => setAffForm({ ...affForm, name: e.target.value })} placeholder="Maria Müller" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>E-Mail</Label>
+                  <Input type="email" value={affForm.email} onChange={(e) => setAffForm({ ...affForm, email: e.target.value })} placeholder="maria@beispiel.de" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Rabattcode (für Käufer) *</Label>
+                  <Input value={affForm.discount_code} onChange={(e) => setAffForm({ ...affForm, discount_code: e.target.value.toUpperCase() })} placeholder="MARIA15" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Rabatt für Käufer (%) *</Label>
+                  <Input type="number" min={1} max={100} value={affForm.discount_percent} onChange={(e) => setAffForm({ ...affForm, discount_percent: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Provision für Affiliate (%) *</Label>
+                <Input type="number" min={1} max={100} value={affForm.commission_percent} onChange={(e) => setAffForm({ ...affForm, commission_percent: e.target.value })} />
+                <p className="text-xs text-muted-foreground">
+                  Prozent vom Brutto-Erstkauf, den du dem Affiliate auszahlst. Wird nur intern gespeichert.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Notizen (intern)</Label>
+                <Input value={affForm.notes} onChange={(e) => setAffForm({ ...affForm, notes: e.target.value })} placeholder="Instagram-Handle, Vereinbarung, IBAN …" />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Beschränken auf Tarife (leer = alle)</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PRICE_OPTIONS.map((p) => (
+                    <label key={p.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={affForm.restrict_to.includes(p.id)}
+                        onCheckedChange={(v) => {
+                          setAffForm({
+                            ...affForm,
+                            restrict_to: v
+                              ? [...affForm.restrict_to, p.id]
+                              : affForm.restrict_to.filter((x) => x !== p.id),
+                          });
+                        }}
+                      />
+                      {p.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <Button onClick={createAffiliate} disabled={creatingAff} className="w-full">
+                {creatingAff ? <Loader2 className="h-4 w-4 animate-spin" /> : "Affiliate anlegen"}
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold">Aktive Affiliates</h2>
+                <Button variant="outline" size="sm" onClick={() => loadAffiliates()}>Aktualisieren</Button>
+              </div>
+              {affLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : affiliates.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">Noch keine Affiliates angelegt.</p>
+              ) : (
+                affiliates.map((a) => {
+                  const stats = affStats[a.id];
+                  const link = `${window.location.origin}/pricing?code=${encodeURIComponent(a.discount_code)}`;
+                  return (
+                    <div key={a.id} className={`rounded-xl border border-border bg-card p-4 space-y-3 ${a.archived ? "opacity-60" : ""}`}>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold">{a.name}</span>
+                          <span className="font-mono text-xs px-2 py-0.5 rounded-full bg-secondary">{a.discount_code}</span>
+                          {a.archived && <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">archiviert</span>}
+                        </div>
+                        {a.email && <p className="text-xs text-muted-foreground mt-0.5">{a.email}</p>}
+                        {a.notes && <p className="text-xs text-muted-foreground mt-0.5 italic">{a.notes}</p>}
+                        <p className="text-sm mt-1">
+                          Provision: <strong>{a.commission_percent}%</strong> · Einlösungen: <strong>{a.times_used ?? 0}</strong>
+                        </p>
+                      </div>
+
+                      {stats && stats !== "loading" && (
+                        <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-0.5">
+                          <p>Verkäufe (abgeschlossen): <strong>{stats.transactions}</strong></p>
+                          <p>Brutto-Umsatz: <strong>{(stats.gross_total_cents / 100).toFixed(2)} €</strong></p>
+                          <p className="text-primary">Auszuzahlende Provision: <strong>{(stats.commission_cents / 100).toFixed(2)} €</strong></p>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(a.discount_code).then(() => toast.success("Code kopiert"))}>
+                          <Copy className="h-3.5 w-3.5 mr-1" /> Code
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(link); toast.success("Link kopiert"); }}>
+                          <Link2 className="h-3.5 w-3.5 mr-1" /> Auto-Apply-Link
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => loadAffStats(a.id)} disabled={stats === "loading"}>
+                          {stats === "loading"
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                            : <BarChart3 className="h-3.5 w-3.5 mr-1" />}
+                          Provision berechnen
+                        </Button>
+                        {!a.archived && (
+                          <Button size="sm" variant="outline" onClick={() => archiveAffiliate(a.id)}>
+                            <Archive className="h-3.5 w-3.5 mr-1" /> Archivieren
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })
