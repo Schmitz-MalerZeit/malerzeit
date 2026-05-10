@@ -92,9 +92,10 @@ export default function QuoteResult() {
     }
     if (parsed?.pdf_storage_path) {
       setLastSavedPdfPath(parsed.pdf_storage_path);
-      // Reopening an existing quote that already has a stored PDF must NOT
-      // count again toward the monthly PDF quota. Editing the quote will
-      // reset this flag via persistEdits/recalcPrices.
+    }
+    // Reopening a quote that already has a stored PDF must NOT count again
+    // toward the monthly quota. Editing/recalc will reset this flag.
+    if (initialQuotaConsumedForQuote(parsed)) {
       setPdfQuotaConsumed(true);
     }
     if (parsed?.pdf_filename) setLastFilename(parsed.pdf_filename);
