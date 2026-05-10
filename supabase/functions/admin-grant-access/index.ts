@@ -104,8 +104,8 @@ Deno.serve(async (req) => {
       const subId = `manual_${crypto.randomUUID()}`;
       const { error } = await admin.from('subscriptions').insert({
         user_id: targetId,
-        paddle_subscription_id: subId,
-        paddle_customer_id: `manual_${targetId}`,
+        stripe_subscription_id: subId,
+        stripe_customer_id: `manual_${targetId}`,
         product_id: VALID_PRICES[priceId],
         price_id: priceId,
         status: 'active',
