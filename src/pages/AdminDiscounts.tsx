@@ -67,6 +67,40 @@ function emptyGrant() {
   return { email: "", priceId: "profi_monthly", days: "30" };
 }
 
+function emptyAffiliate() {
+  return {
+    name: "",
+    email: "",
+    notes: "",
+    commission_percent: "20",
+    discount_code: "",
+    discount_percent: "15",
+    restrict_to: [] as string[],
+  };
+}
+
+interface Affiliate {
+  id: string;
+  name: string;
+  email: string | null;
+  notes: string | null;
+  commission_percent: number;
+  discount_code: string;
+  paddle_discount_id: string;
+  environment: string;
+  archived: boolean;
+  paddle_status?: string | null;
+  times_used?: number;
+  usage_limit?: number | null;
+}
+
+interface AffStats {
+  transactions: number;
+  gross_total_cents: number;
+  commission_cents: number;
+  commission_percent: number;
+}
+
 export default function AdminDiscounts() {
   const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
