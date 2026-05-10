@@ -329,7 +329,7 @@ export default function Pricing() {
               : `${fmt(pendingTier.yearly)} / ${t("pricing.yearly")}`)
           : ""}
         note={hasActiveSub
-          ? t("pricing.confirmSwitchNote", { defaultValue: "Der Wechsel erfolgt sofort. Paddle berechnet die Differenz anteilig." })
+          ? t("pricing.confirmSwitchNote", { defaultValue: "Der Wechsel erfolgt sofort. Wir berechnen die Differenz anteilig." })
           : (billing === "yearly"
               ? t("pricing.confirmBuyNoteYearly", { defaultValue: "Jährliche Zahlung. Verlängert sich automatisch, jederzeit kündbar." })
               : t("pricing.confirmBuyNoteMonthly", { defaultValue: "Monatliche Zahlung. Verlängert sich automatisch, jederzeit kündbar." }))}
