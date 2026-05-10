@@ -107,9 +107,9 @@ export default function Billing() {
   const openPortal = async () => {
     setPortalLoading(true);
     try {
-      const { getPaddleEnvironment } = await import("@/lib/paddle");
+      const { getStripeEnvironment } = await import("@/lib/stripe");
       const { data, error } = await supabase.functions.invoke("customer-portal", {
-        body: { environment: getPaddleEnvironment() },
+        body: { environment: getStripeEnvironment() },
       });
       if (error || !data?.url) throw new Error("Portal nicht verfügbar");
       window.open(data.url, "_blank");
@@ -121,9 +121,9 @@ export default function Billing() {
   const reactivate = async () => {
     setReactivating(true);
     try {
-      const { getPaddleEnvironment } = await import("@/lib/paddle");
+      const { getStripeEnvironment } = await import("@/lib/stripe");
       const { data, error } = await supabase.functions.invoke("change-subscription", {
-        body: { action: "reactivate", environment: getPaddleEnvironment() },
+        body: { action: "reactivate", environment: getStripeEnvironment() },
       });
       if (error || data?.error) throw new Error(data?.error || error?.message || "error");
       toast.success(t("billing.reactivateSuccess", { defaultValue: "Kündigung zurückgenommen – dein Abo läuft weiter." }));

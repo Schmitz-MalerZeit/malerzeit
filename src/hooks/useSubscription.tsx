@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getPaddleEnvironment } from "@/lib/paddle";
+import { getStripeEnvironment } from "@/lib/stripe";
 import { useAuth } from "@/hooks/useAuth";
 
 export interface SubscriptionState {
@@ -44,7 +44,7 @@ export function useSubscription(): SubscriptionState {
   const load = async () => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
-    const env = getPaddleEnvironment();
+    const env = getStripeEnvironment();
 
     // Fetch subscription first to determine the billing-cycle period
     const { data: subRow } = await supabase.from("subscriptions").select("*")

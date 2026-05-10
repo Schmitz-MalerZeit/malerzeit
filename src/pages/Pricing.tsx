@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Loader2, Sparkles, Info, Tag } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/useAuth";
-import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { isNativeApp } from "@/lib/platform";
@@ -29,7 +29,7 @@ export default function Pricing() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const nav = useNavigate();
-  const { openCheckout, loading } = usePaddleCheckout();
+  const { openCheckout, loading } = useStripeCheckout();
   const sub = useSubscription();
   const [billing, setBilling] = useState<"monthly" | "yearly">("yearly");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -73,11 +73,11 @@ export default function Pricing() {
 
       if (isActiveLike || canReactivate) {
         const { supabase } = await import("@/integrations/supabase/client");
-        const { getPaddleEnvironment } = await import("@/lib/paddle");
+        const { getStripeEnvironment } = await import("@/lib/stripe");
         const samePlan = s?.price_id === priceId;
         const action = canReactivate && samePlan ? "reactivate" : "change";
         const { data, error } = await supabase.functions.invoke("change-subscription", {
-          body: { action, newPriceId: priceId, environment: getPaddleEnvironment() },
+          body: { action, newPriceId: priceId, environment: getStripeEnvironment() },
         });
         const { toast } = await import("sonner");
         if (error || data?.error) {
