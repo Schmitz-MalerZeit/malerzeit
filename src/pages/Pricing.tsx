@@ -35,6 +35,7 @@ export default function Pricing() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const [discountCode, setDiscountCode] = useState<string>("");
+  const [pendingTier, setPendingTier] = useState<Tier | null>(null);
 
   useEffect(() => {
     const c = searchParams.get("code");
