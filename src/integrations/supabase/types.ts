@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliates: {
+        Row: {
+          archived: boolean
+          commission_percent: number
+          created_at: string
+          discount_code: string
+          email: string | null
+          environment: string
+          id: string
+          name: string
+          notes: string | null
+          paddle_discount_id: string
+          updated_at: string
+        }
+        Insert: {
+          archived?: boolean
+          commission_percent: number
+          created_at?: string
+          discount_code: string
+          email?: string | null
+          environment: string
+          id?: string
+          name: string
+          notes?: string | null
+          paddle_discount_id: string
+          updated_at?: string
+        }
+        Update: {
+          archived?: boolean
+          commission_percent?: number
+          created_at?: string
+          discount_code?: string
+          email?: string | null
+          environment?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          paddle_discount_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hourly_rates: {
         Row: {
           created_at: string
