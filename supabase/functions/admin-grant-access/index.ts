@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
         .from('subscriptions')
         .select('*')
         .eq('environment', environment)
-        .like('paddle_subscription_id', 'manual_%')
+        .like('stripe_subscription_id', 'manual_%')
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) return json({ error: error.message }, 500);
