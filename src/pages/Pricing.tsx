@@ -55,8 +55,12 @@ export default function Pricing() {
   const fmt = (n: number) =>
     n.toLocaleString(locale, { style: "currency", currency: "EUR" });
 
-  const buy = async (tier: Tier) => {
+  const requestBuy = (tier: Tier) => {
     if (!user) { nav("/auth"); return; }
+    setPendingTier(tier);
+  };
+
+  const buy = async (tier: Tier) => {
     const priceId = `${tier.id}_${billing}`;
     setBusyId(priceId);
     try {
@@ -80,10 +84,21 @@ export default function Pricing() {
           nav("/billing");
         }
       } else {
-        await openCheckout({ priceId, customerEmail: user.email, userId: user.id, discountCode: discountCode || undefined });
+        await openCheckout({ priceId, customerEmail: user!.email, userId: user!.id, discountCode: discountCode || undefined });
       }
     } finally { setBusyId(null); }
   };
+
+  const confirmBuy = () => {
+    const tier = pendingTier;
+    setPendingTier(null);
+    if (tier) void buy(tier);
+  };
+
+  const hasActiveSub = !!(sub.subscription &&
+    ["active", "trialing", "past_due"].includes(sub.subscription.status) &&
+    !sub.subscription.cancel_at_period_end);
+
 
   return (
     <AppShell title={t("pricing.title")}>
