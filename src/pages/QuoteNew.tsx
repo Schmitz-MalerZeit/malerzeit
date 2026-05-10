@@ -116,6 +116,8 @@ export default function QuoteNew() {
   const [pastCustomers, setPastCustomers] = useState<CustomerSuggestion[]>([]);
   const [plzLookupBusy, setPlzLookupBusy] = useState(false);
   const [validatingAddress, setValidatingAddress] = useState(false);
+  const [addonDialogOpen, setAddonDialogOpen] = useState(false);
+  const [addonDialogContext, setAddonDialogContext] = useState<string | undefined>(undefined);
   const [addressMismatch, setAddressMismatch] = useState<{
     current: { postalCode: string; city: string };
     suggested: { postalCode: string; city: string };
