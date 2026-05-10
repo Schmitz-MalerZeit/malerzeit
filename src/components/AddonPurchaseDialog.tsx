@@ -68,7 +68,7 @@ export function AddonPurchaseDialog({ open, onOpenChange, contextLine }: Props) 
             <button
               key={pkg.priceId}
               type="button"
-              onClick={() => buy(pkg.priceId)}
+              onClick={() => requestBuy(pkg)}
               disabled={busyId !== null}
               className={`w-full text-left rounded-xl border p-4 transition-base hover:border-primary hover:bg-primary/5 disabled:opacity-60 ${
                 pkg.recommended ? "border-primary/40 bg-primary/[0.03]" : "border-border bg-card"
