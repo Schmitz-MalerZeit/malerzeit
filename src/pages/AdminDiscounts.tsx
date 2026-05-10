@@ -240,33 +240,22 @@ export default function AdminDiscounts() {
     setSubmitting(true);
     const payload: any = {
       code: form.code.trim().toUpperCase(),
-      description: form.description.trim(),
-      type: "percentage",
-      amount: String(pct),
-      enabled_for_checkout: form.enabled_for_checkout,
+      name: form.description.trim(),
+      percent_off: pct,
       recur: form.recur,
     };
     if (form.recur && form.maximum_recurring_intervals)
       payload.maximum_recurring_intervals = Number(form.maximum_recurring_intervals);
-    if (form.usage_limit) payload.usage_limit = Number(form.usage_limit);
+    if (form.usage_limit) payload.max_redemptions = Number(form.usage_limit);
     if (form.expires_at) payload.expires_at = new Date(form.expires_at).toISOString();
-    if (form.restrict_to.length > 0) {
-      const resolved: string[] = [];
-      for (const ext of form.restrict_to) {
-        const { data } = await supabase.functions.invoke("get-paddle-price", {
-          body: { priceId: ext, environment: env },
-        });
-        if (data?.paddleId) resolved.push(data.paddleId);
-      }
-      payload.restrict_to = resolved;
-    }
+    if (form.restrict_to.length > 0) payload.restrict_to_lookups = form.restrict_to;
 
     const { data, error } = await supabase.functions.invoke("admin-discounts", {
       body: { action: "create", environment: env, payload },
     });
     setSubmitting(false);
     if (error || data?.error) {
-      toast.error("Anlegen fehlgeschlagen: " + (data?.error?.detail || data?.error || error?.message));
+      toast.error("Anlegen fehlgeschlagen: " + (data?.error || error?.message));
       return;
     }
     toast.success("Code angelegt");
