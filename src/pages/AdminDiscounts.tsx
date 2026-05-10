@@ -105,7 +105,7 @@ export default function AdminDiscounts() {
   const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [env, setEnv] = useState<Env>("sandbox");
-  const [section, setSection] = useState<"codes" | "grants">("codes");
+  const [section, setSection] = useState<"codes" | "grants" | "affiliates">("codes");
 
   const [items, setItems] = useState<Discount[]>([]);
   const [loading, setLoading] = useState(false);
@@ -116,6 +116,12 @@ export default function AdminDiscounts() {
   const [grantsLoading, setGrantsLoading] = useState(false);
   const [grantForm, setGrantForm] = useState(emptyGrant());
   const [granting, setGranting] = useState(false);
+
+  const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
+  const [affLoading, setAffLoading] = useState(false);
+  const [affForm, setAffForm] = useState(emptyAffiliate());
+  const [creatingAff, setCreatingAff] = useState(false);
+  const [affStats, setAffStats] = useState<Record<string, AffStats | "loading">>({});
 
   useEffect(() => {
     if (!user) return;
