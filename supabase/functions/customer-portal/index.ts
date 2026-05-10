@@ -18,10 +18,16 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
+    let env: PaddleEnv | null = null;
+    try {
+      const body = await req.json();
+      if (body?.environment === 'live' || body?.environment === 'sandbox') env = body.environment;
+    } catch { /* no body */ }
+
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const { data: sub } = await admin.from('subscriptions').select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    let q = admin.from('subscriptions').select('*').eq('user_id', user.id);
+    if (env) q = q.eq('environment', env);
+    const { data: sub } = await q.order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (!sub) return new Response(JSON.stringify({ error: 'No subscription' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     const paddle = getPaddleClient(sub.environment as PaddleEnv);
