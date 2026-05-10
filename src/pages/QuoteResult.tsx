@@ -525,16 +525,20 @@ export default function QuoteResult() {
     const res = data as { ok: boolean; error?: string; limit?: number; used?: number; mode?: string };
     if (!res?.ok) {
       if (res?.error === "trial_exhausted") {
-        toast.error(tr(`Test-PDFs aufgebraucht (${res.used}/${res.limit}). Wähle einen Tarif, um weiter PDFs herunterzuladen.`, `Trial PDFs used up (${res.used}/${res.limit}). Choose a plan to keep downloading PDFs.`), {
-          action: { label: tr("Tarife", "Plans"), onClick: () => nav("/pricing") },
-        });
+        setAddonDialogContext(tr(
+          `Deine kostenlosen Test-PDFs sind aufgebraucht (${res.used}/${res.limit}). Lade jetzt zusätzliche PDFs nach oder wechsle in einen Tarif – so kannst du sofort weiterarbeiten.`,
+          `Your free trial PDFs are used up (${res.used}/${res.limit}). Top up extra PDFs now or switch to a plan to keep going right away.`,
+        ));
+        setAddonDialogOpen(true);
       } else if (res?.error === "limit_reached") {
         setAddonDialogContext(tr(`Du hast ${res.used} von ${res.limit} KI-Angeboten in diesem Monat genutzt.`, `You've used ${res.used} of ${res.limit} AI quotes this month.`));
         setAddonDialogOpen(true);
       } else if (res?.error === "no_active_plan") {
-        toast.error(tr("Kein aktiver Tarif. Bitte wähle einen Plan.", "No active plan. Please choose a plan."), {
-          action: { label: tr("Tarife", "Plans"), onClick: () => nav("/pricing") },
-        });
+        setAddonDialogContext(tr(
+          "Du hast aktuell keinen aktiven Tarif. Buche zusätzliche PDFs für sofortige Nutzung oder wähle einen passenden Tarif.",
+          "You don't have an active plan right now. Buy extra PDFs for instant use or pick a plan that fits you.",
+        ));
+        setAddonDialogOpen(true);
       } else {
         toast.error(tr("PDF-Erstellung nicht erlaubt.", "PDF creation not allowed."));
       }

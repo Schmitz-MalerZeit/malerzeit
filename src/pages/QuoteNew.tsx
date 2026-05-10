@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useTr } from "@/lib/tr";
 import { FirstVisitTip } from "@/components/FirstVisitTip";
+import { AddonPurchaseDialog } from "@/components/AddonPurchaseDialog";
 
 const appendText = (prev: string, add: string) =>
   prev.trim().length === 0 ? add : `${prev.replace(/\s+$/, "")}\n${add}`;
@@ -115,6 +116,8 @@ export default function QuoteNew() {
   const [pastCustomers, setPastCustomers] = useState<CustomerSuggestion[]>([]);
   const [plzLookupBusy, setPlzLookupBusy] = useState(false);
   const [validatingAddress, setValidatingAddress] = useState(false);
+  const [addonDialogOpen, setAddonDialogOpen] = useState(false);
+  const [addonDialogContext, setAddonDialogContext] = useState<string | undefined>(undefined);
   const [addressMismatch, setAddressMismatch] = useState<{
     current: { postalCode: string; city: string };
     suggested: { postalCode: string; city: string };
@@ -210,13 +213,11 @@ export default function QuoteNew() {
   // their 3 free PDFs are used up — only the actual PDF download is blocked server-side.
   const preflightLimit = (): boolean => {
     if (subState.pdfLimit > 0 && subState.pdfUsed >= subState.pdfLimit) {
-      toast.error(
-        tr(
-          `Monatslimit erreicht (${subState.pdfUsed}/${subState.pdfLimit}). Bitte upgrade deinen Tarif.`,
-          `Monthly limit reached (${subState.pdfUsed}/${subState.pdfLimit}). Please upgrade your plan.`,
-        ),
-        { action: { label: tr("Upgrade", "Upgrade"), onClick: () => nav("/pricing") } }
-      );
+      setAddonDialogContext(tr(
+        `Monatslimit erreicht (${subState.pdfUsed}/${subState.pdfLimit}). Lade jetzt zusätzliche PDFs nach oder wechsle in einen größeren Tarif.`,
+        `Monthly limit reached (${subState.pdfUsed}/${subState.pdfLimit}). Top up extra PDFs now or upgrade to a bigger plan.`,
+      ));
+      setAddonDialogOpen(true);
       return false;
     }
     return true;
@@ -575,6 +576,7 @@ export default function QuoteNew() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        <AddonPurchaseDialog open={addonDialogOpen} onOpenChange={setAddonDialogOpen} contextLine={addonDialogContext} />
       </AppShell>
     );
   }
@@ -603,6 +605,7 @@ export default function QuoteNew() {
           {tr("Ohne Antworten fortfahren", "Continue without answers")}
         </Button>
       </div>
+      <AddonPurchaseDialog open={addonDialogOpen} onOpenChange={setAddonDialogOpen} contextLine={addonDialogContext} />
     </AppShell>
   );
 }
