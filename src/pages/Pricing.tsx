@@ -145,7 +145,7 @@ export default function Pricing() {
               onSubmit={(e) => {
                 e.preventDefault();
                 const input = (e.currentTarget.elements.namedItem("code") as HTMLInputElement);
-                const v = input.value.trim().toUpperCase();
+                const v = input.value.trim();
                 if (!v) return;
                 setDiscountCode(v);
                 try { sessionStorage.setItem("promo_code", v); } catch {}
