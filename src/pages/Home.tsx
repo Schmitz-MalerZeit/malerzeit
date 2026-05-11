@@ -154,7 +154,13 @@ export default function Home() {
           const warn = pct >= 80 && left > 0;
           const empty = left === 0;
           const now = new Date();
-          const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0);
+          // Reset = Ende der aktuellen Abrechnungsperiode (Kauftag-Anker), nicht Monatsende.
+          const periodEnd = sub.subscription?.current_period_end
+            ? new Date(sub.subscription.current_period_end as string)
+            : null;
+          const resetDate = periodEnd && !isNaN(periodEnd.getTime())
+            ? periodEnd
+            : new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0);
           const daysLeft = Math.max(1, Math.ceil((resetDate.getTime() - now.getTime()) / 86_400_000));
           const locale = (i18n.resolvedLanguage || "de") === "en" ? "en-US" : "de-DE";
           const fmtDate = resetDate.toLocaleDateString(locale, { day: "2-digit", month: "long", year: "numeric" });
