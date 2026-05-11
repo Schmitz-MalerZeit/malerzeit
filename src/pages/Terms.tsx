@@ -19,7 +19,6 @@ export default function Terms() {
         29664 Walsrode<br />
         Deutschland<br />
         E-Mail: support@schmitz-walsrode.de<br />
-        Telefon: 05161 9491315<br />
         USt-IdNr.: DE260741375
       </p>
       <p>
