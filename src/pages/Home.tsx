@@ -212,7 +212,7 @@ export default function Home() {
                       {empty ? t("home.quotaNextOn") : t("home.quotaResetOn")}
                     </div>
                     <div className="tabular-nums">
-                      {fmtWeekday}, {fmtDate} · 00:00
+                      {fmtWeekday}, {fmtDate}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
