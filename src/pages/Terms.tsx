@@ -78,26 +78,25 @@ export default function Terms() {
         Mehrwertsteuer.
       </p>
       <p>
-        Die Bestellung wird über unseren Online-Reseller Paddle.com Market Limited
-        („Paddle") abgewickelt. <strong>Paddle ist Verkäufer (Merchant of Record) für
-        sämtliche Bestellungen.</strong> Paddle übernimmt die gesamte Zahlungsabwicklung,
-        Rechnungsstellung, Steuerabführung sowie den damit verbundenen Kundenservice und
-        bearbeitet Rückerstattungen.
+        Die Zahlungsabwicklung erfolgt über unseren Zahlungsdienstleister Stripe Payments
+        Europe, Ltd. („Stripe"). Stripe übernimmt die gesamte Zahlungsabwicklung sowie die
+        sichere Verarbeitung der Zahlungsdaten. Vertragspartner für die Bereitstellung der
+        App und Rechnungssteller bleibt der Anbieter (Christoph Schmitz, Raumwerk
+        Schmitz).
       </p>
       <p>
-        Es gelten ergänzend die <a href="https://www.paddle.com/legal/checkout-buyer-terms" target="_blank" rel="noopener noreferrer">Buyer Terms von Paddle</a>.
+        Es gelten ergänzend die <a href="https://stripe.com/de/legal/end-users" target="_blank" rel="noopener noreferrer">Nutzungsbedingungen von Stripe</a>.
         Details zu Zahlungsmethoden, Abrechnung, Steuern, Verlängerung und Kündigung von
-        Abonnements ergeben sich aus diesen Buyer Terms sowie der jeweiligen
-        Produktbeschreibung in der App.
+        Abonnements ergeben sich aus der jeweiligen Produktbeschreibung in der App sowie
+        diesen Nutzungsbedingungen.
       </p>
 
       <h2>7. Laufzeit, Verlängerung und Kündigung</h2>
       <p>
         Abonnements verlängern sich automatisch um die jeweils gewählte Laufzeit (z. B.
         monatlich oder jährlich), sofern sie nicht vor Ablauf der jeweiligen Periode
-        gekündigt werden. Die Kündigung kann jederzeit über das Kundenportal von Paddle
-        unter <a href="https://paddle.net" target="_blank" rel="noopener noreferrer">paddle.net</a> oder
-        in den Konto-Einstellungen der App erfolgen. Nach einer Kündigung bleibt der
+        gekündigt werden. Die Kündigung kann jederzeit in den Konto-Einstellungen der App
+        (Bereich „Abo & Rechnungen") erfolgen. Nach einer Kündigung bleibt der
         Zugang bis zum Ende der bereits bezahlten Periode bestehen.
       </p>
 
