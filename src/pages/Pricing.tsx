@@ -154,9 +154,8 @@ export default function Pricing() {
               <input
                 name="code"
                 type="text"
-                autoCapitalize="characters"
                 placeholder="z.B. WELCOME20"
-                className="flex-1 h-10 px-3 rounded-md border-2 border-accent/40 bg-background font-mono text-sm uppercase placeholder:normal-case placeholder:font-sans focus:outline-none focus:border-accent"
+                className="flex-1 h-10 px-3 rounded-md border-2 border-accent/40 bg-background font-mono text-sm focus:outline-none focus:border-accent"
               />
               <Button type="submit" size="sm" className="h-10 bg-accent text-accent-foreground hover:bg-accent/90">Anwenden</Button>
             </form>
