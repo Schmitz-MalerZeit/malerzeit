@@ -40,7 +40,7 @@ export default function Pricing() {
   useEffect(() => {
     const c = searchParams.get("code");
     if (c) {
-      const v = c.trim().toUpperCase();
+      const v = c.trim();
       setDiscountCode(v);
       try { sessionStorage.setItem("promo_code", v); } catch {}
     } else {
