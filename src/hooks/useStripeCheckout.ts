@@ -2,6 +2,14 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 
+const isEmbeddedPreview = () => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+};
+
 /**
  * Opens a Stripe Checkout session by calling the create-checkout-session
  * edge function and redirecting the browser to the returned hosted page.
@@ -17,6 +25,9 @@ export function useStripeCheckout() {
     discountCode?: string;
   }) => {
     setLoading(true);
+    const checkoutWindow = isEmbeddedPreview()
+      ? window.open("about:blank", "_blank", "noopener,noreferrer")
+      : null;
     try {
       const successUrl =
         options.successUrl || `${window.location.origin}/billing?checkout=success`;
@@ -35,9 +46,18 @@ export function useStripeCheckout() {
         },
       );
       if (error || !data?.url) {
+        checkoutWindow?.close();
         throw new Error(error?.message || data?.error || "checkout_failed");
       }
-      window.location.href = data.url as string;
+      const checkoutUrl = data.url as string;
+      if (checkoutWindow) {
+        checkoutWindow.location.href = checkoutUrl;
+      } else {
+        window.location.assign(checkoutUrl);
+      }
+    } catch (error) {
+      checkoutWindow?.close();
+      throw error;
     } finally {
       setLoading(false);
     }
