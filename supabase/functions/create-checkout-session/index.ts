@@ -90,6 +90,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Payment methods:
+    // - For subscriptions (EUR/DE) Stripe supports: card, link, sepa_debit, paypal.
+    // - For one-off addons we additionally allow common EU methods.
+    // Omitting payment_method_types would fall back to Dashboard settings; we list
+    // them explicitly so SEPA & co. show up regardless of dashboard config.
+    const paymentMethodTypes: string[] = isSubscription
+      ? ['card', 'link', 'sepa_debit', 'paypal']
+      : ['card', 'link', 'sepa_debit', 'paypal', 'sofort', 'giropay', 'eps', 'bancontact'];
+
     const session = await stripe.checkout.sessions.create({
       mode: isSubscription ? 'subscription' : 'payment',
       customer: customerId,
@@ -97,6 +106,7 @@ Deno.serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       locale: 'de',
+      payment_method_types: paymentMethodTypes as any,
       allow_promotion_codes: discounts ? undefined : true,
       discounts,
       metadata: { user_id: user.id, lookup_key: priceId },
