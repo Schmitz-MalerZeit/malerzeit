@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import logo from "@/assets/malerzeit-logo.png";
+import logo from "@/assets/malerzeit-logo.webp";
 
 export const Logo = ({
   size = "md",
@@ -10,10 +10,22 @@ export const Logo = ({
   showAi?: boolean;
   linkToHome?: boolean;
 }) => {
-  const dims = { sm: "h-12", md: "h-16", lg: "h-24" }[size];
+  const cfg = {
+    sm: { cls: "h-12", w: 88, h: 48 },
+    md: { cls: "h-16", w: 117, h: 64 },
+    lg: { cls: "h-24", w: 176, h: 96 },
+  }[size];
   const inner = (
     <div className="flex items-center gap-2">
-      <img src={logo} alt="MalerZeit AI Logo" className={`${dims} w-auto object-contain`} />
+      <img
+        src={logo}
+        alt="MalerZeit AI Logo"
+        width={cfg.w}
+        height={cfg.h}
+        fetchPriority="high"
+        decoding="async"
+        className={`${cfg.cls} w-auto object-contain`}
+      />
       {showAi && (
         <span className="text-xs font-bold tracking-widest text-accent uppercase self-end mb-1.5">AI</span>
       )}
