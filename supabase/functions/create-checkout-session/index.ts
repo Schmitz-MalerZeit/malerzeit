@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
       `${new URL(req.url).origin}/billing?checkout=success`;
     const cancelUrl = (body?.cancelUrl as string | undefined) ||
       `${new URL(req.url).origin}/pricing?checkout=cancelled`;
-    const promotionCode = (body?.discountCode as string | undefined)?.trim().toUpperCase() || null;
+    const promotionCode = (body?.discountCode as string | undefined)?.trim() || null;
 
     if (!priceId || !ALLOWED_PRICE_IDS.has(priceId)) {
       return json({ error: 'invalid_price' }, 400);
