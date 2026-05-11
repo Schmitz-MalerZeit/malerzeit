@@ -95,9 +95,8 @@ export default function Terms() {
       <p>
         Abonnements verlängern sich automatisch um die jeweils gewählte Laufzeit (z. B.
         monatlich oder jährlich), sofern sie nicht vor Ablauf der jeweiligen Periode
-        gekündigt werden. Die Kündigung kann jederzeit über das Kundenportal von Paddle
-        unter <a href="https://paddle.net" target="_blank" rel="noopener noreferrer">paddle.net</a> oder
-        in den Konto-Einstellungen der App erfolgen. Nach einer Kündigung bleibt der
+        gekündigt werden. Die Kündigung kann jederzeit in den Konto-Einstellungen der App
+        (Bereich „Abo & Rechnungen") erfolgen. Nach einer Kündigung bleibt der
         Zugang bis zum Ende der bereits bezahlten Periode bestehen.
       </p>
 
