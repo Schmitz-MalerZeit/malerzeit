@@ -26,7 +26,7 @@ export function useStripeCheckout() {
   }) => {
     setLoading(true);
     const checkoutWindow = isEmbeddedPreview()
-      ? window.open("about:blank", "_blank", "noopener,noreferrer")
+      ? window.open("about:blank", "_blank")
       : null;
     try {
       const successUrl =
