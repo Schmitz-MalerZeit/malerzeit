@@ -6,6 +6,28 @@ import { cn } from "@/lib/utils";
 import { voiceLock } from "@/lib/voiceLock";
 import { tr } from "@/lib/tr";
 
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((event: any) => void) | null;
+  onerror: ((event: { error?: string; message?: string }) => void) | null;
+  onend: (() => void) | null;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+
 interface VoiceInputProps {
   /** Called with the transcribed text. The component does not modify state itself. */
   onTranscript: (text: string) => void;
@@ -33,10 +55,25 @@ export function VoiceInput({
   const [otherActive, setOtherActive] = useState(false);
   const idRef = useRef<number>(voiceLock.nextId());
   const recRef = useRef<MediaRecorder | null>(null);
+  const speechRef = useRef<SpeechRecognitionLike | null>(null);
+  const speechFinalTextRef = useRef("");
+  const speechInterimTextRef = useRef("");
+  const speechErrorRef = useRef<string | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
+  const cleanupSpeech = (abort = true) => {
+    const speech = speechRef.current;
+    if (!speech) return;
+    speech.onresult = null;
+    speech.onerror = null;
+    speech.onend = null;
+    try { abort ? speech.abort() : speech.stop(); } catch { /* ignore */ }
+    speechRef.current = null;
+  };
+
   const stopAll = () => {
+    cleanupSpeech(true);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     recRef.current = null;
@@ -73,6 +110,51 @@ export function VoiceInput({
       toast.info(tr("Bitte erst die laufende Spracheingabe beenden.", "Please stop the running voice input first."));
       return;
     }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        const speech = new SpeechRecognition();
+        speechRef.current = speech;
+        speechFinalTextRef.current = "";
+        speechInterimTextRef.current = "";
+        speechErrorRef.current = null;
+        speech.lang = "de-DE";
+        speech.continuous = true;
+        speech.interimResults = true;
+        speech.maxAlternatives = 1;
+        speech.onresult = (event: any) => {
+          let finalText = speechFinalTextRef.current;
+          let interimText = "";
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const part = event.results[i]?.[0]?.transcript?.trim();
+            if (!part) continue;
+            if (event.results[i].isFinal) finalText = appendRecognizedText(finalText, part);
+            else interimText = appendRecognizedText(interimText, part);
+          }
+          speechFinalTextRef.current = finalText;
+          speechInterimTextRef.current = interimText;
+        };
+        speech.onerror = (event) => {
+          speechErrorRef.current = event.error || event.message || tr("Spracheingabe fehlgeschlagen", "Voice input failed");
+        };
+        speech.onend = () => {
+          const text = appendRecognizedText(speechFinalTextRef.current, speechInterimTextRef.current).trim();
+          speechRef.current = null;
+          setRecording(false);
+          voiceLock.release(idRef.current);
+          if (text) onTranscript(text);
+          else if (speechErrorRef.current) toast.error(speechErrorRef.current);
+          else toast.info(tr("Nichts erkannt – bitte erneut versuchen", "Nothing recognized – please try again"));
+        };
+        speech.start();
+        setRecording(true);
+        return;
+      } catch {
+        cleanupSpeech(true);
+      }
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -141,6 +223,10 @@ export function VoiceInput({
   };
 
   const stop = () => {
+    if (speechRef.current) {
+      try { speechRef.current.stop(); } catch { cleanupSpeech(true); }
+      return;
+    }
     if (recRef.current && recRef.current.state !== "inactive") recRef.current.stop();
     setRecording(false);
   };
@@ -211,4 +297,12 @@ function blobToBase64(blob: Blob): Promise<string> {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);
   });
+}
+
+function appendRecognizedText(current: string, next: string): string {
+  const a = current.trim();
+  const b = next.trim();
+  if (!a) return b;
+  if (!b) return a;
+  return `${a} ${b}`;
 }
