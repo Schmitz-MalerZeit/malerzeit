@@ -85,6 +85,17 @@ export function VoiceInput({
       recRef.current = rec;
       chunksRef.current = [];
       rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      // Falls iOS die Aufnahme von außen beendet (Statusleiste antippen, anderer Anruf,
+      // Hintergrund-Wechsel), feuert MediaRecorder.onstop nicht zuverlässig. Wir hängen
+      // uns deshalb an das 'ended'-Event des Audio-Tracks und stoßen den Stop manuell an.
+      stream.getAudioTracks().forEach((t) => {
+        t.addEventListener("ended", () => {
+          if (recRef.current && recRef.current.state !== "inactive") {
+            try { recRef.current.stop(); } catch { /* ignore */ }
+          }
+          setRecording(false);
+        });
+      });
       rec.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
         stopAll();
@@ -136,6 +147,19 @@ export function VoiceInput({
 
   const onClick = () => (recording ? stop() : start());
 
+  // iOS-PWA-Fix: Wenn der Cursor in einem Input/Textarea steht und der Nutzer auf den
+  // Mikro-Button tippt, "frisst" iOS den ersten Tap, um die Tastatur zu schließen
+  // (Input verliert Fokus). Erst der zweite Tap löst dann tatsächlich den onClick aus.
+  // Lösung: pointerdown abfangen, default verhindern – damit das Input den Fokus behält
+  // und der erste Tap direkt als Klick zählt (Gesture-Chain für getUserMedia bleibt erhalten).
+  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    // Nur Touch/Pen abfangen – auf Desktop normales Klick-Verhalten beibehalten,
+    // damit Buttons mit Tab/Space weiter fokussierbar bleiben.
+    if (e.pointerType === "touch" || e.pointerType === "pen") {
+      e.preventDefault();
+    }
+  };
+
   const sizes = size === "md" ? "h-10 w-10" : "h-8 w-8";
   const icon = size === "md" ? "h-4 w-4" : "h-3.5 w-3.5";
 
@@ -146,6 +170,8 @@ export function VoiceInput({
     <button
       type="button"
       onClick={onClick}
+      onPointerDown={onPointerDown}
+      style={{ touchAction: "manipulation" }}
       disabled={isDisabled}
       title={recording
         ? tr("Aufnahme stoppen", "Stop recording")
