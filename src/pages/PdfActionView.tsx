@@ -144,13 +144,9 @@ export default function PdfActionView() {
 
   const sendWhatsapp = async () => {
     if (!options) return;
-    // Bevorzugt das native Teilen-Sheet mit echtem PDF-Anhang ohne Caption,
-    // damit kein zusätzlicher Storage-Link in WhatsApp gepostet wird.
-    if (await sharePdf()) return;
-    // Fallback: wa.me ohne Text – damit nur der WhatsApp-Chat geöffnet wird
-    // und der Nutzer die PDF manuell anhängen kann.
-    const fallback = options.whatsappPhone ? `https://wa.me/${options.whatsappPhone}` : "https://wa.me/";
-    window.open(fallback, "_blank", "noopener,noreferrer");
+    // Direkt WhatsApp mit vorgefülltem Text öffnen – die PDF kann der Nutzer
+    // anschließend bei Bedarf über den "Teilen"-Button als Anhang nachreichen.
+    window.open(waUrl, "_blank", "noopener,noreferrer");
   };
 
   const goBack = () => {
