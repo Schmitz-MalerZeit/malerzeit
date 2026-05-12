@@ -55,18 +55,6 @@ export default function PdfActionView() {
 
   const downloadPdf = async () => {
     if (!options) return;
-    const isIOS = (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !("MSStream" in window);
-    if (isIOS) {
-      const link = document.createElement("a");
-      link.href = options.url;
-      link.download = options.fileName;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      return;
-    }
     setBusy(true);
     try {
       const blob = await fetchPdfBlob();
