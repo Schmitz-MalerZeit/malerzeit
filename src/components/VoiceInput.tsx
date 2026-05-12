@@ -147,6 +147,19 @@ export function VoiceInput({
 
   const onClick = () => (recording ? stop() : start());
 
+  // iOS-PWA-Fix: Wenn der Cursor in einem Input/Textarea steht und der Nutzer auf den
+  // Mikro-Button tippt, "frisst" iOS den ersten Tap, um die Tastatur zu schließen
+  // (Input verliert Fokus). Erst der zweite Tap löst dann tatsächlich den onClick aus.
+  // Lösung: pointerdown abfangen, default verhindern – damit das Input den Fokus behält
+  // und der erste Tap direkt als Klick zählt (Gesture-Chain für getUserMedia bleibt erhalten).
+  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    // Nur Touch/Pen abfangen – auf Desktop normales Klick-Verhalten beibehalten,
+    // damit Buttons mit Tab/Space weiter fokussierbar bleiben.
+    if (e.pointerType === "touch" || e.pointerType === "pen") {
+      e.preventDefault();
+    }
+  };
+
   const sizes = size === "md" ? "h-10 w-10" : "h-8 w-8";
   const icon = size === "md" ? "h-4 w-4" : "h-3.5 w-3.5";
 
