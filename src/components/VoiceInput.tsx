@@ -223,6 +223,10 @@ export function VoiceInput({
   };
 
   const stop = () => {
+    if (speechRef.current) {
+      try { speechRef.current.stop(); } catch { cleanupSpeech(true); }
+      return;
+    }
     if (recRef.current && recRef.current.state !== "inactive") recRef.current.stop();
     setRecording(false);
   };
