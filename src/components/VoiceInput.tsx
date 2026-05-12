@@ -170,6 +170,8 @@ export function VoiceInput({
     <button
       type="button"
       onClick={onClick}
+      onPointerDown={onPointerDown}
+      style={{ touchAction: "manipulation" }}
       disabled={isDisabled}
       title={recording
         ? tr("Aufnahme stoppen", "Stop recording")
