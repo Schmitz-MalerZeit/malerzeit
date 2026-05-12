@@ -112,7 +112,11 @@ export function VoiceInput({
           voiceLock.release(idRef.current);
         }
       };
-      rec.start();
+      // timeslice = 1000ms: ondataavailable feuert jede Sekunde, damit auch
+      // sehr lange Aufnahmen (Nutzer spricht parallel mit Kunde) verlustfrei
+      // gepuffert werden, falls das System die MediaRecorder-Session vorzeitig
+      // beendet (z. B. iOS bei Hintergrund/Lock).
+      rec.start(1000);
       setRecording(true);
     } catch (e: any) {
       toast.error(
