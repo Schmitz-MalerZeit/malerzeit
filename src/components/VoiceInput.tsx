@@ -85,6 +85,17 @@ export function VoiceInput({
       recRef.current = rec;
       chunksRef.current = [];
       rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      // Falls iOS die Aufnahme von außen beendet (Statusleiste antippen, anderer Anruf,
+      // Hintergrund-Wechsel), feuert MediaRecorder.onstop nicht zuverlässig. Wir hängen
+      // uns deshalb an das 'ended'-Event des Audio-Tracks und stoßen den Stop manuell an.
+      stream.getAudioTracks().forEach((t) => {
+        t.addEventListener("ended", () => {
+          if (recRef.current && recRef.current.state !== "inactive") {
+            try { recRef.current.stop(); } catch { /* ignore */ }
+          }
+          setRecording(false);
+        });
+      });
       rec.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
         stopAll();
