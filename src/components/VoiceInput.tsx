@@ -110,6 +110,51 @@ export function VoiceInput({
       toast.info(tr("Bitte erst die laufende Spracheingabe beenden.", "Please stop the running voice input first."));
       return;
     }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        const speech = new SpeechRecognition();
+        speechRef.current = speech;
+        speechFinalTextRef.current = "";
+        speechInterimTextRef.current = "";
+        speechErrorRef.current = null;
+        speech.lang = "de-DE";
+        speech.continuous = true;
+        speech.interimResults = true;
+        speech.maxAlternatives = 1;
+        speech.onresult = (event: any) => {
+          let finalText = speechFinalTextRef.current;
+          let interimText = "";
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const part = event.results[i]?.[0]?.transcript?.trim();
+            if (!part) continue;
+            if (event.results[i].isFinal) finalText = appendText(finalText, part);
+            else interimText = appendText(interimText, part);
+          }
+          speechFinalTextRef.current = finalText;
+          speechInterimTextRef.current = interimText;
+        };
+        speech.onerror = (event) => {
+          speechErrorRef.current = event.error || event.message || tr("Spracheingabe fehlgeschlagen", "Voice input failed");
+        };
+        speech.onend = () => {
+          const text = appendText(speechFinalTextRef.current, speechInterimTextRef.current).trim();
+          speechRef.current = null;
+          setRecording(false);
+          voiceLock.release(idRef.current);
+          if (text) onTranscript(text);
+          else if (speechErrorRef.current) toast.error(speechErrorRef.current);
+          else toast.info(tr("Nichts erkannt – bitte erneut versuchen", "Nothing recognized – please try again"));
+        };
+        speech.start();
+        setRecording(true);
+        return;
+      } catch {
+        cleanupSpeech(true);
+      }
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
