@@ -6,6 +6,28 @@ import { cn } from "@/lib/utils";
 import { voiceLock } from "@/lib/voiceLock";
 import { tr } from "@/lib/tr";
 
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((event: any) => void) | null;
+  onerror: ((event: { error?: string; message?: string }) => void) | null;
+  onend: (() => void) | null;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+
 interface VoiceInputProps {
   /** Called with the transcribed text. The component does not modify state itself. */
   onTranscript: (text: string) => void;
@@ -33,10 +55,25 @@ export function VoiceInput({
   const [otherActive, setOtherActive] = useState(false);
   const idRef = useRef<number>(voiceLock.nextId());
   const recRef = useRef<MediaRecorder | null>(null);
+  const speechRef = useRef<SpeechRecognitionLike | null>(null);
+  const speechFinalTextRef = useRef("");
+  const speechInterimTextRef = useRef("");
+  const speechErrorRef = useRef<string | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
+  const cleanupSpeech = (abort = true) => {
+    const speech = speechRef.current;
+    if (!speech) return;
+    speech.onresult = null;
+    speech.onerror = null;
+    speech.onend = null;
+    try { abort ? speech.abort() : speech.stop(); } catch { /* ignore */ }
+    speechRef.current = null;
+  };
+
   const stopAll = () => {
+    cleanupSpeech(true);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     recRef.current = null;
