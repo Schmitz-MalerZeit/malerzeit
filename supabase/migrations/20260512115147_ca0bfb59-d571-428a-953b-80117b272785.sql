@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS seen_tips jsonb NOT NULL DEFAULT '{}'::jsonb;

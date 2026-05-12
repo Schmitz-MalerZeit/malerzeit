@@ -164,6 +164,7 @@ export type Database = {
           logo_url: string | null
           phone: string | null
           postal_code: string | null
+          seen_tips: Json
           signatory_name: string | null
           trial_ends_at: string | null
           updated_at: string
@@ -184,6 +185,7 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          seen_tips?: Json
           signatory_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
@@ -204,6 +206,7 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          seen_tips?: Json
           signatory_name?: string | null
           trial_ends_at?: string | null
           updated_at?: string
