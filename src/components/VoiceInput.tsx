@@ -129,8 +129,8 @@ export function VoiceInput({
           for (let i = event.resultIndex; i < event.results.length; i += 1) {
             const part = event.results[i]?.[0]?.transcript?.trim();
             if (!part) continue;
-            if (event.results[i].isFinal) finalText = appendText(finalText, part);
-            else interimText = appendText(interimText, part);
+            if (event.results[i].isFinal) finalText = appendRecognizedText(finalText, part);
+            else interimText = appendRecognizedText(interimText, part);
           }
           speechFinalTextRef.current = finalText;
           speechInterimTextRef.current = interimText;
@@ -139,7 +139,7 @@ export function VoiceInput({
           speechErrorRef.current = event.error || event.message || tr("Spracheingabe fehlgeschlagen", "Voice input failed");
         };
         speech.onend = () => {
-          const text = appendText(speechFinalTextRef.current, speechInterimTextRef.current).trim();
+          const text = appendRecognizedText(speechFinalTextRef.current, speechInterimTextRef.current).trim();
           speechRef.current = null;
           setRecording(false);
           voiceLock.release(idRef.current);
@@ -293,4 +293,12 @@ function blobToBase64(blob: Blob): Promise<string> {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);
   });
+}
+
+function appendRecognizedText(current: string, next: string): string {
+  const a = current.trim();
+  const b = next.trim();
+  if (!a) return b;
+  if (!b) return a;
+  return `${a} ${b}`;
 }
