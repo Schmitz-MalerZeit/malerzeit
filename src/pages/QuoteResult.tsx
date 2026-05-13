@@ -70,11 +70,12 @@ export default function QuoteResult() {
   const [addDlg, setAddDlg] = useState<{
     open: boolean;
     sectionIdx: number | null;
+    itemIdx: number | null;
     description: string;
     hours: string;
     rateId: string;
     materialNet: string;
-  }>({ open: false, sectionIdx: null, description: "", hours: "", rateId: "", materialNet: "" });
+  }>({ open: false, sectionIdx: null, itemIdx: null, description: "", hours: "", rateId: "", materialNet: "" });
   const subState = useSubscription();
   const tier = getTier(subState);
   const pdfAllowed = canDownloadPdf(tier);
