@@ -359,9 +359,6 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
         doc.setFontSize(9.5);
         doc.setTextColor(90, 90, 90);
         const parts: string[] = [];
-        if (typeof sec.hours === "number" && sec.hours > 0) {
-          parts.push(`${sec.hours.toLocaleString(L.locale)} ${L.hoursUnit}`);
-        }
         if (typeof sec.net_amount === "number") parts.push(L.netLabelInline(fmt(sec.net_amount)));
         const left = `${L.subtotal} ${sec.title}` + (parts.length ? ` · ${parts.join(" · ")}` : "");
         doc.text(left, margin + 8, y + 2);
