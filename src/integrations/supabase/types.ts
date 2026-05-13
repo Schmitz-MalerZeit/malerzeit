@@ -307,6 +307,50 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_photos: {
+        Row: {
+          created_at: string
+          height: number | null
+          id: string
+          quote_id: string
+          section_id: string
+          sort_order: number
+          storage_path: string
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          quote_id: string
+          section_id: string
+          sort_order?: number
+          storage_path: string
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          quote_id?: string
+          section_id?: string
+          sort_order?: number
+          storage_path?: string
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_photos_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           created_at: string
