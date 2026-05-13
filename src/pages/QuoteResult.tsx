@@ -735,7 +735,48 @@ export default function QuoteResult() {
     // Adding an empty section doesn't change pricing → use persistEdits to avoid recalc banner.
     persistEdits({ ...data, ai: { ...data.ai, sections: next, line_items: flattenSections(next) } });
   };
-  const updateCustomerText = (value: string) => {
+
+  // Fotos-Sheet für eine Sektion öffnen. Sicherstellen, dass ein savedQuoteId
+  // existiert (silent save), damit Fotos zugeordnet werden können.
+  const openPhotosForSection = async (sIdx: number) => {
+    if (!data) return;
+    if (!photosAllowed) { setPhotosUpgradeOpen(true); return; }
+    const sec = data.ai.sections?.[sIdx];
+    if (!sec) return;
+    if (!sec.id) {
+      // sollte durch withSectionIds nicht vorkommen — Sicherheitsnetz
+      const sectionsArr = [...(data.ai.sections || [])];
+      sectionsArr[sIdx] = { ...sec, id: crypto.randomUUID() };
+      persistEdits({ ...data, ai: { ...data.ai, sections: sectionsArr } });
+    }
+    setOpeningPhotos(true);
+    try {
+      let qId = savedQuoteId;
+      if (!qId) {
+        await save(true);
+        qId = savedQuoteId;
+        // savedQuoteId wird async gesetzt – aus localStorage neu lesen falls nötig
+        if (!qId) {
+          const raw = localStorage.getItem("currentQuote");
+          if (raw) {
+            try { qId = JSON.parse(raw).savedQuoteId || null; } catch { /* ignore */ }
+          }
+        }
+      }
+      if (!qId) {
+        toast.error(tr("Bitte zuerst speichern, dann Fotos hinzufügen.", "Please save first, then add photos."));
+        return;
+      }
+      const finalSec = data.ai.sections?.[sIdx];
+      setPhotoSheet({
+        open: true,
+        sectionId: finalSec?.id || sec.id,
+        sectionTitle: finalSec?.title || tr("Bereich", "Section"),
+      });
+    } finally {
+      setOpeningPhotos(false);
+    }
+  };
     if (!data) return;
     persistEdits({ ...data, ai: { ...data.ai, customer_text: value } });
   };
