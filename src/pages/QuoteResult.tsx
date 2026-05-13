@@ -43,7 +43,16 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useSubscription } from "@/hooks/useSubscription";
-import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
+import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, canUsePhotos, getTier, REQUIRED_TIER_LABEL } from "@/lib/planFeatures";
+import { QuotePhotosSheet } from "@/components/QuotePhotosSheet";
+import {
+  withSectionIds,
+  listQuotePhotos,
+  getSignedPhotoUrl,
+  photoUrlToDataUrl,
+  type QuotePhoto,
+} from "@/lib/quotePhotos";
+import { ImageIcon } from "lucide-react";
 import { useTr, currentLocale } from "@/lib/tr";
 import i18n from "@/i18n";
 import {
