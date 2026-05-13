@@ -15,6 +15,7 @@ import {
 } from "@/lib/quotePhotos";
 import { supabase } from "@/integrations/supabase/client";
 import { useTr } from "@/lib/tr";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { QuotePhotoLightbox } from "./QuotePhotoLightbox";
 
 export function QuotePhotosSheet(props: {
