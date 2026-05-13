@@ -31,41 +31,49 @@ export function withSectionIds<T extends { id?: string; title?: string; items?: 
   }));
 }
 
-/** JPEG-Komprimierung im Browser. Max-Kante 1600 px, Qualität 0.82. */
-export async function compressImage(file: File): Promise<{ blob: Blob; width: number; height: number }> {
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image();
-    i.onload = () => resolve(i);
-    i.onerror = reject;
-    i.src = dataUrl;
-  });
-  const MAX = 1600;
-  let { naturalWidth: w, naturalHeight: h } = img;
-  if (w > MAX || h > MAX) {
-    const scale = Math.min(MAX / w, MAX / h);
-    w = Math.round(w * scale);
-    h = Math.round(h * scale);
+/** JPEG-Komprimierung im Browser. Max-Kante 1600 px, Qualität 0.82.
+ *  Bei Fehlern (z. B. HEIC, das der Browser nicht decodieren kann) wird
+ *  die Originaldatei als Fallback zurückgegeben, damit der Upload nicht scheitert. */
+export async function compressImage(file: File): Promise<{ blob: Blob; width: number; height: number; mime: string }> {
+  try {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(new Error("FileReader fehlgeschlagen"));
+      r.readAsDataURL(file);
+    });
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error("Bild konnte nicht decodiert werden (evtl. HEIC?)"));
+      i.src = dataUrl;
+    });
+    const MAX = 1600;
+    let { naturalWidth: w, naturalHeight: h } = img;
+    if (!w || !h) throw new Error("Bildgröße unbekannt");
+    if (w > MAX || h > MAX) {
+      const scale = Math.min(MAX / w, MAX / h);
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas nicht verfügbar");
+    ctx.drawImage(img, 0, 0, w, h);
+    const blob: Blob = await new Promise((resolve, reject) =>
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error("Canvas → Blob fehlgeschlagen"))),
+        "image/jpeg",
+        0.82,
+      ),
+    );
+    return { blob, width: w, height: h, mime: "image/jpeg" };
+  } catch (err) {
+    console.warn("[quotePhotos] compressImage Fallback (Original wird hochgeladen):", err);
+    return { blob: file, width: 0, height: 0, mime: file.type || "image/jpeg" };
   }
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas nicht verfügbar");
-  ctx.drawImage(img, 0, 0, w, h);
-  const blob: Blob = await new Promise((resolve, reject) =>
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error("Bild konnte nicht komprimiert werden"))),
-      "image/jpeg",
-      0.82,
-    ),
-  );
-  return { blob, width: w, height: h };
 }
 
 export async function uploadQuotePhoto(opts: {
