@@ -1577,6 +1577,7 @@ export default function QuoteResult() {
             </span>
           </div>
           {Array.isArray(ai.sections) && ai.sections.length > 0 ? (
+            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragStart={onDndStart} onDragEnd={onDndEnd}>
             <div className="space-y-5">
               {ai.sections.map((sec: any, sIdx: number) => (
                 <div key={sIdx} className="space-y-2 rounded-xl border border-border/60 bg-secondary/30 p-3">
