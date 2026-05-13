@@ -940,37 +940,44 @@ export default function QuoteResult() {
       };
     });
 
-    // Baustellen-Fotos je Sektion einbetten (jeweils das erste Foto, sortiert).
-    // Nur wenn Plan es erlaubt UND der Vorschlag bereits gespeichert ist
-    // (sonst gibt es keine quote_id, an der Fotos hängen).
+    // Baustellen-Fotos: Galerie am Ende des PDFs (eigene Seite/Seiten),
+    // gruppiert pro Raum/Sektion. Nur wenn Plan es erlaubt UND der Vorschlag
+    // bereits gespeichert ist (sonst gibt es keine quote_id).
+    const photoGallery: Array<{
+      sectionTitle: string;
+      photos: Array<{ dataUrl: string; width?: number; height?: number }>;
+    }> = [];
     if (photosAllowed && savedQuoteId) {
       try {
         const allPhotos = await listQuotePhotos(savedQuoteId);
-        const firstBySection: Record<string, QuotePhoto> = {};
+        const bySection: Record<string, QuotePhoto[]> = {};
         for (const p of allPhotos) {
-          if (!firstBySection[p.section_id]) firstBySection[p.section_id] = p;
+          (bySection[p.section_id] ||= []).push(p);
         }
-        await Promise.all(
-          scaledSections.map(async (s: any) => {
-            const sid = s?.id;
-            if (!sid) return;
-            const ph = firstBySection[sid];
-            if (!ph) return;
+        // sortierte Reihenfolge wie in den Sektionen
+        for (const s of scaledSections as any[]) {
+          const sid = s?.id;
+          if (!sid) continue;
+          const list = bySection[sid];
+          if (!list || !list.length) continue;
+          const loaded: Array<{ dataUrl: string; width?: number; height?: number }> = [];
+          for (const ph of list) {
             try {
               const url = await getSignedPhotoUrl(ph.storage_path, 60 * 5);
               const dataUrl = await photoUrlToDataUrl(url);
               if (dataUrl) {
-                s.photoDataUrl = dataUrl;
-                s.photoWidth = ph.width || undefined;
-                s.photoHeight = ph.height || undefined;
+                loaded.push({ dataUrl, width: ph.width || undefined, height: ph.height || undefined });
               }
             } catch (err) {
-              console.warn("[pdf] section photo load failed", err);
+              console.warn("[pdf] gallery photo load failed", err);
             }
-          }),
-        );
+          }
+          if (loaded.length) {
+            photoGallery.push({ sectionTitle: s.title || "", photos: loaded });
+          }
+        }
       } catch (err) {
-        console.warn("[pdf] could not load section photos", err);
+        console.warn("[pdf] could not load gallery photos", err);
       }
     }
 
@@ -1068,6 +1075,7 @@ export default function QuoteResult() {
       date: new Date().toLocaleDateString(lang === "en" ? "en-US" : "de-DE"),
       lineItems: translatedLineItems,
       sections: translatedSections,
+      photoGallery,
       net: effNet, vat: effVat, gross: effGross, vatRate: vatRate,
       validityDays: settings?.quote_validity_days ?? 14,
       closingText: resolvedClosing,
