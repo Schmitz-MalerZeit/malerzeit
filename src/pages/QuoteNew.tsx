@@ -114,6 +114,10 @@ export default function QuoteNew() {
   const [settings, setSettings] = useState({ material_markup: 15, quality_level: "standard", vat_rate: 19 });
   const [hourlyRates, setHourlyRates] = useState<{ label: string; rate: number; is_default: boolean }[]>([]);
   const [pastCustomers, setPastCustomers] = useState<CustomerSuggestion[]>([]);
+  const [savedCustomers, setSavedCustomers] = useState<{ id: string; name: string; address: string; postal_code: string; city: string; phone: string; email: string }[]>([]);
+  const [savedObjects, setSavedObjects] = useState<{ id: string; customer_id: string; label: string; address: string; postal_code: string; city: string }[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedObjectId, setSelectedObjectId] = useState<string>("");
   const [plzLookupBusy, setPlzLookupBusy] = useState(false);
   const [validatingAddress, setValidatingAddress] = useState(false);
   const [addonDialogOpen, setAddonDialogOpen] = useState(false);
@@ -140,7 +144,7 @@ export default function QuoteNew() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: s }, { data: hr }, { data: q }] = await Promise.all([
+      const [{ data: s }, { data: hr }, { data: q }, { data: cust }, { data: objs }] = await Promise.all([
         supabase.from("user_settings").select("*").maybeSingle(),
         supabase.from("hourly_rates").select("label, rate, is_default, sort_order").order("sort_order", { ascending: true }),
         supabase.from("quotes")
@@ -148,6 +152,8 @@ export default function QuoteNew() {
           .not("customer_name", "is", null)
           .order("created_at", { ascending: false })
           .limit(200),
+        supabase.from("customers").select("id, name, address, postal_code, city, phone, email").order("name", { ascending: true }),
+        supabase.from("customer_objects").select("id, customer_id, label, address, postal_code, city").order("sort_order", { ascending: true }),
       ]);
       if (s) setSettings({
         material_markup: Number(s.material_markup),
@@ -157,9 +163,27 @@ export default function QuoteNew() {
       setHourlyRates((hr || []).map((r: any) => ({
         label: r.label, rate: Number(r.rate), is_default: !!r.is_default,
       })));
-      // Deduplicate past customers by name+address (most-recent kept)
+
+      const savedList = ((cust as any[]) || []).map((r) => ({
+        id: r.id, name: r.name || "",
+        address: r.address || "", postal_code: r.postal_code || "",
+        city: r.city || "", phone: r.phone || "", email: r.email || "",
+      }));
+      setSavedCustomers(savedList);
+      setSavedObjects(((objs as any[]) || []).map((r) => ({
+        id: r.id, customer_id: r.customer_id, label: r.label || "",
+        address: r.address || "", postal_code: r.postal_code || "", city: r.city || "",
+      })));
+
+      // Build autocomplete list: saved customers first, then dedupe-merge past-quote customers.
       const seen = new Set<string>();
       const list: CustomerSuggestion[] = [];
+      for (const sc of savedList) {
+        const key = `${sc.name}|${sc.address}|${sc.postal_code}`.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        list.push({ name: sc.name, address: sc.address, postal_code: sc.postal_code, city: sc.city, phone: sc.phone, email: sc.email });
+      }
       for (const row of (q || []) as any[]) {
         const name = (row.customer_name || "").trim();
         if (!name) continue;
