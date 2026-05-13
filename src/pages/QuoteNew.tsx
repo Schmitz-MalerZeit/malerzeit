@@ -43,9 +43,9 @@ const DESCRIPTION_PLACEHOLDER_DE = `Bitte gib die Infos strukturiert ein, z. B.:
    - Decke mitstreichen
    - Innen / Bewohnt / normaler Zugang
 
-2) Eingesetztes Personal & geschätzte Stunden
-   - Maler-Geselle: 12 Std à 55 €
-   - Lehrling 3. Lehrjahr: 8 Std à 28 €
+2) Eingesetztes Personal & geschätzte Stunden (Stundenlöhne kommen automatisch aus deinen Einstellungen)
+   - Maler-Geselle: 12 Std
+   - Lehrling 3. Lehrjahr: 8 Std
 
 3) Geschätzter Materialaufwand (netto, vor Aufschlag)
    - ca. 180 € (Vlies, Farbe, Spachtel, Kleinmaterial)
