@@ -1402,6 +1402,26 @@ export default function QuoteResult() {
                             rows={1}
                             className="flex-1 min-h-[40px] text-sm resize-y"
                           />
+                          <div className="flex flex-col mt-1">
+                            <button
+                              type="button"
+                              onClick={() => moveSectionItem(sIdx, iIdx, -1)}
+                              disabled={sIdx === 0 && iIdx === 0}
+                              className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed h-4"
+                              aria-label={tr("Nach oben", "Move up")}
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveSectionItem(sIdx, iIdx, 1)}
+                              disabled={sIdx === (ai.sections.length - 1) && iIdx === sec.items.length - 1}
+                              className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed h-4"
+                              aria-label={tr("Nach unten", "Move down")}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </button>
+                          </div>
                           {calc && (
                             <button
                               type="button"
