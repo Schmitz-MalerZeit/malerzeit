@@ -1136,6 +1136,8 @@ export default function QuoteResult() {
         vat_rate: vatRate,
         estimated_hours: ai.estimated_hours,
         estimated_material: ai.estimated_material_cost,
+        estimated_labor_cost: Number(ai.pricing?.labor_cost) || 0,
+        material_cost: Number(ai.pricing?.material_cost) || 0,
         customer_name: data.customer?.name || null,
         customer_address: data.customer?.address || null,
         customer_postal_code: data.customer?.postal_code || null,
