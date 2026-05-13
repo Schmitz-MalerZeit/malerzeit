@@ -612,10 +612,7 @@ export default function QuoteResult() {
     const nextAi = { ...data.ai, sections: sectionsArr, line_items: sectionsArr.flatMap((s: any) => s.items) };
     persistEdits({ ...data, ai: nextAi });
   };
-    if (!data) return;
-    const next = (data.ai.sections || []).filter((_: any, i: number) => i !== sIdx);
-    setSections(next);
-  };
+  const removeSection = (sIdx: number) => {
   const addSection = () => {
     if (!data) return;
     const next = [...(data.ai.sections || []), { title: tr("Neuer Bereich", "New section"), items: [], calc_items: [] }];
