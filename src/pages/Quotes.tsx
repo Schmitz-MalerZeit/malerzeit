@@ -457,7 +457,7 @@ export default function Quotes() {
                   <Copy className="h-4 w-4 mr-2" /> {tr("Neue Version", "New version")}
                 </Button>
               </div>
-              <div className="mt-2 grid grid-cols-3 gap-2">
+              <div className="mt-2 grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -473,6 +473,21 @@ export default function Quotes() {
                   className={`h-9 text-xs ${q.internal_notes ? "text-primary border-primary/40" : ""}`}
                 >
                   <StickyNote className="h-3.5 w-3.5 mr-1.5" /> {tr("Notiz", "Note")}
+                </Button>
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => openPhotoSheet(q)}
+                  className={`h-9 text-xs ${photoCounts[q.id] ? "text-primary border-primary/40" : ""}`}
+                >
+                  <ImageIcon className="h-3.5 w-3.5 mr-1.5" /> {tr("Fotos", "Photos")}
+                  {photoCounts[q.id] ? (
+                    <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium">
+                      {photoCounts[q.id]}
+                    </span>
+                  ) : null}
                 </Button>
                 <Button
                   type="button"
