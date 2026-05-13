@@ -196,6 +196,10 @@ export default function QuoteResult() {
     const raw = localStorage.getItem("currentQuote");
     if (!raw) { nav("/quote/new"); return; }
     const parsed = JSON.parse(raw);
+    // Stable section IDs (für Foto-Zuordnung). Mutiert die geladenen Sections.
+    if (parsed?.ai?.sections) {
+      parsed.ai.sections = withSectionIds(parsed.ai.sections);
+    }
     setData(parsed);
     if (parsed?.savedQuoteId) {
       setSavedQuoteId(parsed.savedQuoteId);
