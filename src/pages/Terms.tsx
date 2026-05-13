@@ -1,8 +1,14 @@
 import { PublicShell } from "@/components/PublicShell";
+import { Seo } from "@/components/Seo";
 
 export default function Terms() {
   return (
     <PublicShell title="Nutzungsbedingungen">
+      <Seo
+        title="Nutzungsbedingungen – MalerZeit AI"
+        description="Allgemeine Geschäftsbedingungen für die Nutzung der App MalerZeit AI: Vertragsgrundlagen, Laufzeiten, Pflichten und Haftung."
+        path="/terms"
+      />
       <p className="text-xs uppercase tracking-wide text-muted-foreground/70">
         Allgemeine Geschäftsbedingungen für die Nutzung der App „Malerzeit"
       </p>
