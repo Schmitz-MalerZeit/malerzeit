@@ -43,9 +43,9 @@ const DESCRIPTION_PLACEHOLDER_DE = `Bitte gib die Infos strukturiert ein, z. B.:
    - Decke mitstreichen
    - Innen / Bewohnt / normaler Zugang
 
-2) Eingesetztes Personal & geschätzte Stunden
-   - Maler-Geselle: 12 Std à 55 €
-   - Lehrling 3. Lehrjahr: 8 Std à 28 €
+2) Eingesetztes Personal & geschätzte Stunden (Stundenlöhne kommen automatisch aus deinen Einstellungen)
+   - Maler-Geselle: 12 Std
+   - Lehrling 3. Lehrjahr: 8 Std
 
 3) Geschätzter Materialaufwand (netto, vor Aufschlag)
    - ca. 180 € (Vlies, Farbe, Spachtel, Kleinmaterial)
@@ -59,9 +59,9 @@ const DESCRIPTION_PLACEHOLDER_EN = `Please enter the info in a structured way, e
    - Paint ceiling as well
    - Indoor / occupied / normal access
 
-2) Crew & estimated hours
-   - Journeyman painter: 12 hrs at €55
-   - Apprentice (3rd year): 8 hrs at €28
+2) Crew & estimated hours (hourly rates come from your settings automatically)
+   - Journeyman painter: 12 hrs
+   - Apprentice (3rd year): 8 hrs
 
 3) Estimated material cost (net, before markup)
    - approx. €180 (fleece, paint, filler, small materials)
@@ -603,8 +603,8 @@ export default function QuoteNew() {
             </div>
             <p className="text-sm text-muted-foreground mb-3">
               {tr(
-                "Beschreibe die Arbeiten, das eingesetzte Personal mit Stunden und Stundenlohn sowie den geschätzten Materialaufwand. Daraus berechnet die KI deinen Preis.",
-                "Describe the work, the crew with hours and hourly rate, plus estimated material cost. The AI uses this to calculate your price.",
+                "Beschreibe die Arbeiten, das eingesetzte Personal mit Stunden und den geschätzten Materialaufwand. Stundenlöhne musst du nicht angeben – die kommen automatisch aus deinen Einstellungen.",
+                "Describe the work, the crew with hours and estimated material cost. You don't need to enter hourly rates – they come from your settings automatically.",
               )}
             </p>
             <div className="rounded-xl bg-secondary/50 border border-border p-3 mb-4 text-xs text-muted-foreground leading-relaxed">
