@@ -59,9 +59,9 @@ const DESCRIPTION_PLACEHOLDER_EN = `Please enter the info in a structured way, e
    - Paint ceiling as well
    - Indoor / occupied / normal access
 
-2) Crew & estimated hours
-   - Journeyman painter: 12 hrs at €55
-   - Apprentice (3rd year): 8 hrs at €28
+2) Crew & estimated hours (hourly rates come from your settings automatically)
+   - Journeyman painter: 12 hrs
+   - Apprentice (3rd year): 8 hrs
 
 3) Estimated material cost (net, before markup)
    - approx. €180 (fleece, paint, filler, small materials)
