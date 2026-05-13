@@ -137,8 +137,8 @@ export function QuotePhotosSheet(props: {
             <SheetTitle>{tr("Fotos", "Photos")} · {sectionTitle}</SheetTitle>
             <SheetDescription>
               {tr(
-                `Bis zu ${MAX_PHOTOS_PER_SECTION} Fotos. Das erste Foto erscheint im PDF rechts neben der Raum-Überschrift.`,
-                `Up to ${MAX_PHOTOS_PER_SECTION} photos. The first photo appears in the PDF next to the room title.`,
+                `Bis zu ${MAX_PHOTOS_PER_SECTION} Fotos pro Raum. Alle Fotos werden am Ende des PDFs als Galerie angehängt – nach Räumen gruppiert.`,
+                `Up to ${MAX_PHOTOS_PER_SECTION} photos per room. All photos are appended at the end of the PDF as a gallery, grouped by room.`,
               )}
             </SheetDescription>
           </SheetHeader>
