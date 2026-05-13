@@ -50,6 +50,11 @@ export default function QuoteResult() {
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewBlobLang, setPreviewBlobLang] = useState<"de" | "en" | null>(null);
+  const [translationCache, setTranslationCache] = useState<Record<string, {
+    line_items: string[];
+    sections: Array<{ title: string; items: string[] }>;
+    closing_text: string;
+  }>>({});
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
   const [lastFilename, setLastFilename] = useState<string>("");
   const [lastSavedPdfPath, setLastSavedPdfPath] = useState<string | null>(null);
