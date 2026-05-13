@@ -118,7 +118,23 @@ export default function Quotes() {
 
   useEffect(() => {
     supabase.from("quotes").select("*").order("created_at", { ascending: false })
-      .then(({ data }) => setItems(data || []));
+      .then(async ({ data }) => {
+        const list = data || [];
+        setItems(list);
+        // Foto-Counts en-bloc laden, damit Badges direkt erscheinen.
+        if (list.length > 0) {
+          const ids = list.map((x: any) => x.id);
+          const { data: photos } = await supabase
+            .from("quote_photos")
+            .select("quote_id")
+            .in("quote_id", ids);
+          if (Array.isArray(photos)) {
+            const counts: Record<string, number> = {};
+            for (const p of photos as any[]) counts[p.quote_id] = (counts[p.quote_id] || 0) + 1;
+            setPhotoCounts(counts);
+          }
+        }
+      });
     supabase.from("profiles").select("*").maybeSingle()
       .then(({ data }) => setProfile(data));
   }, []);
