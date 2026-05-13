@@ -1738,7 +1738,7 @@ export default function QuoteResult() {
       <Dialog open={addDlg.open} onOpenChange={(o) => setAddDlg((s) => ({ ...s, open: o }))}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{tr("Position hinzufügen", "Add item")}</DialogTitle>
+            <DialogTitle>{addDlg.itemIdx !== null ? tr("Position bearbeiten", "Edit item") : tr("Position hinzufügen", "Add item")}</DialogTitle>
             <DialogDescription>
               {tr("Stunden, Stundensatz und Materialkosten werden direkt in die Kalkulation übernommen.", "Hours, hourly rate and material cost are added to the calculation directly.")}
             </DialogDescription>
