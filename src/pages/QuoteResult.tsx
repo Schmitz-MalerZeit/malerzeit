@@ -777,6 +777,7 @@ export default function QuoteResult() {
       setOpeningPhotos(false);
     }
   };
+  const updateCustomerText = (value: string) => {
     if (!data) return;
     persistEdits({ ...data, ai: { ...data.ai, customer_text: value } });
   };
