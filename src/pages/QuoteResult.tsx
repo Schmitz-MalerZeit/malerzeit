@@ -561,7 +561,17 @@ export default function QuoteResult() {
     ai.surcharge && (ai.surcharge.mode === "percent" || ai.surcharge.mode === "amount")
       ? { mode: ai.surcharge.mode, value: Number(ai.surcharge.value) || 0 }
       : { mode: "percent", value: 0 };
-  const baseNet = Number(p.net_amount) || 0;
+  // Bevorzugt die Summe der Bereichs-Nettos als Basis, damit der Aufschlag/Nachlass
+  // proportional auf die einzelnen Positionen im PDF angewendet werden kann und
+  // die Zwischensummen je Raum mit der Endsumme zusammenpassen. Wenn keine
+  // Bereiche vorhanden sind, fallen wir auf das gespeicherte pricing.net_amount
+  // zurück.
+  const sectionsList: any[] = Array.isArray(ai.sections) ? ai.sections : [];
+  const sectionsNetSum = sectionsList.reduce(
+    (acc, s) => acc + (typeof s?.net_amount === "number" ? s.net_amount : 0),
+    0,
+  );
+  const baseNet = sectionsNetSum > 0 ? sectionsNetSum : (Number(p.net_amount) || 0);
   const vatRate = Number(p.vat_rate) || 19;
   const surchargeNet = Math.round(
     (surcharge.mode === "percent" ? baseNet * (surcharge.value / 100) : surcharge.value) * 100,
