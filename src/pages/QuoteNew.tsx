@@ -700,6 +700,13 @@ export default function QuoteNew() {
   return (
     <AppShell title={headerTitle}>
       <div className="space-y-5">
+        <button
+          type="button"
+          onClick={() => setStep("input")}
+          className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+        >
+          ← {tr("Zurück zur Eingabe (Beschreibung bearbeiten)", "Back to input (edit description)")}
+        </button>
         <p className="text-sm text-muted-foreground">
           {tr("Damit die Preisorientierung möglichst präzise wird, beantworte bitte kurz folgende Fragen:", "To make the price estimate as precise as possible, please briefly answer the following questions:")}
         </p>
