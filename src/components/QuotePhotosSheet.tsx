@@ -59,7 +59,12 @@ export function QuotePhotosSheet(props: {
   }, [open, quoteId, sectionId]);
 
   const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0 || !quoteId || !sectionId) return;
+    console.log("[QuotePhotosSheet] handleFiles", { count: files?.length, quoteId, sectionId });
+    if (!files || files.length === 0) return;
+    if (!quoteId || !sectionId) {
+      toast.error(tr("Vorschlag wird noch gespeichert – bitte kurz warten und erneut versuchen.", "Quote is still saving – please wait a moment and try again."));
+      return;
+    }
     const remaining = MAX_PHOTOS_PER_SECTION - photos.length;
     if (remaining <= 0) {
       toast.error(tr(`Maximal ${MAX_PHOTOS_PER_SECTION} Fotos pro Raum.`, `Maximum ${MAX_PHOTOS_PER_SECTION} photos per room.`));
@@ -74,22 +79,32 @@ export function QuotePhotosSheet(props: {
       const uploaded: QuotePhotoWithUrl[] = [];
       for (let i = 0; i < list.length; i++) {
         const file = list[i];
-        if (!file.type.startsWith("image/")) continue;
-        const photo = await uploadQuotePhoto({
-          userId: u.user.id,
-          quoteId,
-          sectionId,
-          file,
-          sortOrder: baseSort + i,
-        });
-        const withUrls = await attachUrlsToPhotos([photo]);
-        uploaded.push(withUrls[0]);
+        if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) {
+          console.warn("[QuotePhotosSheet] skipping non-image", file.name, file.type);
+          continue;
+        }
+        try {
+          const photo = await uploadQuotePhoto({
+            userId: u.user.id,
+            quoteId,
+            sectionId,
+            file,
+            sortOrder: baseSort + i,
+          });
+          const withUrls = await attachUrlsToPhotos([photo]);
+          uploaded.push(withUrls[0]);
+        } catch (perFileErr: any) {
+          console.error("[QuotePhotosSheet] per-file upload failed", file.name, perFileErr);
+          toast.error(`${file.name}: ${perFileErr?.message || tr("Upload fehlgeschlagen", "Upload failed")}`);
+        }
       }
+      if (uploaded.length === 0) return;
       const next = [...photos, ...uploaded];
       setPhotos(next);
       props.onCountChange?.(next.length);
       toast.success(tr(`${uploaded.length} Foto(s) hinzugefügt`, `${uploaded.length} photo(s) added`));
     } catch (e: any) {
+      console.error("[QuotePhotosSheet] handleFiles error", e);
       toast.error(e?.message || tr("Upload fehlgeschlagen", "Upload failed"));
     } finally {
       setUploading(false);
