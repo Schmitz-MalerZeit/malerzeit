@@ -2132,6 +2132,48 @@ export default function QuoteResult() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <QuotePhotosSheet
+        open={photoSheet.open}
+        onOpenChange={(o) => setPhotoSheet((s) => ({ ...s, open: o }))}
+        quoteId={savedQuoteId}
+        sectionId={photoSheet.sectionId}
+        sectionTitle={photoSheet.sectionTitle}
+        onCountChange={(n) => {
+          if (!photoSheet.sectionId) return;
+          setPhotoCounts((prev) => ({ ...prev, [photoSheet.sectionId!]: n }));
+        }}
+      />
+
+      <AlertDialog open={photosUpgradeOpen} onOpenChange={setPhotosUpgradeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <ImageIcon className="h-6 w-6 text-primary" />
+            </div>
+            <AlertDialogTitle className="text-center">
+              {tr(`Baustellen-Fotos sind ${REQUIRED_TIER_LABEL.photos}-exklusiv`, `Site photos are ${REQUIRED_TIER_LABEL.photos}-only`)}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center leading-relaxed">
+              {tr(
+                "Im Exklusiv-Tarif kannst du pro Raum bis zu 10 Fotos von der Baustelle hinzufügen. Das erste Foto erscheint im PDF rechts neben der Raum-Überschrift.",
+                "On the Exklusiv plan you can attach up to 10 site photos per room. The first photo appears in the PDF next to the room title.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:flex-col sm:space-x-0 gap-2">
+            <AlertDialogAction
+              onClick={() => { setPhotosUpgradeOpen(false); nav("/pricing"); }}
+              className="w-full h-11 gradient-primary text-primary-foreground border-0"
+            >
+              <Sparkles className="h-4 w-4 mr-2" /> {tr("Auf Exklusiv upgraden", "Upgrade to Exklusiv")}
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full h-10 mt-0">
+              {tr("Vielleicht später", "Maybe later")}
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={addDlg.open} onOpenChange={(o) => setAddDlg((s) => ({ ...s, open: o }))}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
