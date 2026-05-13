@@ -613,6 +613,10 @@ export default function QuoteResult() {
     persistEdits({ ...data, ai: nextAi });
   };
   const removeSection = (sIdx: number) => {
+    if (!data) return;
+    const next = (data.ai.sections || []).filter((_: any, i: number) => i !== sIdx);
+    setSections(next);
+  };
   const addSection = () => {
     if (!data) return;
     const next = [...(data.ai.sections || []), { title: tr("Neuer Bereich", "New section"), items: [], calc_items: [] }];
