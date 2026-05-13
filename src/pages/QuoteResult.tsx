@@ -1709,15 +1709,36 @@ export default function QuoteResult() {
                       </ul>
                     </SortableContext>
                   </SectionDropZone>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openAddDialog(sIdx)}
-                    className="h-8 text-xs"
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" /> {tr("Position", "Item")}
-                  </Button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openAddDialog(sIdx)}
+                      className="h-8 text-xs"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> {tr("Position", "Item")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openPhotosForSection(sIdx)}
+                      disabled={openingPhotos}
+                      className="h-8 text-xs"
+                    >
+                      {openingPhotos
+                        ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                        : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
+                      {tr("Fotos", "Photos")}
+                      {sec.id && photoCounts[sec.id] ? (
+                        <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium">
+                          {photoCounts[sec.id]}
+                        </span>
+                      ) : null}
+                      {!photosAllowed && <Lock className="h-3 w-3 ml-1 opacity-70" />}
+                    </Button>
+                  </div>
                   {(typeof sec.net_amount === "number" || typeof sec.gross_amount === "number") && (
                     <div className="mt-2 pt-2 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-xs">
                       <span className="text-muted-foreground">
