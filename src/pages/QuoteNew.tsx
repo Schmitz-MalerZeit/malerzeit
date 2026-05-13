@@ -603,8 +603,8 @@ export default function QuoteNew() {
             </div>
             <p className="text-sm text-muted-foreground mb-3">
               {tr(
-                "Beschreibe die Arbeiten, das eingesetzte Personal mit Stunden und Stundenlohn sowie den geschätzten Materialaufwand. Daraus berechnet die KI deinen Preis.",
-                "Describe the work, the crew with hours and hourly rate, plus estimated material cost. The AI uses this to calculate your price.",
+                "Beschreibe die Arbeiten, das eingesetzte Personal mit Stunden und den geschätzten Materialaufwand. Stundenlöhne musst du nicht angeben – die kommen automatisch aus deinen Einstellungen.",
+                "Describe the work, the crew with hours and estimated material cost. You don't need to enter hourly rates – they come from your settings automatically.",
               )}
             </p>
             <div className="rounded-xl bg-secondary/50 border border-border p-3 mb-4 text-xs text-muted-foreground leading-relaxed">
