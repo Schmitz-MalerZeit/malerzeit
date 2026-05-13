@@ -698,6 +698,19 @@ export default function Quotes() {
         onClose={() => setLightboxIdx(null)}
         onIndexChange={setLightboxIdx}
       />
+
+      <QuotePhotosSheet
+        open={!!editorSection}
+        onOpenChange={(o) => {
+          if (!o) {
+            setEditorSection(null);
+            if (photoSheetQuote) void reloadPhotosFor(photoSheetQuote.id);
+          }
+        }}
+        quoteId={photoSheetQuote?.id ?? null}
+        sectionId={editorSection?.id ?? null}
+        sectionTitle={editorSection?.title ?? ""}
+      />
     </AppShell>
   );
 }
