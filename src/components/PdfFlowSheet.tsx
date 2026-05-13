@@ -217,7 +217,13 @@ export function PdfFlowSheet({
     }
   };
 
-  /** „Teilen" – immer mit Datei-Anhang, wenn das Gerät es unterstützt. */
+  /** „Teilen" – ausschließlich mit echtem Datei-Anhang.
+   *
+   * WICHTIG: Wir teilen NIEMALS die signierte Storage-URL via `navigator.share({ url })`.
+   * Sonst lädt z. B. WhatsApp die URL selbst herunter und verschickt eine winzige
+   * „Link-Vorschau-PDF" mit dem Storage-Objekt-Namen (UUID) – genau das hat zu
+   * der zweiten leeren 1-KB-PDF im Chat geführt. Klappt der Datei-Share nicht,
+   * bieten wir stattdessen einen sauberen Download an. */
   const sharePdf = async () => {
     if (canShareFile && pdfFile) {
       try {
@@ -229,25 +235,18 @@ export function PdfFlowSheet({
         return;
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
-        console.warn("File-Share fehlgeschlagen, Fallback:", e);
+        console.warn("File-Share fehlgeschlagen, biete Download an:", e);
       }
     }
-    // Fallback: nur Link/Text teilen
-    const url = downloadUrl || state.url;
-    if (navigator.share && url) {
-      try {
-        await navigator.share({ title: state.subject || state.fileName, text: state.subject, url });
-        return;
-      } catch { return; }
+    // Kein Datei-Share möglich → sauberen Download anbieten, KEINE URL teilen.
+    if (state.pdfBlob || fetchedBlob) {
+      downloadPdfAsBlob();
+      toast.message("PDF heruntergeladen", {
+        description: "Hänge sie aus dem Download-Ordner manuell in WhatsApp / Mail an.",
+      });
+      return;
     }
-    if (url) {
-      try {
-        await navigator.clipboard.writeText(url);
-        toast.success("PDF-Link kopiert");
-        return;
-      } catch { /* ignore */ }
-    }
-    toast.error("Teilen ist auf diesem Gerät nicht verfügbar.");
+    toast.error("Teilen ist auf diesem Gerät nicht verfügbar. Bitte PDF herunterladen.");
   };
 
   /** WhatsApp – versucht zuerst echten Datei-Anhang via Share-Sheet.
