@@ -83,12 +83,17 @@ export async function uploadQuotePhoto(opts: {
   file: File;
   sortOrder?: number;
 }): Promise<QuotePhoto> {
-  const { blob, width, height } = await compressImage(opts.file);
-  const path = `${opts.userId}/${opts.quoteId}/${opts.sectionId}/${Date.now()}_${crypto.randomUUID()}.jpg`;
+  console.log("[quotePhotos] uploadQuotePhoto start", { quoteId: opts.quoteId, sectionId: opts.sectionId, fileName: opts.file.name, fileType: opts.file.type, fileSize: opts.file.size });
+  const { blob, width, height, mime } = await compressImage(opts.file);
+  const ext = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg";
+  const path = `${opts.userId}/${opts.quoteId}/${opts.sectionId}/${Date.now()}_${crypto.randomUUID()}.${ext}`;
   const { error: upErr } = await supabase.storage
     .from("quote-photos")
-    .upload(path, blob, { contentType: "image/jpeg", upsert: false });
-  if (upErr) throw upErr;
+    .upload(path, blob, { contentType: mime, upsert: false });
+  if (upErr) {
+    console.error("[quotePhotos] storage.upload error", upErr);
+    throw upErr;
+  }
   const { data, error } = await supabase
     .from("quote_photos")
     .insert({
@@ -97,16 +102,18 @@ export async function uploadQuotePhoto(opts: {
       section_id: opts.sectionId,
       storage_path: path,
       sort_order: opts.sortOrder ?? 0,
-      width,
-      height,
+      width: width || null,
+      height: height || null,
     })
     .select()
     .single();
   if (error) {
+    console.error("[quotePhotos] insert quote_photos error", error);
     // Best-effort cleanup
     await supabase.storage.from("quote-photos").remove([path]);
     throw error;
   }
+  console.log("[quotePhotos] uploadQuotePhoto ok", data?.id);
   return data as QuotePhoto;
 }
 
