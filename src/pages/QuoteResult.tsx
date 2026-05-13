@@ -43,7 +43,16 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useSubscription } from "@/hooks/useSubscription";
-import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, getTier } from "@/lib/planFeatures";
+import { canDownloadPdf, canUseLogoInPdf, canSendViaWhatsapp, canUsePhotos, getTier, REQUIRED_TIER_LABEL } from "@/lib/planFeatures";
+import { QuotePhotosSheet } from "@/components/QuotePhotosSheet";
+import {
+  withSectionIds,
+  listQuotePhotos,
+  getSignedPhotoUrl,
+  photoUrlToDataUrl,
+  type QuotePhoto,
+} from "@/lib/quotePhotos";
+import { ImageIcon } from "lucide-react";
 import { useTr, currentLocale } from "@/lib/tr";
 import i18n from "@/i18n";
 import {
@@ -168,6 +177,15 @@ export default function QuoteResult() {
   const pdfAllowed = canDownloadPdf(tier);
   const logoAllowed = canUseLogoInPdf(tier);
   const whatsappAllowed = canSendViaWhatsapp(tier);
+  const photosAllowed = canUsePhotos(tier);
+
+  // Foto-Sheet je Sektion. quoteId wird beim Öffnen via silent-save sichergestellt.
+  const [photoSheet, setPhotoSheet] = useState<{ open: boolean; sectionId: string | null; sectionTitle: string }>({
+    open: false, sectionId: null, sectionTitle: "",
+  });
+  const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
+  const [photosUpgradeOpen, setPhotosUpgradeOpen] = useState(false);
+  const [openingPhotos, setOpeningPhotos] = useState(false);
 
   // Revoke blob URL on unmount (only the in-memory URL; the base64 cache stays in sessionStorage)
   useEffect(() => {
@@ -178,6 +196,10 @@ export default function QuoteResult() {
     const raw = localStorage.getItem("currentQuote");
     if (!raw) { nav("/quote/new"); return; }
     const parsed = JSON.parse(raw);
+    // Stable section IDs (für Foto-Zuordnung). Mutiert die geladenen Sections.
+    if (parsed?.ai?.sections) {
+      parsed.ai.sections = withSectionIds(parsed.ai.sections);
+    }
     setData(parsed);
     if (parsed?.savedQuoteId) {
       setSavedQuoteId(parsed.savedQuoteId);
@@ -223,6 +245,21 @@ export default function QuoteResult() {
       }
     }
   }, [nav]);
+
+  // Foto-Zähler je Sektion neu laden, sobald savedQuoteId verfügbar (und Sheet schließt).
+  useEffect(() => {
+    if (!savedQuoteId) { setPhotoCounts({}); return; }
+    let cancelled = false;
+    listQuotePhotos(savedQuoteId)
+      .then((photos) => {
+        if (cancelled) return;
+        const counts: Record<string, number> = {};
+        for (const p of photos) counts[p.section_id] = (counts[p.section_id] || 0) + 1;
+        setPhotoCounts(counts);
+      })
+      .catch(() => { /* ignore */ });
+    return () => { cancelled = true; };
+  }, [savedQuoteId, photoSheet.open]);
 
   // Persist edits back to sessionStorage and invalidate any cached PDF so the
   // next preview/download uses the new texts.
@@ -279,9 +316,15 @@ export default function QuoteResult() {
       if ((res as any)?.error) throw new Error((res as any).error);
 
       const r: any = res;
-      const nextSections = Array.isArray(r.sections) && r.sections.length > 0
+      const rawNextSections = Array.isArray(r.sections) && r.sections.length > 0
         ? r.sections
         : sections;
+      // Stable section IDs aus den Original-Sections übernehmen (per Index),
+      // damit Foto-Zuordnungen erhalten bleiben.
+      const nextSections = rawNextSections.map((s: any, i: number) => ({
+        ...s,
+        id: sections[i]?.id || s.id || crypto.randomUUID(),
+      }));
       const nextAi = {
         ...data.ai,
         sections: nextSections,
@@ -688,9 +731,43 @@ export default function QuoteResult() {
   };
   const addSection = () => {
     if (!data) return;
-    const next = [...(data.ai.sections || []), { title: tr("Neuer Bereich", "New section"), items: [], calc_items: [] }];
+    const next = [...(data.ai.sections || []), { id: crypto.randomUUID(), title: tr("Neuer Bereich", "New section"), items: [], calc_items: [] }];
     // Adding an empty section doesn't change pricing → use persistEdits to avoid recalc banner.
     persistEdits({ ...data, ai: { ...data.ai, sections: next, line_items: flattenSections(next) } });
+  };
+
+  // Fotos-Sheet für eine Sektion öffnen. Sicherstellen, dass ein savedQuoteId
+  // existiert (silent save), damit Fotos zugeordnet werden können.
+  const openPhotosForSection = async (sIdx: number) => {
+    if (!data) return;
+    if (!photosAllowed) { setPhotosUpgradeOpen(true); return; }
+    const sec = data.ai.sections?.[sIdx];
+    if (!sec) return;
+    if (!sec.id) {
+      // sollte durch withSectionIds nicht vorkommen — Sicherheitsnetz
+      const sectionsArr = [...(data.ai.sections || [])];
+      sectionsArr[sIdx] = { ...sec, id: crypto.randomUUID() };
+      persistEdits({ ...data, ai: { ...data.ai, sections: sectionsArr } });
+    }
+    setOpeningPhotos(true);
+    try {
+      let qId = savedQuoteId;
+      if (!qId) {
+        qId = await save(true);
+      }
+      if (!qId) {
+        toast.error(tr("Bitte zuerst speichern, dann Fotos hinzufügen.", "Please save first, then add photos."));
+        return;
+      }
+      const finalSec = data.ai.sections?.[sIdx];
+      setPhotoSheet({
+        open: true,
+        sectionId: finalSec?.id || sec.id,
+        sectionTitle: finalSec?.title || tr("Bereich", "Section"),
+      });
+    } finally {
+      setOpeningPhotos(false);
+    }
   };
   const updateCustomerText = (value: string) => {
     if (!data) return;
@@ -862,6 +939,41 @@ export default function QuoteResult() {
         gross_amount: newGross,
       };
     });
+
+    // Baustellen-Fotos je Sektion einbetten (jeweils das erste Foto, sortiert).
+    // Nur wenn Plan es erlaubt UND der Vorschlag bereits gespeichert ist
+    // (sonst gibt es keine quote_id, an der Fotos hängen).
+    if (photosAllowed && savedQuoteId) {
+      try {
+        const allPhotos = await listQuotePhotos(savedQuoteId);
+        const firstBySection: Record<string, QuotePhoto> = {};
+        for (const p of allPhotos) {
+          if (!firstBySection[p.section_id]) firstBySection[p.section_id] = p;
+        }
+        await Promise.all(
+          scaledSections.map(async (s: any) => {
+            const sid = s?.id;
+            if (!sid) return;
+            const ph = firstBySection[sid];
+            if (!ph) return;
+            try {
+              const url = await getSignedPhotoUrl(ph.storage_path, 60 * 5);
+              const dataUrl = await photoUrlToDataUrl(url);
+              if (dataUrl) {
+                s.photoDataUrl = dataUrl;
+                s.photoWidth = ph.width || undefined;
+                s.photoHeight = ph.height || undefined;
+              }
+            } catch (err) {
+              console.warn("[pdf] section photo load failed", err);
+            }
+          }),
+        );
+      } catch (err) {
+        console.warn("[pdf] could not load section photos", err);
+      }
+    }
+
     // For English PDFs, translate dynamic content (sections, line items, closing text)
     // via the translate-quote edge function. The structured AI content is generated
     // in German by default; here we localize it on demand.
@@ -1183,6 +1295,7 @@ export default function QuoteResult() {
       xhr.send(blob);
     });
 
+
     const payload = {
       user_id: u.user.id,
       description: data.description,
@@ -1500,8 +1613,8 @@ export default function QuoteResult() {
   // Wenn bereits ein Datensatz existiert (savedQuoteId), wird ein UPDATE statt
   // INSERT ausgeführt – verhindert Duplikate, wenn der Nutzer nach dem
   // PDF-Erstellen noch manuell auf "Speichern" tippt.
-  const save = async (silent = false) => {
-    if (saved && !savedQuoteId) return; // already saved, nothing to update
+  const save = async (silent = false): Promise<string | null> => {
+    if (saved && !savedQuoteId) return null; // already saved, nothing to update
     if (!silent) setBusy(true);
     try {
       const { data: u } = await supabase.auth.getUser();
@@ -1544,9 +1657,11 @@ export default function QuoteResult() {
       setSavedQuoteId(row.id);
       setSaved(true);
       if (!silent) toast.success(savedQuoteId ? tr("Vorschlag aktualisiert", "Quote updated") : tr("Vorschlag gespeichert", "Quote saved"));
+      return row.id as string;
     } catch (e: any) {
       if (!silent) toast.error(e.message);
       else console.warn(tr("Auto-Speichern fehlgeschlagen:", "Auto-save failed:"), e?.message);
+      return null;
     }
     finally { if (!silent) setBusy(false); }
   };
@@ -1624,15 +1739,36 @@ export default function QuoteResult() {
                       </ul>
                     </SortableContext>
                   </SectionDropZone>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openAddDialog(sIdx)}
-                    className="h-8 text-xs"
-                  >
-                    <Plus className="h-3.5 w-3.5 mr-1" /> {tr("Position", "Item")}
-                  </Button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openAddDialog(sIdx)}
+                      className="h-8 text-xs"
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> {tr("Position", "Item")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openPhotosForSection(sIdx)}
+                      disabled={openingPhotos}
+                      className="h-8 text-xs"
+                    >
+                      {openingPhotos
+                        ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                        : <ImageIcon className="h-3.5 w-3.5 mr-1" />}
+                      {tr("Fotos", "Photos")}
+                      {sec.id && photoCounts[sec.id] ? (
+                        <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium">
+                          {photoCounts[sec.id]}
+                        </span>
+                      ) : null}
+                      {!photosAllowed && <Lock className="h-3 w-3 ml-1 opacity-70" />}
+                    </Button>
+                  </div>
                   {(typeof sec.net_amount === "number" || typeof sec.gross_amount === "number") && (
                     <div className="mt-2 pt-2 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-xs">
                       <span className="text-muted-foreground">
@@ -2018,6 +2154,48 @@ export default function QuoteResult() {
               className="w-full h-11 gradient-primary text-primary-foreground border-0"
             >
               <Sparkles className="h-4 w-4 mr-2" /> {tr("Auf Profi upgraden", "Upgrade to Pro")}
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full h-10 mt-0">
+              {tr("Vielleicht später", "Maybe later")}
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <QuotePhotosSheet
+        open={photoSheet.open}
+        onOpenChange={(o) => setPhotoSheet((s) => ({ ...s, open: o }))}
+        quoteId={savedQuoteId}
+        sectionId={photoSheet.sectionId}
+        sectionTitle={photoSheet.sectionTitle}
+        onCountChange={(n) => {
+          if (!photoSheet.sectionId) return;
+          setPhotoCounts((prev) => ({ ...prev, [photoSheet.sectionId!]: n }));
+        }}
+      />
+
+      <AlertDialog open={photosUpgradeOpen} onOpenChange={setPhotosUpgradeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="mx-auto mb-2 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <ImageIcon className="h-6 w-6 text-primary" />
+            </div>
+            <AlertDialogTitle className="text-center">
+              {tr(`Baustellen-Fotos sind ${REQUIRED_TIER_LABEL.photos}-exklusiv`, `Site photos are ${REQUIRED_TIER_LABEL.photos}-only`)}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center leading-relaxed">
+              {tr(
+                "Im Exklusiv-Tarif kannst du pro Raum bis zu 10 Fotos von der Baustelle hinzufügen. Das erste Foto erscheint im PDF rechts neben der Raum-Überschrift.",
+                "On the Exklusiv plan you can attach up to 10 site photos per room. The first photo appears in the PDF next to the room title.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:flex-col sm:space-x-0 gap-2">
+            <AlertDialogAction
+              onClick={() => { setPhotosUpgradeOpen(false); nav("/pricing"); }}
+              className="w-full h-11 gradient-primary text-primary-foreground border-0"
+            >
+              <Sparkles className="h-4 w-4 mr-2" /> {tr("Auf Exklusiv upgraden", "Upgrade to Exklusiv")}
             </AlertDialogAction>
             <AlertDialogCancel className="w-full h-10 mt-0">
               {tr("Vielleicht später", "Maybe later")}
