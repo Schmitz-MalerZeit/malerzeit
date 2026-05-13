@@ -40,6 +40,10 @@ export interface QuotePDFData {
     net_amount?: number;
     vat_amount?: number;
     gross_amount?: number;
+    /** Optionales Foto rechts neben der Raum-Überschrift. */
+    photoDataUrl?: string;
+    photoWidth?: number;
+    photoHeight?: number;
   }>;
   net: number;
   vat: number;
