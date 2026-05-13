@@ -28,6 +28,7 @@ export function QuotePhotosSheet(props: {
   onCountChange?: (count: number) => void;
 }) {
   const tr = useTr();
+  const isMobile = useIsMobile();
   const { open, onOpenChange, quoteId, sectionId, sectionTitle } = props;
   const [photos, setPhotos] = useState<QuotePhotoWithUrl[]>([]);
   const [loading, setLoading] = useState(false);
