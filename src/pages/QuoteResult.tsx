@@ -1314,25 +1314,38 @@ export default function QuoteResult() {
                     </button>
                   </div>
                   <ul className="space-y-2 pl-1">
-                    {sec.items.map((item: string, iIdx: number) => (
-                      <li key={iIdx} className="flex gap-2 items-start">
-                        <span className="text-primary font-bold mt-2.5">•</span>
-                        <Textarea
-                          value={item}
-                          onChange={(e) => updateSectionItem(sIdx, iIdx, e.target.value)}
-                          rows={1}
-                          className="flex-1 min-h-[40px] text-sm resize-y"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeSectionItem(sIdx, iIdx)}
-                          className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
-                          aria-label={tr("Position entfernen", "Remove item")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </li>
-                    ))}
+                    {sec.items.map((item: string, iIdx: number) => {
+                      const calc = (sec.calc_items || [])[iIdx];
+                      return (
+                        <li key={iIdx} className="flex gap-2 items-start">
+                          <span className="text-primary font-bold mt-2.5">•</span>
+                          <Textarea
+                            value={item}
+                            onChange={(e) => updateSectionItem(sIdx, iIdx, e.target.value)}
+                            rows={1}
+                            className="flex-1 min-h-[40px] text-sm resize-y"
+                          />
+                          {calc && (
+                            <button
+                              type="button"
+                              onClick={() => openEditDialog(sIdx, iIdx)}
+                              className="mt-2 text-muted-foreground hover:text-primary transition-colors"
+                              aria-label={tr("Kalkulation bearbeiten", "Edit calculation")}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeSectionItem(sIdx, iIdx)}
+                            className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+                            aria-label={tr("Position entfernen", "Remove item")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                   <Button
                     type="button"
