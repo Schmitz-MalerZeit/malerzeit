@@ -319,11 +319,13 @@ export type Database = {
           customer_text: string | null
           description: string | null
           estimated_hours: number | null
+          estimated_labor_cost: number
           estimated_material: number | null
           gross_amount: number
           id: string
           internal_notes: string | null
           line_items: Json
+          material_cost: number
           net_amount: number
           pdf_created_at: string | null
           pdf_filename: string | null
@@ -350,11 +352,13 @@ export type Database = {
           customer_text?: string | null
           description?: string | null
           estimated_hours?: number | null
+          estimated_labor_cost?: number
           estimated_material?: number | null
           gross_amount?: number
           id?: string
           internal_notes?: string | null
           line_items?: Json
+          material_cost?: number
           net_amount?: number
           pdf_created_at?: string | null
           pdf_filename?: string | null
@@ -381,11 +385,13 @@ export type Database = {
           customer_text?: string | null
           description?: string | null
           estimated_hours?: number | null
+          estimated_labor_cost?: number
           estimated_material?: number | null
           gross_amount?: number
           id?: string
           internal_notes?: string | null
           line_items?: Json
+          material_cost?: number
           net_amount?: number
           pdf_created_at?: string | null
           pdf_filename?: string | null
