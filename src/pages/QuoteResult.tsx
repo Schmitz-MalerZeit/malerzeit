@@ -1657,6 +1657,14 @@ export default function QuoteResult() {
                 <Plus className="h-4 w-4 mr-1.5" /> {tr("Bereich hinzufügen", "Add section")}
               </Button>
             </div>
+            <DragOverlay>
+              {activeDragLabel ? (
+                <div className="rounded-md border border-primary bg-background px-3 py-2 text-sm shadow-lg max-w-[80vw] truncate">
+                  {activeDragLabel}
+                </div>
+              ) : null}
+            </DragOverlay>
+            </DndContext>
           ) : (
             <>
               <ul className="space-y-2">
