@@ -246,6 +246,21 @@ export default function QuoteResult() {
     }
   }, [nav]);
 
+  // Foto-Zähler je Sektion neu laden, sobald savedQuoteId verfügbar (und Sheet schließt).
+  useEffect(() => {
+    if (!savedQuoteId) { setPhotoCounts({}); return; }
+    let cancelled = false;
+    listQuotePhotos(savedQuoteId)
+      .then((photos) => {
+        if (cancelled) return;
+        const counts: Record<string, number> = {};
+        for (const p of photos) counts[p.section_id] = (counts[p.section_id] || 0) + 1;
+        setPhotoCounts(counts);
+      })
+      .catch(() => { /* ignore */ });
+    return () => { cancelled = true; };
+  }, [savedQuoteId, photoSheet.open]);
+
   // Persist edits back to sessionStorage and invalidate any cached PDF so the
   // next preview/download uses the new texts.
   const persistEdits = (next: any) => {
