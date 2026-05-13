@@ -230,6 +230,68 @@ export default function QuoteNew() {
       phone: s.phone || "",
       email: s.email || "",
     }));
+    // If this matches a saved customer, remember the link so objects can be offered.
+    const match = savedCustomers.find(
+      (sc) => sc.name.toLowerCase() === s.name.toLowerCase()
+        && (sc.address || "").toLowerCase() === (s.address || "").toLowerCase()
+    ) || savedCustomers.find((sc) => sc.name.toLowerCase() === s.name.toLowerCase());
+    setSelectedCustomerId(match?.id ?? null);
+    setSelectedObjectId("");
+  };
+
+  // Persist customer (and object if applicable) to the customers DB so they
+  // appear in the customer manager and in future autocomplete.
+  const upsertCustomerAndObject = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      let customerId = selectedCustomerId;
+      const name = customer.name.trim();
+      if (!name) return;
+
+      const basePayload = {
+        user_id: user.id,
+        name,
+        address: customer.address.trim() || null,
+        postal_code: customer.postal_code.trim() || null,
+        city: customer.city.trim() || null,
+        phone: customer.phone.trim() || null,
+        email: customer.email.trim() || null,
+      };
+
+      if (customerId) {
+        await supabase.from("customers").update(basePayload).eq("id", customerId);
+      } else {
+        // Try to match by name + address to avoid duplicates from earlier autocomplete picks.
+        const existing = savedCustomers.find(
+          (sc) => sc.name.toLowerCase() === name.toLowerCase()
+            && (sc.address || "").toLowerCase() === (customer.address || "").trim().toLowerCase()
+        );
+        if (existing) {
+          customerId = existing.id;
+          await supabase.from("customers").update(basePayload).eq("id", customerId);
+        } else {
+          const { data, error } = await supabase.from("customers").insert(basePayload).select("id").single();
+          if (!error && data) customerId = data.id;
+        }
+      }
+
+      const projectLabel = customer.project_label.trim();
+      if (customerId && projectLabel) {
+        const objs = savedObjects.filter((o) => o.customer_id === customerId);
+        const sameLabel = objs.find((o) => o.label.toLowerCase() === projectLabel.toLowerCase());
+        if (!sameLabel) {
+          await supabase.from("customer_objects").insert({
+            user_id: user.id,
+            customer_id: customerId,
+            label: projectLabel,
+            address: customer.address.trim() || null,
+            postal_code: customer.postal_code.trim() || null,
+            city: customer.city.trim() || null,
+          });
+        }
+      }
+    } catch { /* never block the quote flow on this */ }
   };
 
   // Soft pre-check only (UX). Actual increment happens server-side after PDF success.
