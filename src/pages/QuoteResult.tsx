@@ -177,6 +177,15 @@ export default function QuoteResult() {
   const pdfAllowed = canDownloadPdf(tier);
   const logoAllowed = canUseLogoInPdf(tier);
   const whatsappAllowed = canSendViaWhatsapp(tier);
+  const photosAllowed = canUsePhotos(tier);
+
+  // Foto-Sheet je Sektion. quoteId wird beim Öffnen via silent-save sichergestellt.
+  const [photoSheet, setPhotoSheet] = useState<{ open: boolean; sectionId: string | null; sectionTitle: string }>({
+    open: false, sectionId: null, sectionTitle: "",
+  });
+  const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
+  const [photosUpgradeOpen, setPhotosUpgradeOpen] = useState(false);
+  const [openingPhotos, setOpeningPhotos] = useState(false);
 
   // Revoke blob URL on unmount (only the in-memory URL; the base64 cache stays in sessionStorage)
   useEffect(() => {
