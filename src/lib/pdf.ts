@@ -114,6 +114,8 @@ const STRINGS = {
     contact: "Contact",
     vatId: (id: string) => `VAT ID: ${id}`,
     pageOf: (p: number, t: number) => `Page ${p} of ${t}`,
+    photosTitle: "Site photos",
+    photosCont: "Site photos (continued)",
     locale: "en-US",
   },
 } as const;
