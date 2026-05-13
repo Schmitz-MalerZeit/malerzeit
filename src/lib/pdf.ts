@@ -86,6 +86,8 @@ const STRINGS = {
     contact: "Kontakt",
     vatId: (id: string) => `USt-IdNr.: ${id}`,
     pageOf: (p: number, t: number) => `Seite ${p} von ${t}`,
+    photosTitle: "Baustellen-Fotos",
+    photosCont: "Baustellen-Fotos (Fortsetzung)",
     locale: "de-DE",
   },
   en: {
