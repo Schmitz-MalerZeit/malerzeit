@@ -947,6 +947,41 @@ export default function QuoteResult() {
         gross_amount: newGross,
       };
     });
+
+    // Baustellen-Fotos je Sektion einbetten (jeweils das erste Foto, sortiert).
+    // Nur wenn Plan es erlaubt UND der Vorschlag bereits gespeichert ist
+    // (sonst gibt es keine quote_id, an der Fotos hängen).
+    if (photosAllowed && savedQuoteId) {
+      try {
+        const allPhotos = await listQuotePhotos(savedQuoteId);
+        const firstBySection: Record<string, QuotePhoto> = {};
+        for (const p of allPhotos) {
+          if (!firstBySection[p.section_id]) firstBySection[p.section_id] = p;
+        }
+        await Promise.all(
+          scaledSections.map(async (s: any) => {
+            const sid = s?.id;
+            if (!sid) return;
+            const ph = firstBySection[sid];
+            if (!ph) return;
+            try {
+              const url = await getSignedPhotoUrl(ph.storage_path, 60 * 5);
+              const dataUrl = await photoUrlToDataUrl(url);
+              if (dataUrl) {
+                s.photoDataUrl = dataUrl;
+                s.photoWidth = ph.width || undefined;
+                s.photoHeight = ph.height || undefined;
+              }
+            } catch (err) {
+              console.warn("[pdf] section photo load failed", err);
+            }
+          }),
+        );
+      } catch (err) {
+        console.warn("[pdf] could not load section photos", err);
+      }
+    }
+
     // For English PDFs, translate dynamic content (sections, line items, closing text)
     // via the translate-quote edge function. The structured AI content is generated
     // in German by default; here we localize it on demand.
