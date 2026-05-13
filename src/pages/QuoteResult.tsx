@@ -1812,11 +1812,16 @@ export default function QuoteResult() {
               const markup = Number(settings?.material_markup ?? 15);
               const matGross = m * (1 + markup / 100);
               const net = labor + matGross;
+              const vatRatePrev = Number(data?.ai?.pricing?.vat_rate ?? settings?.vat_rate ?? 19);
+              const vatPrev = Math.round(net * (vatRatePrev / 100) * 100) / 100;
+              const grossPrev = Math.round((net + vatPrev) * 100) / 100;
               return (
                 <div className="rounded-lg bg-secondary/40 p-3 text-xs space-y-1">
                   <div className="flex justify-between"><span className="text-muted-foreground">{tr("Lohn", "Labor")}</span><span>{fmt(labor)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">{tr(`Material (inkl. ${markup}% Aufschlag)`, `Materials (incl. ${markup}% markup)`)}</span><span>{fmt(matGross)}</span></div>
-                  <div className="flex justify-between font-semibold pt-1 border-t border-border/60"><span>{tr("Netto neue Position", "Net new item")}</span><span>{fmt(net)}</span></div>
+                  <div className="flex justify-between pt-1 border-t border-border/60"><span className="text-muted-foreground">{tr("Netto", "Net")}</span><span>{fmt(net)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{tr(`MwSt. (${vatRatePrev}%)`, `VAT (${vatRatePrev}%)`)}</span><span>{fmt(vatPrev)}</span></div>
+                  <div className="flex justify-between font-semibold text-primary pt-1 border-t border-border/60"><span>{tr("Brutto", "Gross")}</span><span>{fmt(grossPrev)}</span></div>
                 </div>
               );
             })()}
