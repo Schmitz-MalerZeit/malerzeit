@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2, MessageCircle, Calculator, ArrowLeft } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2, MessageCircle, Calculator, ArrowLeft, ChevronUp, ChevronDown } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -474,6 +474,62 @@ export default function QuoteResult() {
     } else {
       persistItemsEdit({ ...data, ai: nextAi });
     }
+  };
+  const moveSectionItem = (sIdx: number, iIdx: number, dir: -1 | 1) => {
+    if (!data) return;
+    const sectionsArr = (data.ai.sections || []).map((s: any) => ({
+      ...s,
+      items: [...(s.items || [])],
+      calc_items: Array.isArray(s.calc_items) ? [...s.calc_items] : [],
+    }));
+    if (!sectionsArr[sIdx]) return;
+    const src = sectionsArr[sIdx];
+    const item = src.items[iIdx];
+    if (item === undefined) return;
+    const calc = src.calc_items[iIdx] || null;
+
+    // Within section
+    if ((dir === -1 && iIdx > 0) || (dir === 1 && iIdx < src.items.length - 1)) {
+      const j = iIdx + dir;
+      [src.items[iIdx], src.items[j]] = [src.items[j], src.items[iIdx]];
+      [src.calc_items[iIdx], src.calc_items[j]] = [src.calc_items[j], src.calc_items[iIdx]];
+      const nextAi = { ...data.ai, sections: sectionsArr, line_items: sectionsArr.flatMap((s: any) => s.items) };
+      persistEdits({ ...data, ai: nextAi });
+      return;
+    }
+
+    // Across sections
+    const tIdx = sIdx + dir;
+    if (tIdx < 0 || tIdx >= sectionsArr.length) return;
+    const dst = sectionsArr[tIdx];
+
+    // Remove from source
+    src.items.splice(iIdx, 1);
+    src.calc_items.splice(iIdx, 1);
+    // Insert into destination (top if moving up, bottom if moving down — natural reading)
+    const insertAt = dir === -1 ? dst.items.length : 0;
+    dst.items.splice(insertAt, 0, item);
+    dst.calc_items.splice(insertAt, 0, calc);
+
+    // Transfer subtotal contribution if calc data exists
+    if (calc) {
+      const c = computeContribution(Number(calc.hours) || 0, calc.rateId, Number(calc.materialNet) || 0);
+      src.hours = Math.max(0, (Number(src.hours) || 0) - c.hours);
+      src.labor_cost = Math.max(0, (Number(src.labor_cost) || 0) - c.labor);
+      src.material_cost = Math.max(0, (Number(src.material_cost) || 0) - c.materialGross);
+      src.net_amount = Math.max(0, (Number(src.net_amount) || 0) - c.addNet);
+      src.vat_amount = Math.max(0, Math.round(((Number(src.vat_amount) || 0) - c.addVat) * 100) / 100);
+      src.gross_amount = Math.max(0, Math.round(((Number(src.gross_amount) || 0) - c.addGross) * 100) / 100);
+      dst.hours = (Number(dst.hours) || 0) + c.hours;
+      dst.labor_cost = (Number(dst.labor_cost) || 0) + c.labor;
+      dst.material_cost = (Number(dst.material_cost) || 0) + c.materialGross;
+      dst.net_amount = (Number(dst.net_amount) || 0) + c.addNet;
+      dst.vat_amount = Math.round(((Number(dst.vat_amount) || 0) + c.addVat) * 100) / 100;
+      dst.gross_amount = Math.round(((Number(dst.gross_amount) || 0) + c.addGross) * 100) / 100;
+    }
+
+    const nextAi = { ...data.ai, sections: sectionsArr, line_items: sectionsArr.flatMap((s: any) => s.items) };
+    persistEdits({ ...data, ai: nextAi });
   };
   const removeSection = (sIdx: number) => {
     if (!data) return;
@@ -1346,6 +1402,26 @@ export default function QuoteResult() {
                             rows={1}
                             className="flex-1 min-h-[40px] text-sm resize-y"
                           />
+                          <div className="flex flex-col mt-1">
+                            <button
+                              type="button"
+                              onClick={() => moveSectionItem(sIdx, iIdx, -1)}
+                              disabled={sIdx === 0 && iIdx === 0}
+                              className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed h-4"
+                              aria-label={tr("Nach oben", "Move up")}
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveSectionItem(sIdx, iIdx, 1)}
+                              disabled={sIdx === (ai.sections.length - 1) && iIdx === sec.items.length - 1}
+                              className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed h-4"
+                              aria-label={tr("Nach unten", "Move down")}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </button>
+                          </div>
                           {calc && (
                             <button
                               type="button"
