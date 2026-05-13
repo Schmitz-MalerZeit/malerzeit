@@ -337,13 +337,51 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     d.sections!.forEach((sec, sIdx) => {
       const items = (sec.items || []).filter((x) => typeof x === "string" && x.trim());
       if (!items.length) return;
-      ensureSpace(14);
+
+      // Foto rechts neben der Raum-Überschrift, falls vorhanden.
+      // Bildbox: max 32mm breit, max 32mm hoch (~5–6 Textzeilen), proportional.
+      const hasPhoto = !!sec.photoDataUrl;
+      const photoBoxW = 32;
+      const photoBoxH = 32;
+      let photoActualW = 0;
+      let photoActualH = 0;
+      if (hasPhoto) {
+        const natW = sec.photoWidth || 0;
+        const natH = sec.photoHeight || 0;
+        if (natW > 0 && natH > 0) {
+          const scale = Math.min(photoBoxW / natW, photoBoxH / natH);
+          photoActualW = natW * scale;
+          photoActualH = natH * scale;
+        } else {
+          photoActualW = photoBoxW;
+          photoActualH = photoBoxH;
+        }
+      }
+      const headerBlockH = hasPhoto ? Math.max(8, photoActualH + 4) : 8;
+      ensureSpace(headerBlockH + 6);
       if (sIdx > 0) y += 4;
+
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10.5);
       doc.setTextColor(primary[0], primary[1], primary[2]);
-      doc.text(sec.title, margin, y);
-      y += 8;
+      // Titel vertikal mittig zur Bildbox ausrichten, wenn ein Bild vorhanden ist
+      const titleY = hasPhoto ? y + photoActualH / 2 + 1.5 : y;
+      const titleMaxW = hasPhoto ? pageW - margin * 2 - photoActualW - 4 : pageW - margin * 2;
+      const titleLines = doc.splitTextToSize(sec.title, titleMaxW);
+      doc.text(titleLines, margin, titleY);
+
+      if (hasPhoto && sec.photoDataUrl) {
+        try {
+          const px = pageW - margin - photoActualW;
+          doc.addImage(sec.photoDataUrl, "JPEG", px, y, photoActualW, photoActualH, undefined, "FAST");
+        } catch (err) {
+          console.warn("[pdf] section photo render failed", err);
+        }
+        y += Math.max(8, photoActualH) + 2;
+      } else {
+        y += 8;
+      }
+
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10.5);
       doc.setTextColor(45, 45, 45);
