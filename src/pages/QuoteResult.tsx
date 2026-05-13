@@ -50,6 +50,11 @@ export default function QuoteResult() {
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewBlobLang, setPreviewBlobLang] = useState<"de" | "en" | null>(null);
+  const [translationCache, setTranslationCache] = useState<Record<string, {
+    line_items: string[];
+    sections: Array<{ title: string; items: string[] }>;
+    closing_text: string;
+  }>>({});
   const [pdfQuotaConsumed, setPdfQuotaConsumed] = useState(false);
   const [lastFilename, setLastFilename] = useState<string>("");
   const [lastSavedPdfPath, setLastSavedPdfPath] = useState<string | null>(null);
@@ -475,6 +480,72 @@ export default function QuoteResult() {
         gross_amount: newGross,
       };
     });
+    // For English PDFs, translate dynamic content (sections, line items, closing text)
+    // via the translate-quote edge function. The structured AI content is generated
+    // in German by default; here we localize it on demand.
+    let translatedLineItems: string[] = ai.line_items || [];
+    let translatedSections = scaledSections;
+    let resolvedClosing = settings?.closing_text ?? (lang === "en"
+      ? "If our offer suits you, we look forward to your order confirmation."
+      : "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage.");
+
+    if (lang === "en") {
+      const cacheKey = JSON.stringify({
+        li: translatedLineItems,
+        s: translatedSections.map((s: any) => ({ t: s.title, i: s.items })),
+        c: resolvedClosing,
+      });
+      const cached = translationCache[cacheKey];
+      if (cached) {
+        translatedLineItems = cached.line_items;
+        translatedSections = translatedSections.map((s: any, i: number) => ({
+          ...s,
+          title: cached.sections[i]?.title ?? s.title,
+          items: cached.sections[i]?.items ?? s.items,
+        }));
+        resolvedClosing = cached.closing_text;
+      } else {
+        try {
+          const { data: tData, error: tErr } = await supabase.functions.invoke("translate-quote", {
+            body: {
+              targetLang: "en",
+              line_items: translatedLineItems,
+              sections: translatedSections.map((s: any) => ({ title: s.title, items: s.items })),
+              closing_text: resolvedClosing,
+            },
+          });
+          if (!tErr && tData) {
+            if (Array.isArray(tData.line_items) && tData.line_items.length === translatedLineItems.length) {
+              translatedLineItems = tData.line_items;
+            }
+            if (Array.isArray(tData.sections) && tData.sections.length === translatedSections.length) {
+              translatedSections = translatedSections.map((s: any, i: number) => ({
+                ...s,
+                title: tData.sections[i]?.title ?? s.title,
+                items: Array.isArray(tData.sections[i]?.items) && tData.sections[i].items.length === s.items.length
+                  ? tData.sections[i].items : s.items,
+              }));
+            }
+            if (typeof tData.closing_text === "string" && tData.closing_text.trim()) {
+              resolvedClosing = tData.closing_text;
+            }
+            setTranslationCache((c) => ({
+              ...c,
+              [cacheKey]: {
+                line_items: translatedLineItems,
+                sections: translatedSections.map((s: any) => ({ title: s.title, items: s.items })),
+                closing_text: resolvedClosing,
+              },
+            }));
+          } else if (tErr) {
+            console.warn("translate-quote failed, falling back to source language:", tErr);
+          }
+        } catch (e) {
+          console.warn("translate-quote threw, falling back to source language:", e);
+        }
+      }
+    }
+
     return buildQuotePDF({
       company: {
         name: profile?.company_name,
@@ -501,13 +572,11 @@ export default function QuoteResult() {
         city: data.customer.city,
       } : undefined,
       date: new Date().toLocaleDateString(lang === "en" ? "en-US" : "de-DE"),
-      lineItems: ai.line_items,
-      sections: scaledSections,
+      lineItems: translatedLineItems,
+      sections: translatedSections,
       net: effNet, vat: effVat, gross: effGross, vatRate: vatRate,
       validityDays: settings?.quote_validity_days ?? 14,
-      closingText: settings?.closing_text ?? (lang === "en"
-        ? "If our offer suits you, we look forward to your order confirmation."
-        : "Sollte Ihnen unser Angebot zusagen, freuen wir uns über Ihre Auftragszusage."),
+      closingText: resolvedClosing,
       signatureName: profile?.signatory_name || profile?.contact_person || profile?.company_name,
       lang,
     });
