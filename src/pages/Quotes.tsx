@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { FolderOpen, Loader2, Eye, Trash2, StickyNote, Save, Search, X, Pencil, Copy } from "lucide-react";
+import { FolderOpen, Loader2, Eye, Trash2, StickyNote, Save, Search, X, Pencil, Copy, ImageIcon } from "lucide-react";
+import { listQuotePhotos, attachUrlsToPhotos, type QuotePhotoWithUrl } from "@/lib/quotePhotos";
+import { QuotePhotoLightbox } from "@/components/QuotePhotoLightbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
