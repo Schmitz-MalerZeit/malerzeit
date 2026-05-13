@@ -301,9 +301,15 @@ export default function QuoteResult() {
       if ((res as any)?.error) throw new Error((res as any).error);
 
       const r: any = res;
-      const nextSections = Array.isArray(r.sections) && r.sections.length > 0
+      const rawNextSections = Array.isArray(r.sections) && r.sections.length > 0
         ? r.sections
         : sections;
+      // Stable section IDs aus den Original-Sections übernehmen (per Index),
+      // damit Foto-Zuordnungen erhalten bleiben.
+      const nextSections = rawNextSections.map((s: any, i: number) => ({
+        ...s,
+        id: sections[i]?.id || s.id || crypto.randomUUID(),
+      }));
       const nextAi = {
         ...data.ai,
         sections: nextSections,
