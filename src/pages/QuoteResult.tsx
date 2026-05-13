@@ -1621,8 +1621,8 @@ export default function QuoteResult() {
   // Wenn bereits ein Datensatz existiert (savedQuoteId), wird ein UPDATE statt
   // INSERT ausgeführt – verhindert Duplikate, wenn der Nutzer nach dem
   // PDF-Erstellen noch manuell auf "Speichern" tippt.
-  const save = async (silent = false) => {
-    if (saved && !savedQuoteId) return; // already saved, nothing to update
+  const save = async (silent = false): Promise<string | null> => {
+    if (saved && !savedQuoteId) return null; // already saved, nothing to update
     if (!silent) setBusy(true);
     try {
       const { data: u } = await supabase.auth.getUser();
@@ -1665,9 +1665,11 @@ export default function QuoteResult() {
       setSavedQuoteId(row.id);
       setSaved(true);
       if (!silent) toast.success(savedQuoteId ? tr("Vorschlag aktualisiert", "Quote updated") : tr("Vorschlag gespeichert", "Quote saved"));
+      return row.id as string;
     } catch (e: any) {
       if (!silent) toast.error(e.message);
       else console.warn(tr("Auto-Speichern fehlgeschlagen:", "Auto-save failed:"), e?.message);
+      return null;
     }
     finally { if (!silent) setBusy(false); }
   };
