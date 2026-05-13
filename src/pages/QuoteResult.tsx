@@ -4,7 +4,25 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2, MessageCircle, Calculator, ArrowLeft, ChevronUp, ChevronDown } from "lucide-react";
+import { Copy, FileDown, Save, Loader2, Check, Lock, Sparkles, Pencil, Plus, Trash2, MessageCircle, Calculator, ArrowLeft, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  DragOverlay,
+  type DragStartEvent,
+  type DragEndEvent,
+  useDroppable,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +55,75 @@ import {
 const fmt = (n: number) => n.toLocaleString(currentLocale(), { style: "currency", currency: "EUR" });
 
 const blobToObjectUrl = (blob: Blob): string => URL.createObjectURL(blob);
+
+// Sortable Listenelement (Position) für DnD-Reihenfolge per Drag-Handle.
+// Eigenes kleines Komponente, damit useSortable als Hook auf Top-Level läuft.
+function SortableQuoteItem(props: {
+  id: string;
+  item: string;
+  calc: any;
+  onChange: (v: string) => void;
+  onRemove: () => void;
+  onEditCalc?: () => void;
+  dragLabel: string;
+  editLabel: string;
+  removeLabel: string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  } as React.CSSProperties;
+  return (
+    <li ref={setNodeRef} style={style} className="flex gap-2 items-start">
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label={props.dragLabel}
+        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary mt-1 p-2 -ml-1 -mr-1"
+      >
+        <GripVertical className="h-5 w-5" />
+      </button>
+      <Textarea
+        value={props.item}
+        onChange={(e) => props.onChange(e.target.value)}
+        rows={1}
+        className="flex-1 min-h-[40px] text-sm resize-y"
+      />
+      {props.calc && props.onEditCalc && (
+        <button
+          type="button"
+          onClick={props.onEditCalc}
+          className="mt-2 text-muted-foreground hover:text-primary transition-colors"
+          aria-label={props.editLabel}
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={props.onRemove}
+        className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+        aria-label={props.removeLabel}
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </li>
+  );
+}
+
+// Droppable-Wrapper für leere Bereiche, damit man Positionen per DnD in einen
+// (auch leeren) anderen Raum ablegen kann.
+function SectionDropZone({ id, children }: { id: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={isOver ? "ring-2 ring-primary/40 rounded-md transition" : undefined}>
+      {children}
+    </div>
+  );
+}
 
 export default function QuoteResult() {
   const tr = useTr();
@@ -531,6 +618,69 @@ export default function QuoteResult() {
     const nextAi = { ...data.ai, sections: sectionsArr, line_items: sectionsArr.flatMap((s: any) => s.items) };
     persistEdits({ ...data, ai: nextAi });
   };
+
+  // Generischer Move: verschiebt eine Position aus (srcSec, srcIdx) nach
+  // (dstSec, dstIdx). dstIdx === -1 => an das Ende anhängen. Behandelt sowohl
+  // Within-Section als auch Cross-Section inkl. Übertrag der Zwischensummen
+  // (Stunden, Lohn, Material, Netto/MwSt./Brutto) anhand der calc_items.
+  const moveItemAcross = (
+    srcSec: number,
+    srcIdx: number,
+    dstSec: number,
+    dstIdx: number,
+  ) => {
+    if (!data) return;
+    if (srcSec === dstSec && (srcIdx === dstIdx || (dstIdx === -1 && srcIdx === (data.ai.sections?.[srcSec]?.items?.length ?? 0) - 1))) {
+      return;
+    }
+    const sectionsArr = (data.ai.sections || []).map((s: any) => ({
+      ...s,
+      items: [...(s.items || [])],
+      calc_items: Array.isArray(s.calc_items) ? [...s.calc_items] : [],
+    }));
+    if (!sectionsArr[srcSec] || !sectionsArr[dstSec]) return;
+    const src = sectionsArr[srcSec];
+    if (srcIdx < 0 || srcIdx >= src.items.length) return;
+    const item = src.items[srcIdx];
+    const calc = src.calc_items[srcIdx] || null;
+
+    if (srcSec === dstSec) {
+      // Reorder innerhalb der Sektion (keine Subtotal-Verschiebung nötig).
+      src.items.splice(srcIdx, 1);
+      src.calc_items.splice(srcIdx, 1);
+      const insertAt = dstIdx === -1 ? src.items.length : Math.min(dstIdx, src.items.length);
+      src.items.splice(insertAt, 0, item);
+      src.calc_items.splice(insertAt, 0, calc);
+    } else {
+      const dst = sectionsArr[dstSec];
+      // Aus Quelle entfernen
+      src.items.splice(srcIdx, 1);
+      src.calc_items.splice(srcIdx, 1);
+      // In Ziel einfügen
+      const insertAt = dstIdx === -1 ? dst.items.length : Math.min(Math.max(0, dstIdx), dst.items.length);
+      dst.items.splice(insertAt, 0, item);
+      dst.calc_items.splice(insertAt, 0, calc);
+
+      if (calc) {
+        const c = computeContribution(Number(calc.hours) || 0, calc.rateId, Number(calc.materialNet) || 0);
+        src.hours = Math.max(0, (Number(src.hours) || 0) - c.hours);
+        src.labor_cost = Math.max(0, (Number(src.labor_cost) || 0) - c.labor);
+        src.material_cost = Math.max(0, (Number(src.material_cost) || 0) - c.materialGross);
+        src.net_amount = Math.max(0, (Number(src.net_amount) || 0) - c.addNet);
+        src.vat_amount = Math.max(0, Math.round(((Number(src.vat_amount) || 0) - c.addVat) * 100) / 100);
+        src.gross_amount = Math.max(0, Math.round(((Number(src.gross_amount) || 0) - c.addGross) * 100) / 100);
+        dst.hours = (Number(dst.hours) || 0) + c.hours;
+        dst.labor_cost = (Number(dst.labor_cost) || 0) + c.labor;
+        dst.material_cost = (Number(dst.material_cost) || 0) + c.materialGross;
+        dst.net_amount = (Number(dst.net_amount) || 0) + c.addNet;
+        dst.vat_amount = Math.round(((Number(dst.vat_amount) || 0) + c.addVat) * 100) / 100;
+        dst.gross_amount = Math.round(((Number(dst.gross_amount) || 0) + c.addGross) * 100) / 100;
+      }
+    }
+
+    const nextAi = { ...data.ai, sections: sectionsArr, line_items: sectionsArr.flatMap((s: any) => s.items) };
+    persistEdits({ ...data, ai: nextAi });
+  };
   const removeSection = (sIdx: number) => {
     if (!data) return;
     const next = (data.ai.sections || []).filter((_: any, i: number) => i !== sIdx);
@@ -551,6 +701,51 @@ export default function QuoteResult() {
     persistEdits({ ...data, ai: { ...data.ai, whatsapp_text: value, whatsapp_edited: true } });
   };
 
+  // Drag-&-Drop Sensoren: PointerSensor für Maus, TouchSensor mit kurzer
+  // Verzögerung für Touch (Long-Press), damit Scrollen weiter normal funktioniert
+  // und nur ein bewusstes Halten den Drag startet.
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 6 } }),
+  );
+  const [activeDragLabel, setActiveDragLabel] = useState<string | null>(null);
+
+  const parseDndId = (id: string) => {
+    // Item: "item:<sIdx>:<iIdx>" | Section-Container: "sec:<sIdx>"
+    const parts = id.split(":");
+    if (parts[0] === "item") return { kind: "item" as const, sIdx: Number(parts[1]), iIdx: Number(parts[2]) };
+    if (parts[0] === "sec") return { kind: "sec" as const, sIdx: Number(parts[1]) };
+    return null;
+  };
+
+  const onDndStart = (e: DragStartEvent) => {
+    const parsed = parseDndId(String(e.active.id));
+    if (!parsed || parsed.kind !== "item" || !data) return;
+    const txt = data.ai.sections?.[parsed.sIdx]?.items?.[parsed.iIdx];
+    setActiveDragLabel(typeof txt === "string" ? txt : null);
+  };
+
+  const onDndEnd = (e: DragEndEvent) => {
+    setActiveDragLabel(null);
+    const { active, over } = e;
+    if (!over) return;
+    const a = parseDndId(String(active.id));
+    const o = parseDndId(String(over.id));
+    if (!a || a.kind !== "item" || !o) return;
+    if (o.kind === "item") {
+      // Drop auf eine andere Position: vor diese Position einfügen
+      let dstIdx = o.iIdx;
+      if (a.sIdx === o.sIdx && a.iIdx < o.iIdx) {
+        // Anpassen, weil das Element ja erst entfernt und neu eingefügt wird
+        dstIdx = o.iIdx;
+      }
+      moveItemAcross(a.sIdx, a.iIdx, o.sIdx, dstIdx);
+    } else if (o.kind === "sec") {
+      // Drop auf die Sektion (leerer Bereich) → ans Ende anhängen
+      moveItemAcross(a.sIdx, a.iIdx, o.sIdx, -1);
+    }
+  };
+
   if (!data) return null;
   const ai = data.ai;
   const p = ai.pricing;
@@ -561,7 +756,17 @@ export default function QuoteResult() {
     ai.surcharge && (ai.surcharge.mode === "percent" || ai.surcharge.mode === "amount")
       ? { mode: ai.surcharge.mode, value: Number(ai.surcharge.value) || 0 }
       : { mode: "percent", value: 0 };
-  const baseNet = Number(p.net_amount) || 0;
+  // Bevorzugt die Summe der Bereichs-Nettos als Basis, damit der Aufschlag/Nachlass
+  // proportional auf die einzelnen Positionen im PDF angewendet werden kann und
+  // die Zwischensummen je Raum mit der Endsumme zusammenpassen. Wenn keine
+  // Bereiche vorhanden sind, fallen wir auf das gespeicherte pricing.net_amount
+  // zurück.
+  const sectionsList: any[] = Array.isArray(ai.sections) ? ai.sections : [];
+  const sectionsNetSum = sectionsList.reduce(
+    (acc, s) => acc + (typeof s?.net_amount === "number" ? s.net_amount : 0),
+    0,
+  );
+  const baseNet = sectionsNetSum > 0 ? sectionsNetSum : (Number(p.net_amount) || 0);
   const vatRate = Number(p.vat_rate) || 19;
   const surchargeNet = Math.round(
     (surcharge.mode === "percent" ? baseNet * (surcharge.value / 100) : surcharge.value) * 100,
@@ -1372,6 +1577,7 @@ export default function QuoteResult() {
             </span>
           </div>
           {Array.isArray(ai.sections) && ai.sections.length > 0 ? (
+            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragStart={onDndStart} onDragEnd={onDndEnd}>
             <div className="space-y-5">
               {ai.sections.map((sec: any, sIdx: number) => (
                 <div key={sIdx} className="space-y-2 rounded-xl border border-border/60 bg-secondary/30 p-3">
@@ -1392,60 +1598,32 @@ export default function QuoteResult() {
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                  <ul className="space-y-2 pl-1">
-                    {sec.items.map((item: string, iIdx: number) => {
-                      const calc = (sec.calc_items || [])[iIdx];
-                      return (
-                        <li key={iIdx} className="flex gap-2 items-start">
-                          <span className="text-primary font-bold mt-2.5">•</span>
-                          <Textarea
-                            value={item}
-                            onChange={(e) => updateSectionItem(sIdx, iIdx, e.target.value)}
-                            rows={1}
-                            className="flex-1 min-h-[40px] text-sm resize-y"
-                          />
-                          <div className="flex flex-col mt-1">
-                            <button
-                              type="button"
-                              onClick={() => moveSectionItem(sIdx, iIdx, -1)}
-                              disabled={sIdx === 0 && iIdx === 0}
-                              className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed h-4"
-                              aria-label={tr("Nach oben", "Move up")}
-                            >
-                              <ChevronUp className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveSectionItem(sIdx, iIdx, 1)}
-                              disabled={sIdx === (ai.sections.length - 1) && iIdx === sec.items.length - 1}
-                              className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed h-4"
-                              aria-label={tr("Nach unten", "Move down")}
-                            >
-                              <ChevronDown className="h-4 w-4" />
-                            </button>
-                          </div>
-                          {calc && (
-                            <button
-                              type="button"
-                              onClick={() => openEditDialog(sIdx, iIdx)}
-                              className="mt-2 text-muted-foreground hover:text-primary transition-colors"
-                              aria-label={tr("Kalkulation bearbeiten", "Edit calculation")}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => removeSectionItem(sIdx, iIdx)}
-                            className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
-                            aria-label={tr("Position entfernen", "Remove item")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <SectionDropZone id={`sec:${sIdx}`}>
+                    <SortableContext
+                      items={(sec.items || []).map((_: any, iIdx: number) => `item:${sIdx}:${iIdx}`)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <ul className="space-y-2 pl-1 min-h-[8px]">
+                        {sec.items.map((item: string, iIdx: number) => {
+                          const calc = (sec.calc_items || [])[iIdx];
+                          return (
+                            <SortableQuoteItem
+                              key={`${sIdx}-${iIdx}`}
+                              id={`item:${sIdx}:${iIdx}`}
+                              item={item}
+                              calc={calc}
+                              onChange={(v) => updateSectionItem(sIdx, iIdx, v)}
+                              onRemove={() => removeSectionItem(sIdx, iIdx)}
+                              onEditCalc={calc ? () => openEditDialog(sIdx, iIdx) : undefined}
+                              dragLabel={tr("Verschieben (gedrückt halten und ziehen)", "Drag to reorder (press and hold)")}
+                              editLabel={tr("Kalkulation bearbeiten", "Edit calculation")}
+                              removeLabel={tr("Position entfernen", "Remove item")}
+                            />
+                          );
+                        })}
+                      </ul>
+                    </SortableContext>
+                  </SectionDropZone>
                   <Button
                     type="button"
                     variant="ghost"
@@ -1479,6 +1657,14 @@ export default function QuoteResult() {
                 <Plus className="h-4 w-4 mr-1.5" /> {tr("Bereich hinzufügen", "Add section")}
               </Button>
             </div>
+            <DragOverlay>
+              {activeDragLabel ? (
+                <div className="rounded-md border border-primary bg-background px-3 py-2 text-sm shadow-lg max-w-[80vw] truncate">
+                  {activeDragLabel}
+                </div>
+              ) : null}
+            </DragOverlay>
+            </DndContext>
           ) : (
             <>
               <ul className="space-y-2">
