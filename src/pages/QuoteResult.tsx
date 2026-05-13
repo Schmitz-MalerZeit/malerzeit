@@ -56,6 +56,75 @@ const fmt = (n: number) => n.toLocaleString(currentLocale(), { style: "currency"
 
 const blobToObjectUrl = (blob: Blob): string => URL.createObjectURL(blob);
 
+// Sortable Listenelement (Position) für DnD-Reihenfolge per Drag-Handle.
+// Eigenes kleines Komponente, damit useSortable als Hook auf Top-Level läuft.
+function SortableQuoteItem(props: {
+  id: string;
+  item: string;
+  calc: any;
+  onChange: (v: string) => void;
+  onRemove: () => void;
+  onEditCalc?: () => void;
+  dragLabel: string;
+  editLabel: string;
+  removeLabel: string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  } as React.CSSProperties;
+  return (
+    <li ref={setNodeRef} style={style} className="flex gap-2 items-start">
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label={props.dragLabel}
+        className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary mt-1 p-2 -ml-1 -mr-1"
+      >
+        <GripVertical className="h-5 w-5" />
+      </button>
+      <Textarea
+        value={props.item}
+        onChange={(e) => props.onChange(e.target.value)}
+        rows={1}
+        className="flex-1 min-h-[40px] text-sm resize-y"
+      />
+      {props.calc && props.onEditCalc && (
+        <button
+          type="button"
+          onClick={props.onEditCalc}
+          className="mt-2 text-muted-foreground hover:text-primary transition-colors"
+          aria-label={props.editLabel}
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={props.onRemove}
+        className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+        aria-label={props.removeLabel}
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </li>
+  );
+}
+
+// Droppable-Wrapper für leere Bereiche, damit man Positionen per DnD in einen
+// (auch leeren) anderen Raum ablegen kann.
+function SectionDropZone({ id, children }: { id: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={isOver ? "ring-2 ring-primary/40 rounded-md transition" : undefined}>
+      {children}
+    </div>
+  );
+}
+
 export default function QuoteResult() {
   const tr = useTr();
   const nav = useNavigate();
