@@ -716,7 +716,7 @@ export default function QuoteResult() {
   };
   const addSection = () => {
     if (!data) return;
-    const next = [...(data.ai.sections || []), { title: tr("Neuer Bereich", "New section"), items: [], calc_items: [] }];
+    const next = [...(data.ai.sections || []), { id: crypto.randomUUID(), title: tr("Neuer Bereich", "New section"), items: [], calc_items: [] }];
     // Adding an empty section doesn't change pricing → use persistEdits to avoid recalc banner.
     persistEdits({ ...data, ai: { ...data.ai, sections: next, line_items: flattenSections(next) } });
   };
