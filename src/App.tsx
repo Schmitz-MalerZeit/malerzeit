@@ -24,6 +24,7 @@ import Billing from "./pages/Billing";
 import PdfActionView from "./pages/PdfActionView";
 import NotFound from "./pages/NotFound";
 import AdminDiscounts from "./pages/AdminDiscounts";
+import Customers from "./pages/Customers";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/quote/new" element={<RequireAuth><RequireSubscription><QuoteNew /></RequireSubscription></RequireAuth>} />
             <Route path="/quote/result" element={<RequireAuth><RequireSubscription><QuoteResult /></RequireSubscription></RequireAuth>} />
             <Route path="/quotes" element={<RequireAuth><Quotes /></RequireAuth>} />
+            <Route path="/customers" element={<RequireAuth><Customers /></RequireAuth>} />
             <Route path="/pdf-action" element={<RequireAuth><PdfActionView /></RequireAuth>} />
             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
             <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />

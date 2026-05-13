@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation, Trans } from "react-i18next";
-import { FileText, FolderOpen, Settings as SettingsIcon, Scale, User as UserIcon, LogOut, Sparkles, CreditCard, HelpCircle } from "lucide-react";
+import { FileText, FolderOpen, Settings as SettingsIcon, Scale, User as UserIcon, LogOut, Sparkles, CreditCard, HelpCircle, Users as UsersIcon } from "lucide-react";
 import { HelpDialog } from "@/components/HelpDialog";
 import { FirstVisitTip } from "@/components/FirstVisitTip";
 import { useTr } from "@/lib/tr";
@@ -242,6 +242,7 @@ export default function Home() {
         <div className="space-y-3">
           <Tile primary icon={FileText} title={t("home.ctaNew")} subtitle={t("home.ctaNewSub")} onClick={startNewQuote} />
           <Tile icon={FolderOpen} title={t("home.ctaQuotes")} subtitle={t("home.ctaQuotesSub")} onClick={() => nav("/quotes")} />
+          <Tile icon={UsersIcon} title={tr("Kunden", "Customers")} subtitle={tr("Kundendaten & Objekte verwalten", "Manage customers & objects")} onClick={() => nav("/customers")} />
           <Tile icon={CreditCard} title={t("home.ctaBilling")} subtitle={t("home.ctaBillingSub")} onClick={() => nav("/billing")} />
           <Tile icon={UserIcon} title={t("home.ctaProfile")} subtitle={t("home.ctaProfileSub")} onClick={() => nav("/profile")} />
           <Tile icon={SettingsIcon} title={t("home.ctaSettings")} subtitle={t("home.ctaSettingsSub")} onClick={() => nav("/settings")} />
