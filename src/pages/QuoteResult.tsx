@@ -549,7 +549,69 @@ export default function QuoteResult() {
     const nextAi = { ...data.ai, sections: sectionsArr, line_items: sectionsArr.flatMap((s: any) => s.items) };
     persistEdits({ ...data, ai: nextAi });
   };
-  const removeSection = (sIdx: number) => {
+
+  // Generischer Move: verschiebt eine Position aus (srcSec, srcIdx) nach
+  // (dstSec, dstIdx). dstIdx === -1 => an das Ende anhängen. Behandelt sowohl
+  // Within-Section als auch Cross-Section inkl. Übertrag der Zwischensummen
+  // (Stunden, Lohn, Material, Netto/MwSt./Brutto) anhand der calc_items.
+  const moveItemAcross = (
+    srcSec: number,
+    srcIdx: number,
+    dstSec: number,
+    dstIdx: number,
+  ) => {
+    if (!data) return;
+    if (srcSec === dstSec && (srcIdx === dstIdx || (dstIdx === -1 && srcIdx === (data.ai.sections?.[srcSec]?.items?.length ?? 0) - 1))) {
+      return;
+    }
+    const sectionsArr = (data.ai.sections || []).map((s: any) => ({
+      ...s,
+      items: [...(s.items || [])],
+      calc_items: Array.isArray(s.calc_items) ? [...s.calc_items] : [],
+    }));
+    if (!sectionsArr[srcSec] || !sectionsArr[dstSec]) return;
+    const src = sectionsArr[srcSec];
+    if (srcIdx < 0 || srcIdx >= src.items.length) return;
+    const item = src.items[srcIdx];
+    const calc = src.calc_items[srcIdx] || null;
+
+    if (srcSec === dstSec) {
+      // Reorder innerhalb der Sektion (keine Subtotal-Verschiebung nötig).
+      src.items.splice(srcIdx, 1);
+      src.calc_items.splice(srcIdx, 1);
+      const insertAt = dstIdx === -1 ? src.items.length : Math.min(dstIdx, src.items.length);
+      src.items.splice(insertAt, 0, item);
+      src.calc_items.splice(insertAt, 0, calc);
+    } else {
+      const dst = sectionsArr[dstSec];
+      // Aus Quelle entfernen
+      src.items.splice(srcIdx, 1);
+      src.calc_items.splice(srcIdx, 1);
+      // In Ziel einfügen
+      const insertAt = dstIdx === -1 ? dst.items.length : Math.min(Math.max(0, dstIdx), dst.items.length);
+      dst.items.splice(insertAt, 0, item);
+      dst.calc_items.splice(insertAt, 0, calc);
+
+      if (calc) {
+        const c = computeContribution(Number(calc.hours) || 0, calc.rateId, Number(calc.materialNet) || 0);
+        src.hours = Math.max(0, (Number(src.hours) || 0) - c.hours);
+        src.labor_cost = Math.max(0, (Number(src.labor_cost) || 0) - c.labor);
+        src.material_cost = Math.max(0, (Number(src.material_cost) || 0) - c.materialGross);
+        src.net_amount = Math.max(0, (Number(src.net_amount) || 0) - c.addNet);
+        src.vat_amount = Math.max(0, Math.round(((Number(src.vat_amount) || 0) - c.addVat) * 100) / 100);
+        src.gross_amount = Math.max(0, Math.round(((Number(src.gross_amount) || 0) - c.addGross) * 100) / 100);
+        dst.hours = (Number(dst.hours) || 0) + c.hours;
+        dst.labor_cost = (Number(dst.labor_cost) || 0) + c.labor;
+        dst.material_cost = (Number(dst.material_cost) || 0) + c.materialGross;
+        dst.net_amount = (Number(dst.net_amount) || 0) + c.addNet;
+        dst.vat_amount = Math.round(((Number(dst.vat_amount) || 0) + c.addVat) * 100) / 100;
+        dst.gross_amount = Math.round(((Number(dst.gross_amount) || 0) + c.addGross) * 100) / 100;
+      }
+    }
+
+    const nextAi = { ...data.ai, sections: sectionsArr, line_items: sectionsArr.flatMap((s: any) => s.items) };
+    persistEdits({ ...data, ai: nextAi });
+  };
     if (!data) return;
     const next = (data.ai.sections || []).filter((_: any, i: number) => i !== sIdx);
     setSections(next);
