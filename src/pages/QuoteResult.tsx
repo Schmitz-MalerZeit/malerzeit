@@ -1558,7 +1558,7 @@ export default function QuoteResult() {
           <p className="text-xs text-muted-foreground -mt-1">
             {tr("Negative Werte = Preisnachlass (z. B. -10 für 10 % Rabatt). Wirkt anteilig auf alle Bereiche.", "Negative values = discount (e.g. -10 for 10% off). Applied proportionally to all sections.")}
           </p>
-          <div className="grid grid-cols-[140px_1fr_28px] gap-2 items-center">
+          <div className="grid grid-cols-[140px_auto_1fr_28px] gap-2 items-center">
             <Select
               value={surcharge.mode}
               onValueChange={(v) => updateSurcharge({ mode: v as "percent" | "amount", value: surcharge.value })}
@@ -1569,13 +1569,32 @@ export default function QuoteResult() {
                 <SelectItem value="amount">{tr("Betrag (€ netto)", "Amount (€ net)")}</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              type="button"
+              variant={surcharge.value < 0 ? "default" : "outline"}
+              size="sm"
+              className="h-10 w-12 px-0 font-bold"
+              onClick={() => updateSurcharge({ mode: surcharge.mode, value: -1 * (Number(surcharge.value) || 0) })}
+              aria-label={tr("Vorzeichen wechseln", "Toggle sign")}
+              title={tr("+ / − umschalten (Nachlass = −)", "Toggle + / − (discount = −)")}
+            >
+              {surcharge.value < 0 ? "−" : "+"}
+            </Button>
             <Input
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="0.01"
+              pattern="[0-9.,\-]*"
               value={surcharge.value === 0 ? "" : String(surcharge.value)}
               placeholder="0"
-              onChange={(e) => updateSurcharge({ mode: surcharge.mode, value: Number(e.target.value) || 0 })}
+              onChange={(e) => {
+                const raw = e.target.value.replace(",", ".").trim();
+                if (raw === "" || raw === "-") {
+                  updateSurcharge({ mode: surcharge.mode, value: 0 });
+                  return;
+                }
+                const n = Number(raw);
+                if (!Number.isNaN(n)) updateSurcharge({ mode: surcharge.mode, value: n });
+              }}
               className="h-10"
             />
             <span className="text-sm text-muted-foreground text-center">
