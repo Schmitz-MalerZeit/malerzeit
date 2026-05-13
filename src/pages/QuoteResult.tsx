@@ -632,6 +632,51 @@ export default function QuoteResult() {
     persistEdits({ ...data, ai: { ...data.ai, whatsapp_text: value, whatsapp_edited: true } });
   };
 
+  // Drag-&-Drop Sensoren: PointerSensor für Maus, TouchSensor mit kurzer
+  // Verzögerung für Touch (Long-Press), damit Scrollen weiter normal funktioniert
+  // und nur ein bewusstes Halten den Drag startet.
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 6 } }),
+  );
+  const [activeDragLabel, setActiveDragLabel] = useState<string | null>(null);
+
+  const parseDndId = (id: string) => {
+    // Item: "item:<sIdx>:<iIdx>" | Section-Container: "sec:<sIdx>"
+    const parts = id.split(":");
+    if (parts[0] === "item") return { kind: "item" as const, sIdx: Number(parts[1]), iIdx: Number(parts[2]) };
+    if (parts[0] === "sec") return { kind: "sec" as const, sIdx: Number(parts[1]) };
+    return null;
+  };
+
+  const onDndStart = (e: DragStartEvent) => {
+    const parsed = parseDndId(String(e.active.id));
+    if (!parsed || parsed.kind !== "item" || !data) return;
+    const txt = data.ai.sections?.[parsed.sIdx]?.items?.[parsed.iIdx];
+    setActiveDragLabel(typeof txt === "string" ? txt : null);
+  };
+
+  const onDndEnd = (e: DragEndEvent) => {
+    setActiveDragLabel(null);
+    const { active, over } = e;
+    if (!over) return;
+    const a = parseDndId(String(active.id));
+    const o = parseDndId(String(over.id));
+    if (!a || a.kind !== "item" || !o) return;
+    if (o.kind === "item") {
+      // Drop auf eine andere Position: vor diese Position einfügen
+      let dstIdx = o.iIdx;
+      if (a.sIdx === o.sIdx && a.iIdx < o.iIdx) {
+        // Anpassen, weil das Element ja erst entfernt und neu eingefügt wird
+        dstIdx = o.iIdx;
+      }
+      moveItemAcross(a.sIdx, a.iIdx, o.sIdx, dstIdx);
+    } else if (o.kind === "sec") {
+      // Drop auf die Sektion (leerer Bereich) → ans Ende anhängen
+      moveItemAcross(a.sIdx, a.iIdx, o.sIdx, -1);
+    }
+  };
+
   if (!data) return null;
   const ai = data.ai;
   const p = ai.pricing;
