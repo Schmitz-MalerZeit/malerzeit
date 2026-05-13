@@ -753,15 +753,7 @@ export default function QuoteResult() {
     try {
       let qId = savedQuoteId;
       if (!qId) {
-        await save(true);
-        qId = savedQuoteId;
-        // savedQuoteId wird async gesetzt – aus localStorage neu lesen falls nötig
-        if (!qId) {
-          const raw = localStorage.getItem("currentQuote");
-          if (raw) {
-            try { qId = JSON.parse(raw).savedQuoteId || null; } catch { /* ignore */ }
-          }
-        }
+        qId = await save(true);
       }
       if (!qId) {
         toast.error(tr("Bitte zuerst speichern, dann Fotos hinzufügen.", "Please save first, then add photos."));
