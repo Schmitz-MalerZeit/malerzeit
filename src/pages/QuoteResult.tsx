@@ -1005,6 +1005,7 @@ export default function QuoteResult() {
       pdf_created_at: new Date().toISOString(),
       pdf_size_bytes: blob.size,
       pdf_mime_type: "application/pdf",
+      surcharge: (Number(surcharge.value) || 0) !== 0 ? surcharge : null,
     };
 
     const query = savedQuoteId
@@ -1327,6 +1328,7 @@ export default function QuoteResult() {
         pdf_created_at: lastSavedPdfPath ? new Date().toISOString() : null,
         pdf_size_bytes: previewBlob?.size ?? null,
         pdf_mime_type: lastSavedPdfPath ? "application/pdf" : null,
+        surcharge: (Number(surcharge.value) || 0) !== 0 ? surcharge : null,
       };
 
       const query = savedQuoteId
@@ -1550,9 +1552,12 @@ export default function QuoteResult() {
 
         <div className="rounded-2xl bg-card border border-border p-4 shadow-soft space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm">{tr("Allgemeiner Aufschlag", "General surcharge")}</h3>
+            <h3 className="font-semibold text-sm">{tr("Aufschlag oder Nachlass", "Surcharge or discount")}</h3>
             <span className="text-xs text-muted-foreground">{tr("erscheint nicht im PDF", "not shown in PDF")}</span>
           </div>
+          <p className="text-xs text-muted-foreground -mt-1">
+            {tr("Negative Werte = Preisnachlass (z. B. -10 für 10 % Rabatt). Wirkt anteilig auf alle Bereiche.", "Negative values = discount (e.g. -10 for 10% off). Applied proportionally to all sections.")}
+          </p>
           <div className="grid grid-cols-[140px_1fr_28px] gap-2 items-center">
             <Select
               value={surcharge.mode}
@@ -1568,7 +1573,6 @@ export default function QuoteResult() {
               type="number"
               inputMode="decimal"
               step="0.01"
-              min="0"
               value={surcharge.value === 0 ? "" : String(surcharge.value)}
               placeholder="0"
               onChange={(e) => updateSurcharge({ mode: surcharge.mode, value: Number(e.target.value) || 0 })}
@@ -1578,10 +1582,16 @@ export default function QuoteResult() {
               {surcharge.mode === "percent" ? "%" : "€"}
             </span>
           </div>
-          {surchargeNet > 0 && (
+          {surchargeNet !== 0 && (
             <div className="text-xs flex justify-between border-t border-border/60 pt-2">
-              <span className="text-muted-foreground">{tr("Aufschlag (netto)", "Surcharge (net)")}</span>
-              <span className="font-medium text-foreground">{fmt(surchargeNet)}</span>
+              <span className="text-muted-foreground">
+                {surchargeNet > 0
+                  ? tr("Aufschlag (netto)", "Surcharge (net)")
+                  : tr("Nachlass (netto)", "Discount (net)")}
+              </span>
+              <span className={`font-medium ${surchargeNet < 0 ? "text-primary" : "text-foreground"}`}>
+                {surchargeNet > 0 ? "+" : ""}{fmt(surchargeNet)}
+              </span>
             </div>
           )}
         </div>

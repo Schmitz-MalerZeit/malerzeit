@@ -130,7 +130,9 @@ export default function Quotes() {
           labor_cost: Number(q.estimated_labor_cost) || 0,
           material_cost: Number(q.material_cost) || 0,
         },
-        surcharge: { mode: "percent", value: 0 },
+        surcharge: (q.surcharge && (q.surcharge.mode === "percent" || q.surcharge.mode === "amount"))
+          ? { mode: q.surcharge.mode, value: Number(q.surcharge.value) || 0 }
+          : { mode: "percent", value: 0 },
       },
       pdf_storage_path: asNewVersion ? null : (q.pdf_storage_path || null),
       pdf_filename: asNewVersion ? null : (q.pdf_filename || null),
@@ -368,6 +370,24 @@ export default function Quotes() {
                 {Array.isArray(q.line_items) && q.line_items.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-2">{q.line_items.length} {tr("Leistungspositionen", "line items")}</p>
                 )}
+                {q.surcharge && Number(q.surcharge.value) !== 0 && (() => {
+                  const v = Number(q.surcharge.value);
+                  const isPercent = q.surcharge.mode === "percent";
+                  const isDiscount = v < 0;
+                  const label = isDiscount
+                    ? tr("Nachlass", "Discount")
+                    : tr("Aufschlag", "Surcharge");
+                  const valueStr = isPercent
+                    ? `${v > 0 ? "+" : ""}${v.toLocaleString(currentLocale())} %`
+                    : `${v > 0 ? "+" : ""}${fmt(v)}`;
+                  return (
+                    <div className="mt-2">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${isDiscount ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-700 dark:text-amber-400"}`}>
+                        {label}: {valueStr}
+                      </span>
+                    </div>
+                  );
+                })()}
                 {q.internal_notes && (
                   <p className="text-xs text-muted-foreground mt-2 line-clamp-2 italic">
                     📝 {q.internal_notes}
