@@ -48,8 +48,14 @@ export function hasPrioritySupport(tier: PlanTier): boolean {
   return tier === "exklusiv";
 }
 
-export const REQUIRED_TIER_LABEL: Record<"pdf" | "logo" | "whatsapp", string> = {
+// Baustellen-Fotos im PDF & in „Hinterlegte Fotos": nur Exklusiv (Trial darf testen).
+export function canUsePhotos(tier: PlanTier): boolean {
+  return tier === "trial" || tier === "exklusiv";
+}
+
+export const REQUIRED_TIER_LABEL: Record<"pdf" | "logo" | "whatsapp" | "photos", string> = {
   pdf: "Light",
   logo: "Profi",
   whatsapp: "Profi",
+  photos: "Exklusiv",
 };
