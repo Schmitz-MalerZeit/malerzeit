@@ -1075,6 +1075,7 @@ export default function QuoteResult() {
       date: new Date().toLocaleDateString(lang === "en" ? "en-US" : "de-DE"),
       lineItems: translatedLineItems,
       sections: translatedSections,
+      photoGallery,
       net: effNet, vat: effVat, gross: effGross, vatRate: vatRate,
       validityDays: settings?.quote_validity_days ?? 14,
       closingText: resolvedClosing,
