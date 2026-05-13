@@ -230,7 +230,28 @@ export default function QuoteResult() {
   const removeLineItem = (index: number) => {
     if (!data) return;
     const items = data.ai.line_items.filter((_: string, i: number) => i !== index);
-    persistItemsEdit({ ...data, ai: { ...data.ai, line_items: items } });
+    const calcArr: any[] = Array.isArray(data.ai.line_items_calc) ? [...data.ai.line_items_calc] : [];
+    const removedCalc = calcArr[index] || null;
+    const nextCalc = calcArr.filter((_: any, i: number) => i !== index);
+    let nextAi: any = { ...data.ai, line_items: items, line_items_calc: nextCalc };
+    if (removedCalc) {
+      const c = computeContribution(Number(removedCalc.hours) || 0, removedCalc.rateId, Number(removedCalc.materialNet) || 0);
+      const prevP = data.ai.pricing || {};
+      nextAi.pricing = {
+        ...prevP,
+        labor_cost: Math.max(0, (Number(prevP.labor_cost) || 0) - c.labor),
+        material_cost: Math.max(0, (Number(prevP.material_cost) || 0) - c.materialGross),
+        net_amount: Math.max(0, (Number(prevP.net_amount) || 0) - c.addNet),
+        vat_amount: Math.max(0, Math.round(((Number(prevP.vat_amount) || 0) - c.addVat) * 100) / 100),
+        gross_amount: Math.max(0, Math.round(((Number(prevP.gross_amount) || 0) - c.addGross) * 100) / 100),
+      };
+      nextAi.estimated_hours = Math.max(0, (Number(data.ai.estimated_hours) || 0) - c.hours);
+      nextAi.estimated_labor_cost = Math.max(0, (Number(data.ai.estimated_labor_cost) || 0) - c.labor);
+      nextAi.estimated_material_cost = Math.max(0, (Number(data.ai.estimated_material_cost) || 0) - c.materialNet);
+      persistEdits({ ...data, ai: nextAi });
+    } else {
+      persistItemsEdit({ ...data, ai: nextAi });
+    }
   };
   const openAddDialog = (sectionIdx: number | null) => {
     const def = hourlyRates.find((r) => r.is_default) || hourlyRates[0];
