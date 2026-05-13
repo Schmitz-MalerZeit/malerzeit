@@ -508,6 +508,87 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
     y += cl.length * 4.5;
   }
 
+  // ───────── Foto-Galerie (eigene Seite/Seiten) ─────────
+  const gallery = (d.photoGallery || []).filter(
+    (g) => g && Array.isArray(g.photos) && g.photos.length > 0
+  );
+  if (gallery.length > 0) {
+    doc.addPage();
+    let gy = margin;
+    const galleryBottom = pageH - 32;
+    const cols = 2;
+    const gap = 6;
+    const cellW = (pageW - margin * 2 - gap * (cols - 1)) / cols;
+    const cellH = 60; // mm
+
+    const drawHeader = (text: string) => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(primary[0], primary[1], primary[2]);
+      doc.text(text, margin, gy);
+      gy += 4;
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.3);
+      doc.line(margin, gy, pageW - margin, gy);
+      gy += 6;
+    };
+    drawHeader(L.photosTitle);
+
+    const ensureGallerySpace = (need: number) => {
+      if (gy + need > galleryBottom) {
+        doc.addPage();
+        gy = margin;
+        drawHeader(L.photosCont);
+      }
+    };
+
+    for (const group of gallery) {
+      // Section title
+      ensureGallerySpace(8);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(primary[0], primary[1], primary[2]);
+      const titleLines = doc.splitTextToSize(group.sectionTitle || "", pageW - margin * 2);
+      doc.text(titleLines, margin, gy);
+      gy += titleLines.length * 5 + 3;
+
+      // Photos in grid
+      let col = 0;
+      let rowMaxH = 0;
+      for (const ph of group.photos) {
+        if (col === 0) ensureGallerySpace(cellH + 4);
+        const cx = margin + col * (cellW + gap);
+        // proportional fit inside cell
+        let w = cellW, h = cellH;
+        const natW = ph.width || 0;
+        const natH = ph.height || 0;
+        if (natW > 0 && natH > 0) {
+          const scale = Math.min(cellW / natW, cellH / natH);
+          w = natW * scale;
+          h = natH * scale;
+        }
+        const ox = cx + (cellW - w) / 2;
+        const oy = gy + (cellH - h) / 2;
+        try {
+          doc.addImage(ph.dataUrl, "JPEG", ox, oy, w, h, undefined, "FAST");
+        } catch (err) {
+          console.warn("[pdf] gallery photo render failed", err);
+        }
+        rowMaxH = Math.max(rowMaxH, cellH);
+        col += 1;
+        if (col >= cols) {
+          gy += rowMaxH + gap;
+          col = 0;
+          rowMaxH = 0;
+        }
+      }
+      if (col > 0) {
+        gy += rowMaxH + gap;
+      }
+      gy += 2;
+    }
+  }
+
   // ───────── Footer ─────────
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
