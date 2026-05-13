@@ -170,11 +170,6 @@ export function QuotePhotosSheet(props: {
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
-                    {idx === 0 && (
-                      <span className="absolute bottom-1 left-1 text-[10px] font-medium bg-primary text-primary-foreground rounded px-1.5 py-0.5">
-                        {tr("PDF", "PDF")}
-                      </span>
-                    )}
                   </div>
                 ))}
               </div>
