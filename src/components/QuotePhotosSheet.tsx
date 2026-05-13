@@ -193,25 +193,36 @@ export function QuotePhotosSheet(props: {
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
-            <div className="grid grid-cols-2 gap-2 w-full">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={uploading || limitReached}
-                onClick={() => cameraRef.current?.click()}
-                className="h-11"
-              >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Camera className="h-4 w-4 mr-2" /> {tr("Kamera", "Camera")}</>}
-              </Button>
+            {isMobile ? (
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={uploading || limitReached}
+                  onClick={() => cameraRef.current?.click()}
+                  className="h-11"
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Camera className="h-4 w-4 mr-2" /> {tr("Kamera", "Camera")}</>}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={uploading || limitReached}
+                  onClick={() => galleryRef.current?.click()}
+                  className="h-11"
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ImageIcon className="h-4 w-4 mr-2" /> {tr("Galerie", "Gallery")}</>}
+                </Button>
+              </div>
+            ) : (
               <Button
                 type="button"
                 disabled={uploading || limitReached}
                 onClick={() => galleryRef.current?.click()}
-                className="h-11"
+                className="h-11 w-full"
               >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ImageIcon className="h-4 w-4 mr-2" /> {tr("Galerie", "Gallery")}</>}
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ImageIcon className="h-4 w-4 mr-2" /> {tr("Bilder auswählen", "Choose images")}</>}
               </Button>
-            </div>
+            )}
             <div className="text-xs text-muted-foreground text-center">
               {photos.length} / {MAX_PHOTOS_PER_SECTION}
               {limitReached && " · " + tr("Limit erreicht", "Limit reached")}
