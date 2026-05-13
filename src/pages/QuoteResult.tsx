@@ -2193,8 +2193,8 @@ export default function QuoteResult() {
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center leading-relaxed">
               {tr(
-                "Im Exklusiv-Tarif kannst du pro Raum bis zu 10 Fotos von der Baustelle hinzufügen. Das erste Foto erscheint im PDF rechts neben der Raum-Überschrift.",
-                "On the Exklusiv plan you can attach up to 10 site photos per room. The first photo appears in the PDF next to the room title.",
+                "Im Exklusiv-Tarif kannst du pro Raum bis zu 10 Fotos von der Baustelle hinzufügen. Alle Fotos erscheinen am Ende des PDFs als eigene Galerie – nach Räumen gruppiert.",
+                "On the Exklusiv plan you can attach up to 10 site photos per room. All photos appear at the end of the PDF as a dedicated gallery, grouped by room.",
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
