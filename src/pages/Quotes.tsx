@@ -569,6 +569,74 @@ export default function Quotes() {
         }}
         onRetry={() => { if (lastQuote) void openSavedPdf(lastQuote); }}
       />
+
+      <Sheet open={!!photoSheetQuote} onOpenChange={(o) => { if (!o) { setPhotoSheetQuote(null); setPhotoList([]); } }}>
+        <SheetContent side="bottom" className="h-[85vh] flex flex-col">
+          <SheetHeader className="text-left">
+            <SheetTitle>
+              {tr("Hinterlegte Fotos", "Stored photos")}
+              {photoSheetQuote?.customer_name ? ` · ${photoSheetQuote.customer_name}` : ""}
+            </SheetTitle>
+            <SheetDescription>
+              {tr("Antippen zum Vergrößern. Wischen oder Pfeiltasten zum Blättern.", "Tap to enlarge. Swipe or use arrow keys to navigate.")}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto py-3">
+            {photoLoading ? (
+              <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : photoList.length === 0 ? (
+              <div className="text-center py-10 text-sm text-muted-foreground">
+                {tr("Für diesen Vorschlag sind noch keine Fotos hinterlegt.", "No photos stored for this quote yet.")}
+              </div>
+            ) : (() => {
+              const groups = new Map<string, QuotePhotoWithUrl[]>();
+              for (const p of photoList) {
+                const arr = groups.get(p.section_id) || [];
+                arr.push(p);
+                groups.set(p.section_id, arr);
+              }
+              const sectionTitleById = new Map<string, string>();
+              const secs: any[] = Array.isArray(photoSheetQuote?.sections) ? photoSheetQuote.sections : [];
+              for (const s of secs) if (s?.id) sectionTitleById.set(s.id, s.title || tr("Bereich", "Section"));
+              return (
+                <div className="space-y-5">
+                  {[...groups.entries()].map(([sid, photos]) => (
+                    <div key={sid}>
+                      <h3 className="text-sm font-semibold mb-2">
+                        {sectionTitleById.get(sid) || tr("Bereich", "Section")}
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">{photos.length}</span>
+                      </h3>
+                      <div className="grid grid-cols-3 gap-2">
+                        {photos.map((p) => {
+                          const globalIdx = photoList.findIndex((x) => x.id === p.id);
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => setLightboxIdx(globalIdx)}
+                              className="aspect-square rounded-lg overflow-hidden bg-muted"
+                              aria-label={tr("Foto vergrößern", "Enlarge photo")}
+                            >
+                              <img src={p.url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <QuotePhotoLightbox
+        photos={photoList}
+        index={lightboxIdx}
+        onClose={() => setLightboxIdx(null)}
+        onIndexChange={setLightboxIdx}
+      />
     </AppShell>
   );
 }
