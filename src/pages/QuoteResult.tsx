@@ -1829,7 +1829,9 @@ export default function QuoteResult() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAddDlg((s) => ({ ...s, open: false }))}>{tr("Abbrechen", "Cancel")}</Button>
             <Button onClick={confirmAddPosition}>
-              <Plus className="h-4 w-4 mr-1.5" /> {tr("Hinzufügen", "Add")}
+              {addDlg.itemIdx !== null
+                ? (<><Check className="h-4 w-4 mr-1.5" /> {tr("Speichern", "Save")}</>)
+                : (<><Plus className="h-4 w-4 mr-1.5" /> {tr("Hinzufügen", "Add")}</>)}
             </Button>
           </DialogFooter>
         </DialogContent>
