@@ -177,51 +177,52 @@ export function QuotePhotosSheet(props: {
           </div>
 
           <SheetFooter className="flex-col gap-2 sm:flex-col sm:gap-2">
-            <input
-              ref={cameraRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => handleFiles(e.target.files)}
-            />
-            <input
-              ref={galleryRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => handleFiles(e.target.files)}
-            />
             {isMobile ? (
               <div className="grid grid-cols-2 gap-2 w-full">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={uploading || limitReached}
-                  onClick={() => cameraRef.current?.click()}
-                  className="h-11"
+                <label
+                  className={`relative inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer ${(uploading || limitReached) ? "opacity-50 pointer-events-none" : ""}`}
                 >
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Camera className="h-4 w-4 mr-2" /> {tr("Kamera", "Camera")}</>}
-                </Button>
-                <Button
-                  type="button"
-                  disabled={uploading || limitReached}
-                  onClick={() => galleryRef.current?.click()}
-                  className="h-11"
+                  <input
+                    ref={cameraRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="sr-only"
+                    disabled={uploading || limitReached}
+                    onChange={(e) => handleFiles(e.target.files)}
+                  />
+                </label>
+                <label
+                  className={`relative inline-flex h-11 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 cursor-pointer ${(uploading || limitReached) ? "opacity-50 pointer-events-none" : ""}`}
                 >
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ImageIcon className="h-4 w-4 mr-2" /> {tr("Galerie", "Gallery")}</>}
-                </Button>
+                  <input
+                    ref={galleryRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="sr-only"
+                    disabled={uploading || limitReached}
+                    onChange={(e) => handleFiles(e.target.files)}
+                  />
+                </label>
               </div>
             ) : (
-              <Button
-                type="button"
-                disabled={uploading || limitReached}
-                onClick={() => galleryRef.current?.click()}
-                className="h-11 w-full"
+              <label
+                className={`relative inline-flex h-11 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 cursor-pointer ${(uploading || limitReached) ? "opacity-50 pointer-events-none" : ""}`}
               >
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ImageIcon className="h-4 w-4 mr-2" /> {tr("Bilder auswählen", "Choose images")}</>}
-              </Button>
+                <input
+                  ref={galleryRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  disabled={uploading || limitReached}
+                  onChange={(e) => handleFiles(e.target.files)}
+                />
+              </label>
             )}
             <div className="text-xs text-muted-foreground text-center">
               {photos.length} / {MAX_PHOTOS_PER_SECTION}
