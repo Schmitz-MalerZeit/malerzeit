@@ -237,87 +237,155 @@ export default function QuoteResult() {
     setAddDlg({
       open: true,
       sectionIdx,
+      itemIdx: null,
       description: "",
       hours: "",
       rateId: def?.id || "",
       materialNet: "",
     });
   };
+  const openEditDialog = (sectionIdx: number | null, itemIdx: number) => {
+    if (!data) return;
+    let calc: any = null;
+    let desc = "";
+    if (sectionIdx !== null) {
+      const sec = (data.ai.sections || [])[sectionIdx];
+      if (!sec) return;
+      calc = (sec.calc_items || [])[itemIdx] || null;
+      desc = sec.items?.[itemIdx] ?? "";
+    } else {
+      calc = (data.ai.line_items_calc || [])[itemIdx] || null;
+      desc = data.ai.line_items?.[itemIdx] ?? "";
+    }
+    if (!calc) return;
+    setAddDlg({
+      open: true,
+      sectionIdx,
+      itemIdx,
+      description: desc,
+      hours: String(calc.hours ?? ""),
+      rateId: calc.rateId || (hourlyRates.find((r) => r.is_default)?.id ?? hourlyRates[0]?.id ?? ""),
+      materialNet: String(calc.materialNet ?? ""),
+    });
+  };
   const addLineItem = () => openAddDialog(null);
 
-  // Apply the dialog: insert the new position into items/sections AND update
-  // pricing/sections subtotals deterministically (no AI call). The user can
-  // still hit "Preise neu berechnen" afterwards if they want a full re-eval.
+  // Compute the deterministic contribution of one calc-tracked item.
+  const computeContribution = (hours: number, rateId: string, materialNet: number) => {
+    const rate = hourlyRates.find((r) => r.id === rateId);
+    const hourlyRate = rate?.rate || 0;
+    const labor = Math.round(hours * hourlyRate);
+    const markup = Number(settings?.material_markup ?? 15);
+    const materialGross = Math.round(materialNet * (1 + markup / 100));
+    const addNet = labor + materialGross;
+    const vatRate = Number(data?.ai?.pricing?.vat_rate ?? settings?.vat_rate ?? 19);
+    const addVat = Math.round(addNet * (vatRate / 100) * 100) / 100;
+    const addGross = Math.round((addNet + addVat) * 100) / 100;
+    return { labor, materialNet, materialGross, addNet, addVat, addGross, vatRate, hours };
+  };
+
+  // Apply the dialog: insert/update the position into items/sections AND update
+  // pricing/sections subtotals deterministically (no AI call).
   const confirmAddPosition = () => {
     if (!data) return;
     const desc = addDlg.description.trim();
     if (!desc) { toast.error(tr("Bitte eine Beschreibung eingeben.", "Please enter a description.")); return; }
     const hours = Number((addDlg.hours || "0").replace(",", ".")) || 0;
     const materialNet = Number((addDlg.materialNet || "0").replace(",", ".")) || 0;
-    const rate = hourlyRates.find((r) => r.id === addDlg.rateId);
-    const hourlyRate = rate?.rate || 0;
-    const labor = Math.round(hours * hourlyRate);
-    const markup = Number(settings?.material_markup ?? 15);
-    const materialGross = Math.round(materialNet * (1 + markup / 100));
-    const addNet = labor + materialGross;
-    const vatRate = Number(data.ai?.pricing?.vat_rate ?? settings?.vat_rate ?? 19);
-    const addVat = Math.round(addNet * (vatRate / 100) * 100) / 100;
-    const addGross = Math.round((addNet + addVat) * 100) / 100;
+    const c = computeContribution(hours, addDlg.rateId, materialNet);
 
-    // Build updated sections / items
+    // Compute "old" contribution for edit mode (to subtract before adding new)
+    let old = { labor: 0, materialNet: 0, materialGross: 0, addNet: 0, addVat: 0, addGross: 0, hours: 0 };
+    if (addDlg.itemIdx !== null) {
+      let oldCalc: any = null;
+      if (addDlg.sectionIdx !== null) {
+        oldCalc = (data.ai.sections?.[addDlg.sectionIdx]?.calc_items || [])[addDlg.itemIdx] || null;
+      } else {
+        oldCalc = (data.ai.line_items_calc || [])[addDlg.itemIdx] || null;
+      }
+      if (oldCalc) old = computeContribution(Number(oldCalc.hours) || 0, oldCalc.rateId, Number(oldCalc.materialNet) || 0);
+    }
+
+    const dHours = c.hours - old.hours;
+    const dLabor = c.labor - old.labor;
+    const dMaterialNet = c.materialNet - old.materialNet;
+    const dMaterialGross = c.materialGross - old.materialGross;
+    const dNet = c.addNet - old.addNet;
+    const dVat = Math.round((c.addVat - old.addVat) * 100) / 100;
+    const dGross = Math.round((c.addGross - old.addGross) * 100) / 100;
+
     const sections = Array.isArray(data.ai.sections) ? [...data.ai.sections] : [];
     let nextSections = sections;
     let nextLineItems: string[] = [...(data.ai.line_items || [])];
+    let nextLineItemsCalc: Array<any> = Array.isArray(data.ai.line_items_calc) ? [...data.ai.line_items_calc] : [];
+
     if (addDlg.sectionIdx !== null && sections[addDlg.sectionIdx]) {
       const sIdx = addDlg.sectionIdx;
       const sec = { ...sections[sIdx] };
-      sec.items = [...(sec.items || []), desc];
-      sec.hours = (Number(sec.hours) || 0) + hours;
-      sec.labor_cost = (Number(sec.labor_cost) || 0) + labor;
-      sec.material_cost = (Number(sec.material_cost) || 0) + materialGross;
-      sec.net_amount = (Number(sec.net_amount) || 0) + addNet;
-      sec.vat_amount = Math.round(((Number(sec.vat_amount) || 0) + addVat) * 100) / 100;
-      sec.gross_amount = Math.round(((Number(sec.gross_amount) || 0) + addGross) * 100) / 100;
+      const items = [...(sec.items || [])];
+      const calc_items = [...(sec.calc_items || [])];
+      while (calc_items.length < items.length) calc_items.push(null);
+
+      const newCalc = { hours: c.hours, rateId: addDlg.rateId, materialNet: c.materialNet };
+      if (addDlg.itemIdx !== null && items[addDlg.itemIdx] !== undefined) {
+        items[addDlg.itemIdx] = desc;
+        calc_items[addDlg.itemIdx] = newCalc;
+      } else {
+        items.push(desc);
+        calc_items.push(newCalc);
+      }
+      sec.items = items;
+      sec.calc_items = calc_items;
+      sec.hours = Math.max(0, (Number(sec.hours) || 0) + dHours);
+      sec.labor_cost = Math.max(0, (Number(sec.labor_cost) || 0) + dLabor);
+      sec.material_cost = Math.max(0, (Number(sec.material_cost) || 0) + dMaterialGross);
+      sec.net_amount = Math.max(0, (Number(sec.net_amount) || 0) + dNet);
+      sec.vat_amount = Math.max(0, Math.round(((Number(sec.vat_amount) || 0) + dVat) * 100) / 100);
+      sec.gross_amount = Math.max(0, Math.round(((Number(sec.gross_amount) || 0) + dGross) * 100) / 100);
       nextSections = [...sections];
       nextSections[sIdx] = sec;
       nextLineItems = nextSections.flatMap((s: any) => s.items);
     } else {
-      nextLineItems = [...nextLineItems, desc];
+      while (nextLineItemsCalc.length < nextLineItems.length) nextLineItemsCalc.push(null);
+      const newCalc = { hours: c.hours, rateId: addDlg.rateId, materialNet: c.materialNet };
+      if (addDlg.itemIdx !== null && nextLineItems[addDlg.itemIdx] !== undefined) {
+        nextLineItems[addDlg.itemIdx] = desc;
+        nextLineItemsCalc[addDlg.itemIdx] = newCalc;
+      } else {
+        nextLineItems.push(desc);
+        nextLineItemsCalc.push(newCalc);
+      }
     }
 
-    // Update overall pricing
     const prevP = data.ai.pricing || {};
     const newPricing = {
       ...prevP,
-      vat_rate: vatRate,
-      labor_cost: (Number(prevP.labor_cost) || 0) + labor,
-      material_cost: (Number(prevP.material_cost) || 0) + materialGross,
-      net_amount: (Number(prevP.net_amount) || 0) + addNet,
-      vat_amount: Math.round(((Number(prevP.vat_amount) || 0) + addVat) * 100) / 100,
-      gross_amount: Math.round(((Number(prevP.gross_amount) || 0) + addGross) * 100) / 100,
+      vat_rate: c.vatRate,
+      labor_cost: Math.max(0, (Number(prevP.labor_cost) || 0) + dLabor),
+      material_cost: Math.max(0, (Number(prevP.material_cost) || 0) + dMaterialGross),
+      net_amount: Math.max(0, (Number(prevP.net_amount) || 0) + dNet),
+      vat_amount: Math.max(0, Math.round(((Number(prevP.vat_amount) || 0) + dVat) * 100) / 100),
+      gross_amount: Math.max(0, Math.round(((Number(prevP.gross_amount) || 0) + dGross) * 100) / 100),
     };
 
     const nextAi = {
       ...data.ai,
       sections: nextSections,
       line_items: nextLineItems,
-      estimated_hours: (Number(data.ai.estimated_hours) || 0) + hours,
-      estimated_labor_cost: (Number(data.ai.estimated_labor_cost) || 0) + labor,
-      estimated_material_cost: (Number(data.ai.estimated_material_cost) || 0) + materialNet,
+      line_items_calc: nextLineItemsCalc,
+      estimated_hours: Math.max(0, (Number(data.ai.estimated_hours) || 0) + dHours),
+      estimated_labor_cost: Math.max(0, (Number(data.ai.estimated_labor_cost) || 0) + dLabor),
+      estimated_material_cost: Math.max(0, (Number(data.ai.estimated_material_cost) || 0) + dMaterialNet),
       pricing: newPricing,
     };
-    const next = { ...data, ai: nextAi };
-    // Use persistEdits (NOT persistItemsEdit) – the pricing is already up to
-    // date, so we don't want the "Preise neu berechnen" banner to appear.
-    persistEdits(next);
+    persistEdits({ ...data, ai: nextAi });
     setAddDlg((s) => ({ ...s, open: false }));
-    toast.success(tr("Position hinzugefügt", "Item added"));
+    toast.success(addDlg.itemIdx !== null
+      ? tr("Position aktualisiert", "Item updated")
+      : tr("Position hinzugefügt", "Item added"));
   };
 
   // ---- Section helpers (Räume/Bereiche) ----------------------------------
-  // Beim Editieren von Sections halten wir line_items automatisch synchron
-  // (flach, in Reihenfolge der Sections), damit PDF/WhatsApp/Templates
-  // konsistent bleiben.
   const flattenSections = (sections: Array<{ title: string; items: string[] }>) =>
     sections.flatMap((s) => s.items);
 
@@ -345,16 +413,46 @@ export default function QuoteResult() {
   };
   const removeSectionItem = (sIdx: number, iIdx: number) => {
     if (!data) return;
-    const next = [...(data.ai.sections || [])];
-    const items = next[sIdx].items.filter((_: string, i: number) => i !== iIdx);
-    next[sIdx] = { ...next[sIdx], items };
-    setSections(next);
-  };
-  const addSectionItem = (sIdx: number) => {
-    if (!data) return;
-    const next = [...(data.ai.sections || [])];
-    next[sIdx] = { ...next[sIdx], items: [...next[sIdx].items, ""] };
-    setSections(next);
+    const sectionsArr = [...(data.ai.sections || [])];
+    const sec = { ...sectionsArr[sIdx] };
+    const items = sec.items.filter((_: string, i: number) => i !== iIdx);
+    const calc_items = Array.isArray(sec.calc_items) ? [...sec.calc_items] : [];
+    const removedCalc = calc_items[iIdx] || null;
+    const nextCalc = calc_items.filter((_: any, i: number) => i !== iIdx);
+
+    let nextAi: any = { ...data.ai };
+    if (removedCalc) {
+      const c = computeContribution(Number(removedCalc.hours) || 0, removedCalc.rateId, Number(removedCalc.materialNet) || 0);
+      sec.hours = Math.max(0, (Number(sec.hours) || 0) - c.hours);
+      sec.labor_cost = Math.max(0, (Number(sec.labor_cost) || 0) - c.labor);
+      sec.material_cost = Math.max(0, (Number(sec.material_cost) || 0) - c.materialGross);
+      sec.net_amount = Math.max(0, (Number(sec.net_amount) || 0) - c.addNet);
+      sec.vat_amount = Math.max(0, Math.round(((Number(sec.vat_amount) || 0) - c.addVat) * 100) / 100);
+      sec.gross_amount = Math.max(0, Math.round(((Number(sec.gross_amount) || 0) - c.addGross) * 100) / 100);
+      const prevP = data.ai.pricing || {};
+      nextAi.pricing = {
+        ...prevP,
+        labor_cost: Math.max(0, (Number(prevP.labor_cost) || 0) - c.labor),
+        material_cost: Math.max(0, (Number(prevP.material_cost) || 0) - c.materialGross),
+        net_amount: Math.max(0, (Number(prevP.net_amount) || 0) - c.addNet),
+        vat_amount: Math.max(0, Math.round(((Number(prevP.vat_amount) || 0) - c.addVat) * 100) / 100),
+        gross_amount: Math.max(0, Math.round(((Number(prevP.gross_amount) || 0) - c.addGross) * 100) / 100),
+      };
+      nextAi.estimated_hours = Math.max(0, (Number(data.ai.estimated_hours) || 0) - c.hours);
+      nextAi.estimated_labor_cost = Math.max(0, (Number(data.ai.estimated_labor_cost) || 0) - c.labor);
+      nextAi.estimated_material_cost = Math.max(0, (Number(data.ai.estimated_material_cost) || 0) - c.materialNet);
+    }
+    sec.items = items;
+    sec.calc_items = nextCalc;
+    sectionsArr[sIdx] = sec;
+    nextAi.sections = sectionsArr;
+    nextAi.line_items = sectionsArr.flatMap((s: any) => s.items);
+    // If we subtracted a tracked calc, totals are already in sync → use persistEdits (no recalc banner)
+    if (removedCalc) {
+      persistEdits({ ...data, ai: nextAi });
+    } else {
+      persistItemsEdit({ ...data, ai: nextAi });
+    }
   };
   const removeSection = (sIdx: number) => {
     if (!data) return;
@@ -363,8 +461,9 @@ export default function QuoteResult() {
   };
   const addSection = () => {
     if (!data) return;
-    const next = [...(data.ai.sections || []), { title: tr("Neuer Bereich", "New section"), items: [""] }];
-    setSections(next);
+    const next = [...(data.ai.sections || []), { title: tr("Neuer Bereich", "New section"), items: [], calc_items: [] }];
+    // Adding an empty section doesn't change pricing → use persistEdits to avoid recalc banner.
+    persistEdits({ ...data, ai: { ...data.ai, sections: next, line_items: flattenSections(next) } });
   };
   const updateCustomerText = (value: string) => {
     if (!data) return;
