@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { FolderOpen, Loader2, Eye, Trash2, StickyNote, Save, Search, X, Pencil, Copy, ImageIcon } from "lucide-react";
-import { listQuotePhotos, attachUrlsToPhotos, type QuotePhotoWithUrl } from "@/lib/quotePhotos";
+import { listQuotePhotos, attachUrlsToPhotos, deleteQuotePhoto, withSectionIds, type QuotePhotoWithUrl } from "@/lib/quotePhotos";
 import { QuotePhotoLightbox } from "@/components/QuotePhotoLightbox";
+import { QuotePhotosSheet } from "@/components/QuotePhotosSheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,26 +47,47 @@ export default function Quotes() {
   const subState = useSubscription();
   const waAllowed = canSendViaWhatsapp(getTier(subState));
 
-  // Foto-Sheet (Lightbox-Galerie für gespeicherte Vorschläge)
+  // Foto-Sheet (Galerie für gespeicherte Vorschläge — mit Add/Delete je Sektion)
   const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
   const [photoSheetQuote, setPhotoSheetQuote] = useState<any | null>(null);
   const [photoList, setPhotoList] = useState<QuotePhotoWithUrl[]>([]);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [editorSection, setEditorSection] = useState<{ id: string; title: string } | null>(null);
+
+  const reloadPhotosFor = async (quoteId: string) => {
+    try {
+      const all = await listQuotePhotos(quoteId);
+      const withUrls = await attachUrlsToPhotos(all);
+      setPhotoList(withUrls);
+      setPhotoCounts((prev) => ({ ...prev, [quoteId]: withUrls.length }));
+    } catch (e: any) {
+      toast.error(e?.message || tr("Fotos konnten nicht geladen werden", "Could not load photos"));
+    }
+  };
 
   const openPhotoSheet = async (q: any) => {
     setPhotoSheetQuote(q);
     setPhotoList([]);
     setPhotoLoading(true);
     try {
-      const all = await listQuotePhotos(q.id);
-      const withUrls = await attachUrlsToPhotos(all);
-      setPhotoList(withUrls);
-      setPhotoCounts((prev) => ({ ...prev, [q.id]: withUrls.length }));
-    } catch (e: any) {
-      toast.error(e?.message || tr("Fotos konnten nicht geladen werden", "Could not load photos"));
+      await reloadPhotosFor(q.id);
     } finally {
       setPhotoLoading(false);
+    }
+  };
+
+  const handleDeletePhoto = async (p: QuotePhotoWithUrl) => {
+    if (!confirm(tr("Foto wirklich löschen?", "Really delete photo?"))) return;
+    try {
+      await deleteQuotePhoto(p);
+      const next = photoList.filter((x) => x.id !== p.id);
+      setPhotoList(next);
+      if (photoSheetQuote) {
+        setPhotoCounts((prev) => ({ ...prev, [photoSheetQuote.id]: next.length }));
+      }
+    } catch (e: any) {
+      toast.error(e?.message || tr("Löschen fehlgeschlagen", "Delete failed"));
     }
   };
 
@@ -584,46 +606,85 @@ export default function Quotes() {
           <div className="flex-1 overflow-y-auto py-3">
             {photoLoading ? (
               <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-            ) : photoList.length === 0 ? (
-              <div className="text-center py-10 text-sm text-muted-foreground">
-                {tr("Für diesen Vorschlag sind noch keine Fotos hinterlegt.", "No photos stored for this quote yet.")}
-              </div>
             ) : (() => {
+              const sections = withSectionIds(
+                Array.isArray(photoSheetQuote?.sections) ? photoSheetQuote.sections : [],
+              );
+              const knownIds = new Set(sections.map((s) => s.id));
               const groups = new Map<string, QuotePhotoWithUrl[]>();
               for (const p of photoList) {
                 const arr = groups.get(p.section_id) || [];
                 arr.push(p);
                 groups.set(p.section_id, arr);
               }
-              const sectionTitleById = new Map<string, string>();
-              const secs: any[] = Array.isArray(photoSheetQuote?.sections) ? photoSheetQuote.sections : [];
-              for (const s of secs) if (s?.id) sectionTitleById.set(s.id, s.title || tr("Bereich", "Section"));
-              return (
-                <div className="space-y-5">
-                  {[...groups.entries()].map(([sid, photos]) => (
-                    <div key={sid}>
-                      <h3 className="text-sm font-semibold mb-2">
-                        {sectionTitleById.get(sid) || tr("Bereich", "Section")}
-                        <span className="ml-2 text-xs font-normal text-muted-foreground">{photos.length}</span>
-                      </h3>
-                      <div className="grid grid-cols-3 gap-2">
-                        {photos.map((p) => {
-                          const globalIdx = photoList.findIndex((x) => x.id === p.id);
-                          return (
+              const orphanGroups = [...groups.entries()].filter(([sid]) => !knownIds.has(sid));
+
+              const renderSection = (sid: string, title: string, photos: QuotePhotoWithUrl[]) => (
+                <div key={sid}>
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <h3 className="text-sm font-semibold truncate">
+                      {title}
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">{photos.length}</span>
+                    </h3>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs shrink-0"
+                      disabled={photos.length >= 10}
+                      onClick={() => setEditorSection({ id: sid, title })}
+                    >
+                      <ImageIcon className="h-3.5 w-3.5 mr-1.5" />
+                      {tr("Hinzufügen", "Add")}
+                    </Button>
+                  </div>
+                  {photos.length === 0 ? (
+                    <div className="text-xs text-muted-foreground italic mb-2">
+                      {tr("Keine Fotos.", "No photos.")}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {photos.map((p) => {
+                        const globalIdx = photoList.findIndex((x) => x.id === p.id);
+                        return (
+                          <div key={p.id} className="relative group aspect-square rounded-lg overflow-hidden bg-muted">
                             <button
-                              key={p.id}
                               type="button"
                               onClick={() => setLightboxIdx(globalIdx)}
-                              className="aspect-square rounded-lg overflow-hidden bg-muted"
+                              className="absolute inset-0 w-full h-full"
                               aria-label={tr("Foto vergrößern", "Enlarge photo")}
                             >
                               <img src={p.url} alt="" className="w-full h-full object-cover" loading="lazy" />
                             </button>
-                          );
-                        })}
-                      </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePhoto(p)}
+                              className="absolute top-1 right-1 p-1.5 rounded-full bg-background/80 text-destructive shadow-sm hover:bg-background"
+                              aria-label={tr("Foto löschen", "Delete photo")}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                  )}
+                </div>
+              );
+
+              return (
+                <div className="space-y-5">
+                  {sections.length === 0 && photoList.length === 0 && (
+                    <div className="text-center py-10 text-sm text-muted-foreground">
+                      {tr("Für diesen Vorschlag sind noch keine Räume vorhanden.", "No rooms in this quote yet.")}
+                    </div>
+                  )}
+                  {sections.map((s) =>
+                    renderSection(s.id, s.title || tr("Bereich", "Section"), groups.get(s.id) || []),
+                  )}
+                  {orphanGroups.map(([sid, photos]) =>
+                    renderSection(sid, tr("Sonstige", "Other"), photos),
+                  )}
                 </div>
               );
             })()}
@@ -636,6 +697,19 @@ export default function Quotes() {
         index={lightboxIdx}
         onClose={() => setLightboxIdx(null)}
         onIndexChange={setLightboxIdx}
+      />
+
+      <QuotePhotosSheet
+        open={!!editorSection}
+        onOpenChange={(o) => {
+          if (!o) {
+            setEditorSection(null);
+            if (photoSheetQuote) void reloadPhotosFor(photoSheetQuote.id);
+          }
+        }}
+        quoteId={photoSheetQuote?.id ?? null}
+        sectionId={editorSection?.id ?? null}
+        sectionTitle={editorSection?.title ?? ""}
       />
     </AppShell>
   );

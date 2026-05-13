@@ -15,6 +15,7 @@ import {
 } from "@/lib/quotePhotos";
 import { supabase } from "@/integrations/supabase/client";
 import { useTr } from "@/lib/tr";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { QuotePhotoLightbox } from "./QuotePhotoLightbox";
 
 export function QuotePhotosSheet(props: {
@@ -27,6 +28,7 @@ export function QuotePhotosSheet(props: {
   onCountChange?: (count: number) => void;
 }) {
   const tr = useTr();
+  const isMobile = useIsMobile();
   const { open, onOpenChange, quoteId, sectionId, sectionTitle } = props;
   const [photos, setPhotos] = useState<QuotePhotoWithUrl[]>([]);
   const [loading, setLoading] = useState(false);
@@ -135,8 +137,8 @@ export function QuotePhotosSheet(props: {
             <SheetTitle>{tr("Fotos", "Photos")} · {sectionTitle}</SheetTitle>
             <SheetDescription>
               {tr(
-                `Bis zu ${MAX_PHOTOS_PER_SECTION} Fotos. Das erste Foto erscheint im PDF rechts neben der Raum-Überschrift.`,
-                `Up to ${MAX_PHOTOS_PER_SECTION} photos. The first photo appears in the PDF next to the room title.`,
+                `Bis zu ${MAX_PHOTOS_PER_SECTION} Fotos pro Raum. Alle Fotos werden am Ende des PDFs als Galerie angehängt – nach Räumen gruppiert.`,
+                `Up to ${MAX_PHOTOS_PER_SECTION} photos per room. All photos are appended at the end of the PDF as a gallery, grouped by room.`,
               )}
             </SheetDescription>
           </SheetHeader>
@@ -168,11 +170,6 @@ export function QuotePhotosSheet(props: {
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
-                    {idx === 0 && (
-                      <span className="absolute bottom-1 left-1 text-[10px] font-medium bg-primary text-primary-foreground rounded px-1.5 py-0.5">
-                        {tr("PDF", "PDF")}
-                      </span>
-                    )}
                   </div>
                 ))}
               </div>
@@ -196,25 +193,36 @@ export function QuotePhotosSheet(props: {
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
-            <div className="grid grid-cols-2 gap-2 w-full">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={uploading || limitReached}
-                onClick={() => cameraRef.current?.click()}
-                className="h-11"
-              >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Camera className="h-4 w-4 mr-2" /> {tr("Kamera", "Camera")}</>}
-              </Button>
+            {isMobile ? (
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={uploading || limitReached}
+                  onClick={() => cameraRef.current?.click()}
+                  className="h-11"
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Camera className="h-4 w-4 mr-2" /> {tr("Kamera", "Camera")}</>}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={uploading || limitReached}
+                  onClick={() => galleryRef.current?.click()}
+                  className="h-11"
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ImageIcon className="h-4 w-4 mr-2" /> {tr("Galerie", "Gallery")}</>}
+                </Button>
+              </div>
+            ) : (
               <Button
                 type="button"
                 disabled={uploading || limitReached}
                 onClick={() => galleryRef.current?.click()}
-                className="h-11"
+                className="h-11 w-full"
               >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ImageIcon className="h-4 w-4 mr-2" /> {tr("Galerie", "Gallery")}</>}
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ImageIcon className="h-4 w-4 mr-2" /> {tr("Bilder auswählen", "Choose images")}</>}
               </Button>
-            </div>
+            )}
             <div className="text-xs text-muted-foreground text-center">
               {photos.length} / {MAX_PHOTOS_PER_SECTION}
               {limitReached && " · " + tr("Limit erreicht", "Limit reached")}
