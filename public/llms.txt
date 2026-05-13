@@ -1,0 +1,15 @@
+# MalerZeit AI
+
+> KI-gestützte Preisvorschläge für Malerbetriebe – Tätigkeit beschreiben, kalkulieren und in Minuten ein professionelles PDF erstellen.
+
+MalerZeit AI ist eine mobile Web-App für Malermeister und Malerbetriebe im DACH-Raum. Anwender beschreiben ihre Leistungen per Text oder Sprache, die App kalkuliert auf Basis hinterlegter Stundensätze, Aufschläge und Qualitätsniveaus eine unverbindliche Preisorientierung und exportiert sie als PDF-Vorschlag mit Briefkopf.
+
+## Pages
+
+- [Startseite](/): Produktübersicht und Einstieg in die App.
+- [Anmelden / Registrieren](/auth): Konto erstellen oder einloggen.
+- [Tarife & Preise](/pricing): Starter-, Profi- und Profiplus-Abonnements im Vergleich.
+- [Impressum](/imprint): Anbieterkennzeichnung nach § 5 TMG.
+- [Nutzungsbedingungen](/terms): AGB für die Nutzung der App.
+- [Datenschutz](/privacy): Informationen zur Verarbeitung personenbezogener Daten.
+- [Widerruf & Rückerstattung](/refund): Widerrufsrecht und Erstattungsbedingungen.

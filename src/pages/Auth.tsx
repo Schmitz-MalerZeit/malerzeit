@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, Mail } from "lucide-react";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
+import { Seo } from "@/components/Seo";
 
 const schema = z.object({
   email: z.string().trim().email("Ungültige E-Mail").max(255),
@@ -77,7 +78,12 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 relative">
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-10 relative">
+      <Seo
+        title="Anmelden – MalerZeit AI"
+        description="Melde dich bei MalerZeit AI an oder erstelle ein Konto, um Preisvorschläge in Minuten zu erstellen."
+        path="/auth"
+      />
       <div className="absolute top-4 right-4">
         <LanguageSwitcher variant="compact" />
       </div>
@@ -145,6 +151,6 @@ export default function Auth() {
         </nav>
         <p className="text-[11px] text-center text-muted-foreground mt-3">Anbieter: Raumwerk Schmitz</p>
       </div>
-    </div>
+    </main>
   );
 }
