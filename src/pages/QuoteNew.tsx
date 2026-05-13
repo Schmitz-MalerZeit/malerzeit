@@ -490,6 +490,35 @@ export default function QuoteNew() {
                   </p>
                 )}
               </div>
+              {selectedCustomerId && savedObjects.some((o) => o.customer_id === selectedCustomerId) && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="cust_obj">{tr("Gespeichertes Objekt", "Saved object")}</Label>
+                  <select
+                    id="cust_obj"
+                    value={selectedObjectId}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setSelectedObjectId(id);
+                      if (!id) return;
+                      const o = savedObjects.find((x) => x.id === id);
+                      if (!o) return;
+                      setCustomer((c) => ({
+                        ...c,
+                        project_label: o.label,
+                        address: o.address || c.address,
+                        postal_code: o.postal_code || c.postal_code,
+                        city: o.city || c.city,
+                      }));
+                    }}
+                    className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="">{tr("— Objekt auswählen (optional) —", "— Select object (optional) —")}</option>
+                    {savedObjects.filter((o) => o.customer_id === selectedCustomerId).map((o) => (
+                      <option key={o.id} value={o.id}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="cust_project">
                   {tr("Objekt / Bauvorhaben", "Property / project")} <span className="text-muted-foreground font-normal">({tr("optional", "optional")})</span>
