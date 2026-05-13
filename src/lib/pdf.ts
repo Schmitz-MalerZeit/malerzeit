@@ -45,6 +45,11 @@ export interface QuotePDFData {
     photoWidth?: number;
     photoHeight?: number;
   }>;
+  /** Optionale Foto-Galerie (eigene Seite(n) am Ende des PDFs). */
+  photoGallery?: Array<{
+    sectionTitle: string;
+    photos: Array<{ dataUrl: string; width?: number; height?: number }>;
+  }>;
   net: number;
   vat: number;
   gross: number;
