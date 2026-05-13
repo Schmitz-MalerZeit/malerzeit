@@ -130,7 +130,9 @@ export default function Quotes() {
           labor_cost: Number(q.estimated_labor_cost) || 0,
           material_cost: Number(q.material_cost) || 0,
         },
-        surcharge: { mode: "percent", value: 0 },
+        surcharge: (q.surcharge && (q.surcharge.mode === "percent" || q.surcharge.mode === "amount"))
+          ? { mode: q.surcharge.mode, value: Number(q.surcharge.value) || 0 }
+          : { mode: "percent", value: 0 },
       },
       pdf_storage_path: asNewVersion ? null : (q.pdf_storage_path || null),
       pdf_filename: asNewVersion ? null : (q.pdf_filename || null),
