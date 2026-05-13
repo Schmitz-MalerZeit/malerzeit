@@ -408,6 +408,7 @@ export default function QuoteNew() {
       }
     } finally {
       setValidatingAddress(false);
+    }
     upsertCustomerAndObject();
     callAI("analyze");
   };
