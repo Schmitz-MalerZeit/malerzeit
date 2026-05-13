@@ -46,6 +46,29 @@ export default function Quotes() {
   const subState = useSubscription();
   const waAllowed = canSendViaWhatsapp(getTier(subState));
 
+  // Foto-Sheet (Lightbox-Galerie für gespeicherte Vorschläge)
+  const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
+  const [photoSheetQuote, setPhotoSheetQuote] = useState<any | null>(null);
+  const [photoList, setPhotoList] = useState<QuotePhotoWithUrl[]>([]);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+  const openPhotoSheet = async (q: any) => {
+    setPhotoSheetQuote(q);
+    setPhotoList([]);
+    setPhotoLoading(true);
+    try {
+      const all = await listQuotePhotos(q.id);
+      const withUrls = await attachUrlsToPhotos(all);
+      setPhotoList(withUrls);
+      setPhotoCounts((prev) => ({ ...prev, [q.id]: withUrls.length }));
+    } catch (e: any) {
+      toast.error(e?.message || tr("Fotos konnten nicht geladen werden", "Could not load photos"));
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
+
   const deleteQuote = async (q: any) => {
     setDeleting(true);
     try {
