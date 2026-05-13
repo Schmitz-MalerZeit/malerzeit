@@ -47,26 +47,47 @@ export default function Quotes() {
   const subState = useSubscription();
   const waAllowed = canSendViaWhatsapp(getTier(subState));
 
-  // Foto-Sheet (Lightbox-Galerie für gespeicherte Vorschläge)
+  // Foto-Sheet (Galerie für gespeicherte Vorschläge — mit Add/Delete je Sektion)
   const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
   const [photoSheetQuote, setPhotoSheetQuote] = useState<any | null>(null);
   const [photoList, setPhotoList] = useState<QuotePhotoWithUrl[]>([]);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [editorSection, setEditorSection] = useState<{ id: string; title: string } | null>(null);
+
+  const reloadPhotosFor = async (quoteId: string) => {
+    try {
+      const all = await listQuotePhotos(quoteId);
+      const withUrls = await attachUrlsToPhotos(all);
+      setPhotoList(withUrls);
+      setPhotoCounts((prev) => ({ ...prev, [quoteId]: withUrls.length }));
+    } catch (e: any) {
+      toast.error(e?.message || tr("Fotos konnten nicht geladen werden", "Could not load photos"));
+    }
+  };
 
   const openPhotoSheet = async (q: any) => {
     setPhotoSheetQuote(q);
     setPhotoList([]);
     setPhotoLoading(true);
     try {
-      const all = await listQuotePhotos(q.id);
-      const withUrls = await attachUrlsToPhotos(all);
-      setPhotoList(withUrls);
-      setPhotoCounts((prev) => ({ ...prev, [q.id]: withUrls.length }));
-    } catch (e: any) {
-      toast.error(e?.message || tr("Fotos konnten nicht geladen werden", "Could not load photos"));
+      await reloadPhotosFor(q.id);
     } finally {
       setPhotoLoading(false);
+    }
+  };
+
+  const handleDeletePhoto = async (p: QuotePhotoWithUrl) => {
+    if (!confirm(tr("Foto wirklich löschen?", "Really delete photo?"))) return;
+    try {
+      await deleteQuotePhoto(p);
+      const next = photoList.filter((x) => x.id !== p.id);
+      setPhotoList(next);
+      if (photoSheetQuote) {
+        setPhotoCounts((prev) => ({ ...prev, [photoSheetQuote.id]: next.length }));
+      }
+    } catch (e: any) {
+      toast.error(e?.message || tr("Löschen fehlgeschlagen", "Delete failed"));
     }
   };
 
