@@ -10,6 +10,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { isNativeApp } from "@/lib/platform";
 import { ConfirmPurchaseDialog } from "@/components/ConfirmPurchaseDialog";
+import { Seo } from "@/components/Seo";
 
 type TierId = "starter" | "profi" | "profiplus";
 type Tier = {
@@ -112,6 +113,21 @@ export default function Pricing() {
 
   return (
     <AppShell title={t("pricing.title")}>
+      <Seo
+        title="Tarife & Preise – MalerZeit AI"
+        description="Starter, Profi und Profiplus: Wähle dein MalerZeit AI Abo ab 14,90 € pro Monat und erstelle Preisvorschläge in Minuten."
+        path="/pricing"
+        jsonLd={TIERS.map((tier) => ({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: `MalerZeit AI ${tier.id.charAt(0).toUpperCase() + tier.id.slice(1)}`,
+          description: "Abonnement für KI-gestützte Preisvorschläge im Malerhandwerk.",
+          offers: [
+            { "@type": "Offer", price: tier.monthly.toFixed(2), priceCurrency: "EUR", category: "monthly" },
+            { "@type": "Offer", price: tier.yearly.toFixed(2), priceCurrency: "EUR", category: "yearly" },
+          ],
+        }))}
+      />
       <div className="space-y-6">
         {discountCode ? (
           <div className="rounded-2xl bg-primary/5 border border-primary/30 p-4 text-sm flex items-center justify-between gap-3">
