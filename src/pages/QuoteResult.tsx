@@ -2081,6 +2081,17 @@ export default function QuoteResult() {
 
         {pdfAllowed && (
           <Button
+            onClick={exportGaeb}
+            disabled={busy}
+            variant="outline"
+            className="w-full h-12"
+          >
+            <FileDown className="h-4 w-4 mr-2" /> {tr("GAEB-X83 exportieren", "Export GAEB X83")}
+          </Button>
+        )}
+
+        {pdfAllowed && (
+          <Button
             onClick={sendWhatsappDirect}
             disabled={busy}
             variant="outline"
