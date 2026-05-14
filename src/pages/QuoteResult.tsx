@@ -898,6 +898,47 @@ export default function QuoteResult() {
     toast.success(tr("WhatsApp-Text kopiert", "WhatsApp text copied"));
   };
 
+  const exportGaeb = () => {
+    try {
+      const rawSections = Array.isArray(ai.sections) ? ai.sections : [];
+      const factor = baseNet > 0 ? effNet / baseNet : 1;
+      const xml = buildGaebX83Xml({
+        projectName: data.customer?.projectLabel || data.customer?.name || "Preisorientierung",
+        projectLabel: data.customer?.projectLabel || data.customer?.name || "Preis",
+        customer: {
+          name: data.customer?.name,
+          address: data.customer?.address,
+          postalCode: data.customer?.postal_code,
+          city: data.customer?.city,
+        },
+        company: {
+          name: profile?.company_name,
+          contact: profile?.signatory_name || profile?.contact_person,
+          address: profile?.address,
+          postalCode: profile?.postal_code,
+          city: profile?.city,
+          phone: profile?.phone,
+          email: profile?.email,
+        },
+        date: new Date(),
+        vatRate,
+        netTotal: effNet,
+        sections: rawSections.map((s: any) => ({
+          title: s?.title,
+          items: Array.isArray(s?.items) ? s.items : [],
+          net_amount: typeof s?.net_amount === "number" ? s.net_amount : 0,
+        })),
+        lineItems: Array.isArray(ai.line_items) ? ai.line_items : [],
+        scaleFactor: factor,
+      });
+      const filename = gaebFilename({ customerName: data.customer?.name, date: new Date() });
+      downloadGaebX83(xml, filename);
+      toast.success(tr("GAEB-X83-Datei heruntergeladen", "GAEB X83 file downloaded"));
+    } catch (e: any) {
+      toast.error(e?.message || tr("GAEB-Export fehlgeschlagen", "GAEB export failed"));
+    }
+  };
+
   const buildPDF = async (lang: "de" | "en") => {
     let logoDataUrl: string | undefined;
     let logoSize: { width: number; height: number } | undefined;
