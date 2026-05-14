@@ -33,6 +33,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
+import { buildGaebX83Xml, downloadGaebX83, gaebFilename } from "@/lib/gaeb";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
 import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
 import { renderMessageTemplate, DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE, ensureWhatsappSignature } from "@/lib/messageTemplate";
