@@ -33,6 +33,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { buildQuotePDF, urlToDataUrl, prepareLogoForPdf } from "@/lib/pdf";
+import { buildGaebX83Xml, downloadGaebX83, gaebFilename } from "@/lib/gaeb";
 import { ensureCustomerPriceOrientationText, ensureWhatsappPriceOrientationText, normalizePhoneForWa } from "@/lib/quoteText";
 import { buildEmailMessageBody, buildWhatsappMessageBody } from "@/lib/messageText";
 import { renderMessageTemplate, DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE, ensureWhatsappSignature } from "@/lib/messageTemplate";
@@ -895,6 +896,47 @@ export default function QuoteResult() {
   const copyWA = async () => {
     await navigator.clipboard.writeText(whatsappDisplay);
     toast.success(tr("WhatsApp-Text kopiert", "WhatsApp text copied"));
+  };
+
+  const exportGaeb = () => {
+    try {
+      const rawSections = Array.isArray(ai.sections) ? ai.sections : [];
+      const factor = baseNet > 0 ? effNet / baseNet : 1;
+      const xml = buildGaebX83Xml({
+        projectName: data.customer?.projectLabel || data.customer?.name || "Preisorientierung",
+        projectLabel: data.customer?.projectLabel || data.customer?.name || "Preis",
+        customer: {
+          name: data.customer?.name,
+          address: data.customer?.address,
+          postalCode: data.customer?.postal_code,
+          city: data.customer?.city,
+        },
+        company: {
+          name: profile?.company_name,
+          contact: profile?.signatory_name || profile?.contact_person,
+          address: profile?.address,
+          postalCode: profile?.postal_code,
+          city: profile?.city,
+          phone: profile?.phone,
+          email: profile?.email,
+        },
+        date: new Date(),
+        vatRate,
+        netTotal: effNet,
+        sections: rawSections.map((s: any) => ({
+          title: s?.title,
+          items: Array.isArray(s?.items) ? s.items : [],
+          net_amount: typeof s?.net_amount === "number" ? s.net_amount : 0,
+        })),
+        lineItems: Array.isArray(ai.line_items) ? ai.line_items : [],
+        scaleFactor: factor,
+      });
+      const filename = gaebFilename({ customerName: data.customer?.name, date: new Date() });
+      downloadGaebX83(xml, filename);
+      toast.success(tr("GAEB-X83-Datei heruntergeladen", "GAEB X83 file downloaded"));
+    } catch (e: any) {
+      toast.error(e?.message || tr("GAEB-Export fehlgeschlagen", "GAEB export failed"));
+    }
   };
 
   const buildPDF = async (lang: "de" | "en") => {
@@ -2036,6 +2078,17 @@ export default function QuoteResult() {
             </Button>
           );
         })()}
+
+        {pdfAllowed && (
+          <Button
+            onClick={exportGaeb}
+            disabled={busy}
+            variant="outline"
+            className="w-full h-12"
+          >
+            <FileDown className="h-4 w-4 mr-2" /> {tr("GAEB-X83 exportieren", "Export GAEB X83")}
+          </Button>
+        )}
 
         {pdfAllowed && (
           <Button
