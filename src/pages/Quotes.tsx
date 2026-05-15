@@ -421,8 +421,13 @@ export default function Quotes() {
                   </div>
                 )}
                 <div className="flex justify-between items-start gap-3 mb-2">
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(q.created_at).toLocaleDateString(currentLocale(), { day: "2-digit", month: "long", year: "numeric" })}
+                  <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                    <span>{new Date(q.created_at).toLocaleDateString(currentLocale(), { day: "2-digit", month: "long", year: "numeric" })}</span>
+                    {!q.pdf_storage_path && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-[11px] font-medium">
+                        {tr("Entwurf · noch kein PDF", "Draft · no PDF yet")}
+                      </span>
+                    )}
                   </div>
                   <div className="text-base font-bold text-primary">{fmt(q.gross_amount)}</div>
                 </div>
