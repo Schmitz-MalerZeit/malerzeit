@@ -512,21 +512,33 @@ export function PdfFlowSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="h-[85dvh] max-h-[85dvh] flex flex-col p-0 gap-0 rounded-t-2xl"
-      >
-        <SheetHeader className="px-4 pt-4 pb-2 pr-12 border-b border-border text-left">
-          <SheetTitle className="text-base">PDF-Vorschlag</SheetTitle>
-          <SheetDescription className="text-xs">
-            {phaseLabel[state.phase]}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
-          {renderBody()}
-        </div>
-      </SheetContent>
-    </Sheet>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="bottom"
+          className="h-[85dvh] max-h-[85dvh] flex flex-col p-0 gap-0 rounded-t-2xl"
+        >
+          <SheetHeader className="px-4 pt-4 pb-2 pr-12 border-b border-border text-left">
+            <SheetTitle className="text-base">PDF-Vorschlag</SheetTitle>
+            <SheetDescription className="text-xs">
+              {phaseLabel[state.phase]}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
+            {renderBody()}
+          </div>
+        </SheetContent>
+      </Sheet>
+      <EmailComposeDialog
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        pdfBlob={state.pdfBlob || fetchedBlob}
+        fileName={state.fileName || "Preisorientierung.pdf"}
+        defaultTo={state.recipientEmail || ""}
+        defaultSubject={state.subject || ""}
+        defaultBody={state.emailBody || ""}
+        onSent={() => onAfterShareAction?.()}
+      />
+    </>
   );
 }
