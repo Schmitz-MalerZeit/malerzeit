@@ -131,6 +131,27 @@ const hexToRgb = (hex: string): [number, number, number] => {
   ];
 };
 
+/**
+ * Baut die persönliche Anrede aus einer Eingabe wie "Herr Schröder",
+ * "Frau Müller" oder "Familie Schmidt". Leere/unbekannte Eingaben → "" (Fallback
+ * auf generische Anrede beim Aufrufer).
+ */
+const buildSalutation = (raw: string | undefined, lang: PdfLang): string => {
+  const s = (raw || "").trim().replace(/[,;]+$/, "").trim();
+  if (!s) return "";
+  if (lang === "en") {
+    // Englische Variante: "Dear Mr/Mrs/Family X,"
+    return `Dear ${s},`;
+  }
+  const lower = s.toLowerCase();
+  if (lower.startsWith("herr "))     return `Sehr geehrter ${s},`;
+  if (lower.startsWith("frau "))     return `Sehr geehrte ${s},`;
+  if (lower.startsWith("familie "))  return `Liebe ${s},`;
+  if (lower.startsWith("eheleute ")) return `Sehr geehrte ${s},`;
+  // Sonst: Eingabe roh übernehmen (z. B. "Liebes Team Müller").
+  return `${s},`;
+};
+
 export function buildQuotePDF(d: QuotePDFData): jsPDF {
   const lang: PdfLang = d.lang === "en" ? "en" : "de";
   const L = STRINGS[lang];
