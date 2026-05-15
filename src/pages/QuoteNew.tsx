@@ -113,6 +113,7 @@ export default function QuoteNew() {
   const [questions, setQuestions] = useState<string[]>(initial?.questions ?? []);
   const [answers, setAnswers] = useState<Record<string, string>>(initial?.answers ?? {});
   const [loading, setLoading] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(initial?.draftId ?? null);
   const [settings, setSettings] = useState({ material_markup: 15, quality_level: "standard", vat_rate: 19 });
   const [hourlyRates, setHourlyRates] = useState<{ label: string; rate: number; is_default: boolean }[]>([]);
   const [pastCustomers, setPastCustomers] = useState<CustomerSuggestion[]>([]);
@@ -138,10 +139,59 @@ export default function QuoteNew() {
   useEffect(() => {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
-        description, customer, answers, questions, step,
+        description, customer, answers, questions, step, draftId,
       } satisfies Draft));
     } catch { /* quota exceeded – ignore */ }
-  }, [description, customer, answers, questions, step]);
+  }, [description, customer, answers, questions, step, draftId]);
+
+  // ───────── Draft DB-Speicherung ─────────
+  // Speichert/aktualisiert einen Datensatz in `quotes`, sobald der Nutzer auf
+  // "Weiter" tippt – auch wenn die KI-Antwort noch nicht vorliegt. Dadurch
+  // taucht der Vorschlag sofort unter „Gespeicherte Vorschläge" als Entwurf
+  // auf (kein PDF-Pfad → Badge „noch kein PDF erstellt").
+  const persistDraft = async (ai?: AIResp): Promise<string | null> => {
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return null;
+      const payload: any = {
+        user_id: u.user.id,
+        description: description || null,
+        customer_name: customer.name?.trim() || null,
+        customer_address: customer.address?.trim() || null,
+        customer_postal_code: customer.postal_code?.trim() || null,
+        customer_city: customer.city?.trim() || null,
+        customer_phone: customer.phone?.trim() || null,
+        customer_email: customer.email?.trim() || null,
+        project_label: customer.project_label?.trim() || null,
+        vat_rate: settings.vat_rate,
+      };
+      if (ai) {
+        payload.line_items = Array.isArray(ai.line_items) ? ai.line_items : [];
+        payload.sections = Array.isArray((ai as any).sections) ? (ai as any).sections : [];
+        payload.customer_text = ai.customer_text || null;
+        payload.whatsapp_text = ai.whatsapp_text || null;
+        payload.estimated_hours = Number(ai.estimated_hours) || 0;
+        payload.estimated_material = Number(ai.estimated_material_cost) || 0;
+        payload.estimated_labor_cost = Number(ai.pricing?.labor_cost) || 0;
+        payload.material_cost = Number(ai.pricing?.material_cost) || 0;
+        payload.net_amount = Number(ai.pricing?.net_amount) || 0;
+        payload.vat_amount = Number(ai.pricing?.vat_amount) || 0;
+        payload.gross_amount = Number(ai.pricing?.gross_amount) || 0;
+      }
+      if (draftId) {
+        const { error } = await supabase.from("quotes").update(payload).eq("id", draftId);
+        if (error) { console.warn("draft update failed", error); return draftId; }
+        return draftId;
+      }
+      const { data, error } = await supabase.from("quotes").insert(payload).select("id").single();
+      if (error || !data) { console.warn("draft insert failed", error); return null; }
+      setDraftId(data.id);
+      return data.id as string;
+    } catch (e) {
+      console.warn("persistDraft error", e);
+      return null;
+    }
+  };
 
 
   useEffect(() => {
