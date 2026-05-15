@@ -162,6 +162,7 @@ export default function QuoteNew() {
         customer_city: customer.city?.trim() || null,
         customer_phone: customer.phone?.trim() || null,
         customer_email: customer.email?.trim() || null,
+        customer_salutation: customer.salutation?.trim() || null,
         project_label: customer.project_label?.trim() || null,
         vat_rate: settings.vat_rate,
       };
