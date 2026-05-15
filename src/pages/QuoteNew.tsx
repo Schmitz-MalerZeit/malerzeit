@@ -310,6 +310,7 @@ export default function QuoteNew() {
         city: customer.city.trim() || null,
         phone: customer.phone.trim() || null,
         email: customer.email.trim() || null,
+        salutation: customer.salutation.trim() || null,
       };
 
       if (customerId) {
