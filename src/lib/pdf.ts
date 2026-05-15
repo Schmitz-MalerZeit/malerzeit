@@ -131,25 +131,45 @@ const hexToRgb = (hex: string): [number, number, number] => {
   ];
 };
 
+/** Bekannte Anrede-Titel mit grammatikalischem Geschlecht für die direkte Ansprache. */
+const SALUTATION_TITLES: Record<string, "m" | "f" | "plural"> = {
+  "Herr": "m",
+  "Frau": "f",
+  "Familie": "plural",
+  "Eheleute": "plural",
+  "Herr Dr.": "m",
+  "Frau Dr.": "f",
+  "Herr Prof.": "m",
+  "Frau Prof.": "f",
+  "Herr Prof. Dr.": "m",
+  "Frau Prof. Dr.": "f",
+};
+
+const lastNameOf = (full?: string): string => {
+  const parts = (full || "").trim().split(/\s+/).filter(Boolean);
+  return parts.length > 0 ? parts[parts.length - 1] : "";
+};
+
 /**
- * Baut die persönliche Anrede aus einer Eingabe wie "Herr Schröder",
- * "Frau Müller" oder "Familie Schmidt". Leere/unbekannte Eingaben → "" (Fallback
+ * Baut die persönliche Anrede aus einem Anrede-Titel (Dropdown, z. B. "Herr",
+ * "Frau Dr.", "Familie") und dem Kundennamen. Leerer Titel → "" (Fallback
  * auf generische Anrede beim Aufrufer).
  */
-const buildSalutation = (raw: string | undefined, lang: PdfLang): string => {
-  const s = (raw || "").trim().replace(/[,;]+$/, "").trim();
-  if (!s) return "";
-  if (lang === "en") {
-    // Englische Variante: "Dear Mr/Mrs/Family X,"
-    return `Dear ${s},`;
+const buildSalutation = (title: string | undefined, name: string | undefined, lang: PdfLang): string => {
+  const t = (title || "").trim().replace(/[,;]+$/, "").trim();
+  if (!t) return "";
+  if (t.toLowerCase() === "damen und herren") {
+    return lang === "en" ? "Dear Sir or Madam," : "Sehr geehrte Damen und Herren,";
   }
-  const lower = s.toLowerCase();
-  if (lower.startsWith("herr "))     return `Sehr geehrter ${s},`;
-  if (lower.startsWith("frau "))     return `Sehr geehrte ${s},`;
-  if (lower.startsWith("familie "))  return `Liebe ${s},`;
-  if (lower.startsWith("eheleute ")) return `Sehr geehrte ${s},`;
-  // Sonst: Eingabe roh übernehmen (z. B. "Liebes Team Müller").
-  return `${s},`;
+  const gender = SALUTATION_TITLES[t];
+  const ln = lastNameOf(name);
+  const titleWithName = ln ? `${t} ${ln}` : t;
+  if (lang === "en") return `Dear ${titleWithName},`;
+  if (gender === "plural") return `Liebe ${titleWithName},`;
+  if (gender === "f")      return `Sehr geehrte ${titleWithName},`;
+  if (gender === "m")      return `Sehr geehrter ${titleWithName},`;
+  // Unbekannter Titel: konservativ, ohne Geschlecht
+  return `Sehr geehrte/r ${titleWithName},`;
 };
 
 export function buildQuotePDF(d: QuotePDFData): jsPDF {
