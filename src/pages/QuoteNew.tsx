@@ -554,6 +554,23 @@ export default function QuoteNew() {
                   </p>
                 )}
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cust_salutation">
+                  {tr("Persönliche Anrede", "Personal salutation")}{" "}
+                  <span className="text-muted-foreground font-normal">({tr("für die direkte Ansprache im PDF", "for the direct greeting in the PDF")})</span>
+                </Label>
+                <Input
+                  id="cust_salutation"
+                  value={customer.salutation}
+                  onChange={(e) => setCustomer((c) => ({ ...c, salutation: e.target.value }))}
+                  placeholder={tr("z. B. Herr Schröder, Frau Müller, Familie Schmidt", "e.g. Mr Smith, Mrs Müller, Family Schmidt")}
+                  className="h-11"
+                  maxLength={120}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {tr("Wird im PDF als „Sehr geehrter Herr Schröder," / „Liebe Familie Schmidt," verwendet. Leer lassen für „Sehr geehrte Damen und Herren".", "Used in the PDF as a direct greeting. Leave empty for the generic salutation.")}
+                </p>
+              </div>
               {selectedCustomerId && savedObjects.some((o) => o.customer_id === selectedCustomerId) && (
                 <div className="space-y-1.5">
                   <Label htmlFor="cust_obj">{tr("Gespeichertes Objekt", "Saved object")}</Label>
