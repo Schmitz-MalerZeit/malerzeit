@@ -417,7 +417,13 @@ export default function QuoteNew() {
     if (mode === "analyze" && !preflightLimit()) return;
     setLoading(true);
     try {
+      // Sofort als Entwurf in der DB sichern – auch wenn die KI später fehlschlägt,
+      // tauchen die eingegebenen Daten unter „Gespeicherte Vorschläge" auf.
+      const persistedId = await persistDraft();
       const resp = await invokeGenerateQuote(mode);
+
+      // Mit KI-Daten aktualisieren (best effort, blockiert die Navigation nicht).
+      const finalId = (await persistDraft(resp)) || persistedId || draftId;
 
       if (resp.needs_clarification && resp.clarifying_questions?.length && mode === "analyze") {
         setQuestions(resp.clarifying_questions);
@@ -425,8 +431,12 @@ export default function QuoteNew() {
       } else {
         localStorage.setItem("currentQuote", JSON.stringify({
           description, answers, ai: resp, customer,
+          savedQuoteId: finalId || null,
         }));
         sessionStorage.removeItem("currentQuotePdf"); // invalidate old cached PDF
+        // Draft-Eingabe-State zurücksetzen, damit die nächste neue
+        // Preisorientierung leer startet (der DB-Datensatz bleibt erhalten).
+        localStorage.removeItem(DRAFT_KEY);
         nav("/quote/result");
       }
     } catch (err: any) {
