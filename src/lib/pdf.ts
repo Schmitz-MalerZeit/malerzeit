@@ -248,7 +248,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
   doc.setTextColor(50, 50, 50);
-  doc.text(L.salutation, margin, y);
+  doc.text(buildSalutation(d.customer?.salutation, lang) || L.salutation, margin, y);
   y += 5;
   doc.text(L.intro, margin, y, { maxWidth: pageW - margin * 2 });
   y += 12;
