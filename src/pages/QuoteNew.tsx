@@ -556,19 +556,29 @@ export default function QuoteNew() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cust_salutation">
-                  {tr("Persönliche Anrede", "Personal salutation")}{" "}
+                  {tr("Anrede", "Salutation")}{" "}
                   <span className="text-muted-foreground font-normal">({tr("für die direkte Ansprache im PDF", "for the direct greeting in the PDF")})</span>
                 </Label>
-                <Input
+                <select
                   id="cust_salutation"
                   value={customer.salutation}
                   onChange={(e) => setCustomer((c) => ({ ...c, salutation: e.target.value }))}
-                  placeholder={tr("z. B. Herr Schröder, Frau Müller, Familie Schmidt", "e.g. Mr Smith, Mrs Müller, Family Schmidt")}
-                  className="h-11"
-                  maxLength={120}
-                />
+                  className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">{tr("Keine / Sehr geehrte Damen und Herren", "None / Dear Sir or Madam")}</option>
+                  <option value="Herr">{tr("Herr", "Mr")}</option>
+                  <option value="Frau">{tr("Frau", "Mrs")}</option>
+                  <option value="Familie">{tr("Familie", "Family")}</option>
+                  <option value="Eheleute">{tr("Eheleute", "Married couple")}</option>
+                  <option value="Herr Dr.">Herr Dr.</option>
+                  <option value="Frau Dr.">Frau Dr.</option>
+                  <option value="Herr Prof.">Herr Prof.</option>
+                  <option value="Frau Prof.">Frau Prof.</option>
+                  <option value="Herr Prof. Dr.">Herr Prof. Dr.</option>
+                  <option value="Frau Prof. Dr.">Frau Prof. Dr.</option>
+                </select>
                 <p className="text-xs text-muted-foreground">
-                  {tr('Wird im PDF als "Sehr geehrter Herr Schröder," / "Liebe Familie Schmidt," verwendet. Leer lassen für "Sehr geehrte Damen und Herren".', "Used in the PDF as a direct greeting. Leave empty for the generic salutation.")}
+                  {tr('Die Anrede wird automatisch mit dem Nachnamen des Kunden kombiniert (z. B. "Sehr geehrter Herr Schröder," oder "Liebe Familie Schmidt,").', "The salutation is automatically combined with the customer's last name in the PDF.")}
                 </p>
               </div>
               {selectedCustomerId && savedObjects.some((o) => o.customer_id === selectedCustomerId) && (
