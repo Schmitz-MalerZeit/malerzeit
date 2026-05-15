@@ -306,7 +306,10 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   const useSections = Array.isArray(d.sections) && d.sections.length > 0
     && d.sections.some((s) => s && s.title && Array.isArray(s.items) && s.items.length > 0);
 
-  const contentBottom = pageH - 32;
+  // Genug Abstand zur Fußzeile lassen, damit die "Übertrag"-Zeile nicht in
+  // die Fußzeile rutscht. Footer-Trenner liegt bei pageH - 26, Carry-Down-Text
+  // bei contentBottom + 7 → contentBottom muss ≤ pageH - 36 sein.
+  const contentBottom = pageH - 38;
 
   let runningNet = 0;
   let runningGross = 0;
