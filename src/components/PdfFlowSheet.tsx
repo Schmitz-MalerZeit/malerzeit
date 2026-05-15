@@ -6,8 +6,9 @@ import { PdfPreviewRenderer, type PdfDiagnostics } from "@/components/PdfPreview
 import { toast } from "sonner";
 import {
   AlertCircle, CheckCircle2, Download, FileDown, Loader2,
-  MessageCircle, RefreshCw,
+  Mail, MessageCircle, RefreshCw,
 } from "lucide-react";
+import { EmailComposeDialog } from "./EmailComposeDialog";
 
 export type PdfFlowPhase =
   | "idle"
@@ -39,6 +40,8 @@ export interface PdfFlowState {
   emailBody?: string;
   whatsappText?: string;
   whatsappPhone?: string | null;
+  /** Empfänger-E-Mail (vorausgefüllt für „Per E-Mail senden") */
+  recipientEmail?: string | null;
   /** Frischer PDF-Blob, falls vorhanden – wird für echte Datei-Anhänge via Web Share API verwendet. */
   pdfBlob?: Blob | null;
 }
@@ -88,6 +91,7 @@ export function PdfFlowSheet({
   const [showDetails, setShowDetails] = useState(false);
   const [fetchedBlob, setFetchedBlob] = useState<Blob | null>(null);
   const [fetchingBlob, setFetchingBlob] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   const toAttachmentUrl = (url: string, fileName?: string | null) => {
     if (!url || url.startsWith("blob:")) return url;
@@ -447,7 +451,7 @@ export function PdfFlowSheet({
             </p>
           </div>
 
-          <div className={state.whatsappText ? "grid grid-cols-2 gap-2" : "grid grid-cols-1 gap-2"}>
+          <div className="grid grid-cols-2 gap-2">
             {isIOS ? (
               <Button asChild className="h-11">
                 <a href={downloadUrl || state.url} download={state.fileName || "Preisorientierung.pdf"} target="_blank" rel="noopener noreferrer">
@@ -459,8 +463,15 @@ export function PdfFlowSheet({
                 <Download className="h-4 w-4 mr-2" /> Download
               </Button>
             )}
+            <Button
+              variant="outline"
+              onClick={() => setEmailDialogOpen(true)}
+              className="h-11"
+            >
+              <Mail className="h-4 w-4 mr-2" /> Per E-Mail senden
+            </Button>
             {state.whatsappText && (
-              <Button variant="outline" onClick={sendWhatsapp} className="h-11">
+              <Button variant="outline" onClick={sendWhatsapp} className="h-11 col-span-2">
                 <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
               </Button>
             )}
@@ -501,21 +512,33 @@ export function PdfFlowSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="h-[85dvh] max-h-[85dvh] flex flex-col p-0 gap-0 rounded-t-2xl"
-      >
-        <SheetHeader className="px-4 pt-4 pb-2 pr-12 border-b border-border text-left">
-          <SheetTitle className="text-base">PDF-Vorschlag</SheetTitle>
-          <SheetDescription className="text-xs">
-            {phaseLabel[state.phase]}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
-          {renderBody()}
-        </div>
-      </SheetContent>
-    </Sheet>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="bottom"
+          className="h-[85dvh] max-h-[85dvh] flex flex-col p-0 gap-0 rounded-t-2xl"
+        >
+          <SheetHeader className="px-4 pt-4 pb-2 pr-12 border-b border-border text-left">
+            <SheetTitle className="text-base">PDF-Vorschlag</SheetTitle>
+            <SheetDescription className="text-xs">
+              {phaseLabel[state.phase]}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
+            {renderBody()}
+          </div>
+        </SheetContent>
+      </Sheet>
+      <EmailComposeDialog
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        pdfBlob={state.pdfBlob || fetchedBlob}
+        fileName={state.fileName || "Preisorientierung.pdf"}
+        defaultTo={state.recipientEmail || ""}
+        defaultSubject={state.subject || ""}
+        defaultBody={state.emailBody || ""}
+        onSent={() => onAfterShareAction?.()}
+      />
+    </>
   );
 }

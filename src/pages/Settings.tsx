@@ -11,6 +11,7 @@ import { Loader2, Plus, Trash2, Star, RefreshCw } from "lucide-react";
 import { DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/messageTemplate";
 import { useTr } from "@/lib/tr";
 import { FirstVisitTip } from "@/components/FirstVisitTip";
+import { SmtpSettingsCard } from "@/components/SmtpSettingsCard";
 
 const TEST_USER_ID = "4f497125-b2e8-46af-a6ef-477dbe7a8a0c";
 
@@ -333,6 +334,8 @@ export default function Settings() {
             </Button>
           </div>
         </div>
+
+        <SmtpSettingsCard />
 
         <Button onClick={save} disabled={saving} className="w-full h-12 gradient-primary text-primary-foreground border-0 font-semibold">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : tr("Speichern", "Save")}
