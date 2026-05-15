@@ -533,28 +533,6 @@ export default function QuoteNew() {
             </p>
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="cust_name">{tr("Kundenname", "Customer name")}</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <CustomerAutocomplete
-                      id="cust_name"
-                      value={customer.name}
-                      onChange={(v) => setCustomer((c) => ({ ...c, name: v }))}
-                      onSelectSuggestion={handleSelectCustomer}
-                      suggestions={pastCustomers}
-                      placeholder={tr("z. B. Familie Müller", "e.g. Smith family")}
-                    />
-                  </div>
-                  <VoiceInput size="md" label={tr("Kundenname diktieren", "Dictate customer name")}
-                    onTranscript={(t) => setCustomer((c) => ({ ...c, name: appendText(c.name, t) }))} />
-                </div>
-                {pastCustomers.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {tr("Tipp: Tippe los – bisherige Kunden werden vorgeschlagen.", "Tip: start typing — past customers will be suggested.")}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1.5">
                 <Label htmlFor="cust_salutation">
                   {tr("Anrede", "Salutation")}{" "}
                   <span className="text-muted-foreground font-normal">({tr("für die direkte Ansprache im PDF", "for the direct greeting in the PDF")})</span>
@@ -580,6 +558,28 @@ export default function QuoteNew() {
                 <p className="text-xs text-muted-foreground">
                   {tr('Die Anrede wird automatisch mit dem Nachnamen des Kunden kombiniert (z. B. "Sehr geehrter Herr Schröder," oder "Liebe Familie Schmidt,").', "The salutation is automatically combined with the customer's last name in the PDF.")}
                 </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cust_name">{tr("Kundenname", "Customer name")}</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <CustomerAutocomplete
+                      id="cust_name"
+                      value={customer.name}
+                      onChange={(v) => setCustomer((c) => ({ ...c, name: v }))}
+                      onSelectSuggestion={handleSelectCustomer}
+                      suggestions={pastCustomers}
+                      placeholder={tr("z. B. Familie Müller", "e.g. Smith family")}
+                    />
+                  </div>
+                  <VoiceInput size="md" label={tr("Kundenname diktieren", "Dictate customer name")}
+                    onTranscript={(t) => setCustomer((c) => ({ ...c, name: appendText(c.name, t) }))} />
+                </div>
+                {pastCustomers.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {tr("Tipp: Tippe los – bisherige Kunden werden vorgeschlagen.", "Tip: start typing — past customers will be suggested.")}
+                  </p>
+                )}
               </div>
               {selectedCustomerId && savedObjects.some((o) => o.customer_id === selectedCustomerId) && (
                 <div className="space-y-1.5">
