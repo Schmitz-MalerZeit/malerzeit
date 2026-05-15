@@ -568,7 +568,7 @@ export default function QuoteNew() {
                   maxLength={120}
                 />
                 <p className="text-xs text-muted-foreground">
-                  {tr("Wird im PDF als „Sehr geehrter Herr Schröder," / „Liebe Familie Schmidt," verwendet. Leer lassen für „Sehr geehrte Damen und Herren".", "Used in the PDF as a direct greeting. Leave empty for the generic salutation.")}
+                  {tr('Wird im PDF als "Sehr geehrter Herr Schröder," / "Liebe Familie Schmidt," verwendet. Leer lassen für "Sehr geehrte Damen und Herren".', "Used in the PDF as a direct greeting. Leave empty for the generic salutation.")}
                 </p>
               </div>
               {selectedCustomerId && savedObjects.some((o) => o.customer_id === selectedCustomerId) && (
