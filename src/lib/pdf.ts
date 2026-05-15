@@ -23,6 +23,8 @@ export interface QuotePDFData {
   };
   customer?: {
     name?: string;
+    /** Persönliche Anrede, z. B. "Herr Schröder", "Frau Müller", "Familie Schmidt". */
+    salutation?: string;
     projectLabel?: string;
     address?: string;
     postalCode?: string;
