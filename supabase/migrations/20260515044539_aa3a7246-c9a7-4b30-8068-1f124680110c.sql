@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "own usage insert" ON public.pdf_usage;
