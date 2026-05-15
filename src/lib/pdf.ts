@@ -23,6 +23,8 @@ export interface QuotePDFData {
   };
   customer?: {
     name?: string;
+    /** Persönliche Anrede, z. B. "Herr Schröder", "Frau Müller", "Familie Schmidt". */
+    salutation?: string;
     projectLabel?: string;
     address?: string;
     postalCode?: string;
@@ -127,6 +129,27 @@ const hexToRgb = (hex: string): [number, number, number] => {
     parseInt(h.slice(2, 4), 16) || 58,
     parseInt(h.slice(4, 6), 16) || 108,
   ];
+};
+
+/**
+ * Baut die persönliche Anrede aus einer Eingabe wie "Herr Schröder",
+ * "Frau Müller" oder "Familie Schmidt". Leere/unbekannte Eingaben → "" (Fallback
+ * auf generische Anrede beim Aufrufer).
+ */
+const buildSalutation = (raw: string | undefined, lang: PdfLang): string => {
+  const s = (raw || "").trim().replace(/[,;]+$/, "").trim();
+  if (!s) return "";
+  if (lang === "en") {
+    // Englische Variante: "Dear Mr/Mrs/Family X,"
+    return `Dear ${s},`;
+  }
+  const lower = s.toLowerCase();
+  if (lower.startsWith("herr "))     return `Sehr geehrter ${s},`;
+  if (lower.startsWith("frau "))     return `Sehr geehrte ${s},`;
+  if (lower.startsWith("familie "))  return `Liebe ${s},`;
+  if (lower.startsWith("eheleute ")) return `Sehr geehrte ${s},`;
+  // Sonst: Eingabe roh übernehmen (z. B. "Liebes Team Müller").
+  return `${s},`;
 };
 
 export function buildQuotePDF(d: QuotePDFData): jsPDF {
@@ -246,7 +269,7 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10.5);
   doc.setTextColor(50, 50, 50);
-  doc.text(L.salutation, margin, y);
+  doc.text(buildSalutation(d.customer?.salutation, lang) || L.salutation, margin, y);
   y += 5;
   doc.text(L.intro, margin, y, { maxWidth: pageW - margin * 2 });
   y += 12;
@@ -283,7 +306,10 @@ export function buildQuotePDF(d: QuotePDFData): jsPDF {
   const useSections = Array.isArray(d.sections) && d.sections.length > 0
     && d.sections.some((s) => s && s.title && Array.isArray(s.items) && s.items.length > 0);
 
-  const contentBottom = pageH - 32;
+  // Genug Abstand zur Fußzeile lassen, damit die "Übertrag"-Zeile nicht in
+  // die Fußzeile rutscht. Footer-Trenner liegt bei pageH - 26, Carry-Down-Text
+  // bei contentBottom + 7 → contentBottom muss ≤ pageH - 36 sein.
+  const contentBottom = pageH - 38;
 
   let runningNet = 0;
   let runningGross = 0;

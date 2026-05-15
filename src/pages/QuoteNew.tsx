@@ -72,7 +72,7 @@ const DRAFT_KEY = "quoteDraft.v1";
 
 type Draft = {
   description: string;
-  customer: { name: string; project_label: string; address: string; postal_code: string; city: string; phone: string; email: string };
+  customer: { name: string; salutation: string; project_label: string; address: string; postal_code: string; city: string; phone: string; email: string };
   answers: Record<string, string>;
   questions: string[];
   step: "input" | "questions" | "loading";
@@ -88,7 +88,7 @@ const loadDraft = (): Draft | null => {
       const current = JSON.parse(currentRaw);
       return {
         description: current?.description ?? "",
-        customer: { name: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(current?.customer ?? {}) },
+        customer: { name: "", salutation: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(current?.customer ?? {}) },
         answers: current?.answers ?? {},
         questions: [],
         step: "input",
@@ -106,7 +106,7 @@ export default function QuoteNew() {
   const nav = useNavigate();
   const initial = loadDraft();
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [customer, setCustomer] = useState({ name: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(initial?.customer ?? {}) });
+  const [customer, setCustomer] = useState({ name: "", salutation: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(initial?.customer ?? {}) });
   const [step, setStep] = useState<"input" | "questions" | "loading">(
     initial?.step === "questions" ? "questions" : "input"
   );
@@ -162,6 +162,7 @@ export default function QuoteNew() {
         customer_city: customer.city?.trim() || null,
         customer_phone: customer.phone?.trim() || null,
         customer_email: customer.email?.trim() || null,
+        customer_salutation: customer.salutation?.trim() || null,
         project_label: customer.project_label?.trim() || null,
         vat_rate: settings.vat_rate,
       };
@@ -309,6 +310,7 @@ export default function QuoteNew() {
         city: customer.city.trim() || null,
         phone: customer.phone.trim() || null,
         email: customer.email.trim() || null,
+        salutation: customer.salutation.trim() || null,
       };
 
       if (customerId) {
@@ -551,6 +553,23 @@ export default function QuoteNew() {
                     {tr("Tipp: Tippe los – bisherige Kunden werden vorgeschlagen.", "Tip: start typing — past customers will be suggested.")}
                   </p>
                 )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cust_salutation">
+                  {tr("Persönliche Anrede", "Personal salutation")}{" "}
+                  <span className="text-muted-foreground font-normal">({tr("für die direkte Ansprache im PDF", "for the direct greeting in the PDF")})</span>
+                </Label>
+                <Input
+                  id="cust_salutation"
+                  value={customer.salutation}
+                  onChange={(e) => setCustomer((c) => ({ ...c, salutation: e.target.value }))}
+                  placeholder={tr("z. B. Herr Schröder, Frau Müller, Familie Schmidt", "e.g. Mr Smith, Mrs Müller, Family Schmidt")}
+                  className="h-11"
+                  maxLength={120}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {tr('Wird im PDF als "Sehr geehrter Herr Schröder," / "Liebe Familie Schmidt," verwendet. Leer lassen für "Sehr geehrte Damen und Herren".', "Used in the PDF as a direct greeting. Leave empty for the generic salutation.")}
+                </p>
               </div>
               {selectedCustomerId && savedObjects.some((o) => o.customer_id === selectedCustomerId) && (
                 <div className="space-y-1.5">

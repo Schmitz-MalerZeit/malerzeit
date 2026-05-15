@@ -117,6 +117,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           postal_code: string | null
+          salutation: string | null
           updated_at: string
           user_id: string
         }
@@ -130,6 +131,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           postal_code?: string | null
+          salutation?: string | null
           updated_at?: string
           user_id: string
         }
@@ -143,6 +145,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           postal_code?: string | null
+          salutation?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -360,6 +363,7 @@ export type Database = {
           customer_name: string | null
           customer_phone: string | null
           customer_postal_code: string | null
+          customer_salutation: string | null
           customer_text: string | null
           description: string | null
           estimated_hours: number | null
@@ -394,6 +398,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           customer_postal_code?: string | null
+          customer_salutation?: string | null
           customer_text?: string | null
           description?: string | null
           estimated_hours?: number | null
@@ -428,6 +433,7 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           customer_postal_code?: string | null
+          customer_salutation?: string | null
           customer_text?: string | null
           description?: string | null
           estimated_hours?: number | null
