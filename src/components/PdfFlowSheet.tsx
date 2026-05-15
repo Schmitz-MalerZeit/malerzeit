@@ -6,8 +6,9 @@ import { PdfPreviewRenderer, type PdfDiagnostics } from "@/components/PdfPreview
 import { toast } from "sonner";
 import {
   AlertCircle, CheckCircle2, Download, FileDown, Loader2,
-  MessageCircle, RefreshCw,
+  Mail, MessageCircle, RefreshCw,
 } from "lucide-react";
+import { EmailComposeDialog } from "./EmailComposeDialog";
 
 export type PdfFlowPhase =
   | "idle"
