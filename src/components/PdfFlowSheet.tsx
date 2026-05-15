@@ -91,6 +91,7 @@ export function PdfFlowSheet({
   const [showDetails, setShowDetails] = useState(false);
   const [fetchedBlob, setFetchedBlob] = useState<Blob | null>(null);
   const [fetchingBlob, setFetchingBlob] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   const toAttachmentUrl = (url: string, fileName?: string | null) => {
     if (!url || url.startsWith("blob:")) return url;
@@ -450,7 +451,7 @@ export function PdfFlowSheet({
             </p>
           </div>
 
-          <div className={state.whatsappText ? "grid grid-cols-2 gap-2" : "grid grid-cols-1 gap-2"}>
+          <div className="grid grid-cols-2 gap-2">
             {isIOS ? (
               <Button asChild className="h-11">
                 <a href={downloadUrl || state.url} download={state.fileName || "Preisorientierung.pdf"} target="_blank" rel="noopener noreferrer">
@@ -462,8 +463,15 @@ export function PdfFlowSheet({
                 <Download className="h-4 w-4 mr-2" /> Download
               </Button>
             )}
+            <Button
+              variant="outline"
+              onClick={() => setEmailDialogOpen(true)}
+              className="h-11"
+            >
+              <Mail className="h-4 w-4 mr-2" /> Per E-Mail senden
+            </Button>
             {state.whatsappText && (
-              <Button variant="outline" onClick={sendWhatsapp} className="h-11">
+              <Button variant="outline" onClick={sendWhatsapp} className="h-11 col-span-2">
                 <MessageCircle className="h-4 w-4 mr-2" /> WhatsApp
               </Button>
             )}
