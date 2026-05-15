@@ -61,6 +61,40 @@ serve(async (req) => {
       });
     }
 
+    // Input size limits to prevent AI credit abuse
+    const MAX_ITEMS = 200;
+    const MAX_SECTIONS = 100;
+    const MAX_STR = 4000;
+    const MAX_DESC = 6000;
+    const MAX_RATES = 50;
+    const tooBig = (s: unknown, n: number) => typeof s === "string" && s.length > n;
+    if (Array.isArray(body.line_items) && body.line_items.length > MAX_ITEMS) {
+      return new Response(JSON.stringify({ error: "Zu viele Positionen." }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (Array.isArray(body.line_items) && body.line_items.some((x) => tooBig(x, MAX_STR))) {
+      return new Response(JSON.stringify({ error: "Position zu lang." }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (Array.isArray(body.sections)) {
+      if (body.sections.length > MAX_SECTIONS) {
+        return new Response(JSON.stringify({ error: "Zu viele Abschnitte." }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      let totalItems = 0;
+      for (const s of body.sections) {
+        if (tooBig(s?.title, MAX_STR)) return new Response(JSON.stringify({ error: "Abschnittstitel zu lang." }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (Array.isArray(s?.items)) {
+          totalItems += s.items.length;
+          if (s.items.some((x) => tooBig(x, MAX_STR))) return new Response(JSON.stringify({ error: "Position zu lang." }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      }
+      if (totalItems > MAX_ITEMS) return new Response(JSON.stringify({ error: "Zu viele Positionen." }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (tooBig(body.description, MAX_DESC)) {
+      return new Response(JSON.stringify({ error: "Beschreibung zu lang." }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (Array.isArray(body.hourlyRates) && body.hourlyRates.length > MAX_RATES) {
+      return new Response(JSON.stringify({ error: "Zu viele Stundensätze." }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const ratesList = (body.hourlyRates && body.hourlyRates.length > 0)
       ? body.hourlyRates.map(r => `- ${r.label}: ${r.rate} €/Std${r.is_default ? " (Standard)" : ""}`).join("\n")
       : "- (keine hinterlegt – nutze branchenüblichen Standard ~55 €/Std)";
