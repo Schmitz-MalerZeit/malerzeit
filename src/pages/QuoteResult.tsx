@@ -1452,6 +1452,7 @@ export default function QuoteResult() {
       fileName,
       ...meta,
       whatsappPhone: waPhone,
+      recipientEmail: data.customer?.email || "",
     });
     setPdfFlowOpen(true);
     setBusy(true);
