@@ -11,6 +11,7 @@ import { Loader2, Plus, Trash2, Star, RefreshCw } from "lucide-react";
 import { DEFAULT_EMAIL_TEMPLATE, DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/messageTemplate";
 import { useTr } from "@/lib/tr";
 import { FirstVisitTip } from "@/components/FirstVisitTip";
+import { SmtpSettingsCard } from "@/components/SmtpSettingsCard";
 
 const TEST_USER_ID = "4f497125-b2e8-46af-a6ef-477dbe7a8a0c";
 
