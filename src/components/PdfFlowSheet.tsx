@@ -39,6 +39,8 @@ export interface PdfFlowState {
   emailBody?: string;
   whatsappText?: string;
   whatsappPhone?: string | null;
+  /** Empfänger-E-Mail (vorausgefüllt für „Per E-Mail senden") */
+  recipientEmail?: string | null;
   /** Frischer PDF-Blob, falls vorhanden – wird für echte Datei-Anhänge via Web Share API verwendet. */
   pdfBlob?: Blob | null;
 }
