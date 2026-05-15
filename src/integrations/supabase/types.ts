@@ -535,11 +535,19 @@ export type Database = {
         Row: {
           closing_text: string
           created_at: string
+          email_subject_template: string
           email_template: string
           hourly_rate: number
           material_markup: number
           quality_level: string
           quote_validity_days: number
+          smtp_from_email: string | null
+          smtp_from_name: string | null
+          smtp_host: string | null
+          smtp_port: number | null
+          smtp_reply_to: string | null
+          smtp_secure: string
+          smtp_username: string | null
           updated_at: string
           user_id: string
           vat_rate: number
@@ -548,11 +556,19 @@ export type Database = {
         Insert: {
           closing_text?: string
           created_at?: string
+          email_subject_template?: string
           email_template?: string
           hourly_rate?: number
           material_markup?: number
           quality_level?: string
           quote_validity_days?: number
+          smtp_from_email?: string | null
+          smtp_from_name?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          smtp_reply_to?: string | null
+          smtp_secure?: string
+          smtp_username?: string | null
           updated_at?: string
           user_id: string
           vat_rate?: number
@@ -561,15 +577,41 @@ export type Database = {
         Update: {
           closing_text?: string
           created_at?: string
+          email_subject_template?: string
           email_template?: string
           hourly_rate?: number
           material_markup?: number
           quality_level?: string
           quote_validity_days?: number
+          smtp_from_email?: string | null
+          smtp_from_name?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          smtp_reply_to?: string | null
+          smtp_secure?: string
+          smtp_username?: string | null
           updated_at?: string
           user_id?: string
           vat_rate?: number
           whatsapp_template?: string
+        }
+        Relationships: []
+      }
+      user_smtp_credentials: {
+        Row: {
+          password_encrypted: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          password_encrypted: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          password_encrypted?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
