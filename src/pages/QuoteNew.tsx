@@ -72,7 +72,7 @@ const DRAFT_KEY = "quoteDraft.v1";
 
 type Draft = {
   description: string;
-  customer: { name: string; project_label: string; address: string; postal_code: string; city: string; phone: string; email: string };
+  customer: { name: string; salutation: string; project_label: string; address: string; postal_code: string; city: string; phone: string; email: string };
   answers: Record<string, string>;
   questions: string[];
   step: "input" | "questions" | "loading";
