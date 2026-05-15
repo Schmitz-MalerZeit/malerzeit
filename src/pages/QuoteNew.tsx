@@ -88,7 +88,7 @@ const loadDraft = (): Draft | null => {
       const current = JSON.parse(currentRaw);
       return {
         description: current?.description ?? "",
-        customer: { name: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(current?.customer ?? {}) },
+        customer: { name: "", salutation: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(current?.customer ?? {}) },
         answers: current?.answers ?? {},
         questions: [],
         step: "input",
@@ -106,7 +106,7 @@ export default function QuoteNew() {
   const nav = useNavigate();
   const initial = loadDraft();
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [customer, setCustomer] = useState({ name: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(initial?.customer ?? {}) });
+  const [customer, setCustomer] = useState({ name: "", salutation: "", project_label: "", address: "", postal_code: "", city: "", phone: "", email: "", ...(initial?.customer ?? {}) });
   const [step, setStep] = useState<"input" | "questions" | "loading">(
     initial?.step === "questions" ? "questions" : "input"
   );
