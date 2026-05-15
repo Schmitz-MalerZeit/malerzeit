@@ -57,6 +57,26 @@ serve(async (req) => {
     const closing = typeof body.closing_text === "string" ? body.closing_text : "";
     const customer = typeof body.customer_text === "string" ? body.customer_text : "";
 
+    // Input size limits to prevent AI credit abuse
+    const MAX_ITEMS = 200;
+    const MAX_SECTIONS = 100;
+    const MAX_STR = 4000;
+    const err = (msg: string) => new Response(JSON.stringify({ error: msg }), { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (lineItems.length > MAX_ITEMS) return err("Too many line items.");
+    if (lineItems.some((x) => typeof x === "string" && x.length > MAX_STR)) return err("Line item too long.");
+    if (sections.length > MAX_SECTIONS) return err("Too many sections.");
+    let totalSecItems = 0;
+    for (const s of sections) {
+      if (typeof s?.title === "string" && s.title.length > MAX_STR) return err("Section title too long.");
+      if (Array.isArray(s?.items)) {
+        totalSecItems += s.items.length;
+        if (s.items.some((x) => typeof x === "string" && x.length > MAX_STR)) return err("Section item too long.");
+      }
+    }
+    if (totalSecItems > MAX_ITEMS) return err("Too many section items.");
+    if (closing.length > MAX_STR) return err("Closing text too long.");
+    if (customer.length > MAX_STR) return err("Customer text too long.");
+
     if (lineItems.length === 0 && sections.length === 0 && !closing && !customer) {
       return new Response(JSON.stringify({ line_items: [], sections: [], closing_text: "", customer_text: "" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
