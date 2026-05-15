@@ -76,6 +76,7 @@ type Draft = {
   answers: Record<string, string>;
   questions: string[];
   step: "input" | "questions" | "loading";
+  draftId?: string | null;
 };
 
 const loadDraft = (): Draft | null => {
@@ -91,6 +92,7 @@ const loadDraft = (): Draft | null => {
         answers: current?.answers ?? {},
         questions: [],
         step: "input",
+        draftId: current?.savedQuoteId ?? null,
       } satisfies Draft;
     }
     const d = JSON.parse(raw);
