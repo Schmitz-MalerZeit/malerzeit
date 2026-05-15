@@ -335,6 +335,8 @@ export default function Settings() {
           </div>
         </div>
 
+        <SmtpSettingsCard />
+
         <Button onClick={save} disabled={saving} className="w-full h-12 gradient-primary text-primary-foreground border-0 font-semibold">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : tr("Speichern", "Save")}
         </Button>
