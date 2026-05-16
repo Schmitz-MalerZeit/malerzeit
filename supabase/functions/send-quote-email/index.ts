@@ -22,6 +22,34 @@ function isEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
+function getSmtpConfigError(host: string, port: number, secure: "ssl" | "starttls" | "none") {
+  const normalizedHost = host.toLowerCase();
+  if ([110, 143, 993, 995].includes(port)) {
+    return "Der gespeicherte Port ist für Posteingang/IMAP/POP3. Für den Versand bitte den SMTP-Ausgangsserver verwenden – bei domainFACTORY/df.eu meist sslout.df.eu mit Port 465 und SSL/TLS.";
+  }
+  if (normalizedHost.includes("df.eu") && port !== 465) {
+    return "Für domainFACTORY/df.eu bitte sslout.df.eu mit Port 465 und SSL/TLS verwenden.";
+  }
+  if (port === 465 && secure !== "ssl") return "Port 465 benötigt SSL/TLS.";
+  if (port === 587 && secure !== "starttls") return "Port 587 benötigt STARTTLS.";
+  return null;
+}
+
+function smtpClientOptions(host: string, port: number, secure: "ssl" | "starttls" | "none", username: string, password: string) {
+  return {
+    debug: {
+      allowUnsecure: secure === "none",
+      noStartTLS: secure !== "starttls",
+    },
+    connection: {
+      hostname: host,
+      port,
+      tls: secure === "ssl",
+      auth: { username, password },
+    },
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -96,15 +124,12 @@ Deno.serve(async (req) => {
   const fromName = settings.smtp_from_name || "";
   const fromHeader = fromName ? `${fromName} <${fromEmail}>` : fromEmail;
   const secure = (settings.smtp_secure ?? "ssl") as "ssl" | "starttls" | "none";
+  const smtpHost = String(settings.smtp_host);
+  const smtpPort = Number(settings.smtp_port);
+  const configError = getSmtpConfigError(smtpHost, smtpPort, secure);
+  if (configError) return json({ ok: false, error: "smtp_config_invalid", message: configError }, 200);
 
-  const client = new SMTPClient({
-    connection: {
-      hostname: settings.smtp_host,
-      port: Number(settings.smtp_port),
-      tls: secure === "ssl",
-      auth: { username: settings.smtp_username, password },
-    },
-  });
+  const client = new SMTPClient(smtpClientOptions(smtpHost, smtpPort, secure, settings.smtp_username, password));
 
   try {
     await client.send({
@@ -129,8 +154,8 @@ Deno.serve(async (req) => {
     try { await client.close(); } catch { /* ignore */ }
     const msg = e?.message ?? String(e);
     console.error("smtp send failed", {
-      host: settings.smtp_host,
-      port: settings.smtp_port,
+      host: smtpHost,
+      port: smtpPort,
       secure,
       username: settings.smtp_username,
       from: fromHeader,
