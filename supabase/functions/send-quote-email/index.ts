@@ -3,7 +3,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decryptPassword } from "../_shared/smtp-crypto.ts";
-import { getSmtpConfigError, sendViaSmtp } from "../_shared/smtp-transport.ts";
+import { createSmtpDiagnostic, getSmtpConfigError, sendViaSmtp } from "../_shared/smtp-transport.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +20,18 @@ function json(body: unknown, status = 200) {
 
 function isEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
+function relevantDiff(a: any, b: any) {
+  if (!a || !b) return { comparable: false };
+  const fields = [
+    "smtp_host", "smtp_port", "smtp_secure", "auth_user_present", "auth_pass_present",
+    "auth_pass_length", "auth_pass_fingerprint", "settings_user_id", "credentials_user_id",
+  ];
+  return fields.reduce((acc: Record<string, { test: unknown; send: unknown }>, field) => {
+    if (a[field] !== b[field]) acc[field] = { test: a[field], send: b[field] };
+    return acc;
+  }, {});
 }
 
 Deno.serve(async (req) => {
@@ -59,7 +71,7 @@ Deno.serve(async (req) => {
 
   const { data: settings, error: sErr } = await admin
     .from("user_settings")
-    .select("smtp_host, smtp_port, smtp_secure, smtp_username, smtp_from_name, smtp_from_email, smtp_reply_to")
+    .select("user_id, updated_at, smtp_host, smtp_port, smtp_secure, smtp_username, smtp_from_name, smtp_from_email, smtp_reply_to")
     .eq("user_id", userId)
     .maybeSingle();
   if (sErr || !settings?.smtp_host || !settings.smtp_port || !settings.smtp_username || !settings.smtp_from_email) {
@@ -68,7 +80,7 @@ Deno.serve(async (req) => {
 
   const { data: cred, error: cErr } = await admin
     .from("user_smtp_credentials")
-    .select("password_encrypted")
+    .select("user_id, updated_at, password_encrypted")
     .eq("user_id", userId)
     .maybeSingle();
   if (cErr || !cred?.password_encrypted) {
