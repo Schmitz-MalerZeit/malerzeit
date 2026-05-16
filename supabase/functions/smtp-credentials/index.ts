@@ -19,27 +19,46 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function getSmtpConfigError(host: string, port: number, secure: "ssl" | "starttls" | "none") {
+  const normalizedHost = host.toLowerCase();
+  if ([110, 143, 993, 995].includes(port)) {
+    return "Der eingestellte Port ist für Posteingang/IMAP/POP3. Für den Versand bitte den SMTP-Ausgangsserver verwenden – bei domainFACTORY/df.eu meist sslout.df.eu mit Port 465 und SSL/TLS.";
+  }
+  if (normalizedHost.includes("df.eu") && port !== 465) {
+    return "Für domainFACTORY/df.eu bitte sslout.df.eu mit Port 465 und SSL/TLS verwenden.";
+  }
+  if (port === 465 && secure !== "ssl") return "Port 465 benötigt SSL/TLS.";
+  if (port === 587 && secure !== "starttls") return "Port 587 benötigt STARTTLS.";
+  return null;
+}
+
+function smtpClientOptions(host: string, port: number, secure: "ssl" | "starttls" | "none", username: string, password: string) {
+  return {
+    debug: {
+      allowUnsecure: secure === "none",
+      noStartTLS: secure !== "starttls",
+    },
+    connection: {
+      hostname: host,
+      port,
+      tls: secure === "ssl",
+      auth: { username, password },
+    },
+  };
+}
+
 async function tryConnect(opts: {
   host: string; port: number; secure: "ssl" | "starttls" | "none";
-  username: string; password: string;
+  username: string; password: string; fromEmail: string;
 }): Promise<void> {
-  const client = new SMTPClient({
-    connection: {
-      hostname: opts.host,
-      port: opts.port,
-      tls: opts.secure === "ssl",
-      auth: { username: opts.username, password: opts.password },
-    },
-  });
+  const client = new SMTPClient(smtpClientOptions(opts.host, opts.port, opts.secure, opts.username, opts.password));
   try {
-    // Just opening + closing the connection verifies host + auth.
     await client.send({
-      from: opts.username,
-      to: opts.username,
-      subject: "__smtp_test__",
-      content: "test",
-      // We don't actually want to send — close right after auth handshake.
-    }).catch(() => { /* swallow — auth happens before send */ });
+      from: opts.fromEmail,
+      to: opts.fromEmail,
+      subject: "MalerZeit E-Mail-Test",
+      content: "Der E-Mail-Versand aus MalerZeit ist korrekt eingerichtet.",
+    });
   } finally {
     try { await client.close(); } catch { /* ignore */ }
   }
@@ -93,6 +112,8 @@ Deno.serve(async (req) => {
   if (!["ssl", "starttls", "none"].includes(secure)) {
     return json({ error: "bad_secure" }, 400);
   }
+  const configError = getSmtpConfigError(host, port, secure);
+  if (configError) return json({ error: "smtp_config_invalid", message: configError }, 400);
 
   // Resolve password: use new one if given, else load existing encrypted one for tests.
   let effectivePassword = password;
@@ -111,7 +132,7 @@ Deno.serve(async (req) => {
 
   if (action === "test") {
     try {
-      await tryConnect({ host, port, secure, username, password: effectivePassword });
+      await tryConnect({ host, port, secure, username, password: effectivePassword, fromEmail });
       return json({ ok: true });
     } catch (e: any) {
       return json({ error: "smtp_failed", message: e?.message ?? String(e) }, 400);
