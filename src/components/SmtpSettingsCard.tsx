@@ -110,16 +110,19 @@ export function SmtpSettingsCard() {
     try {
       const { data, error } = await supabase.functions.invoke("smtp-credentials", {
         body: {
-          action: "test",
+          action: "save_and_test",
           host: f.host, port: f.port, secure: f.secure,
-          username: f.username, fromEmail: f.fromEmail,
+          username: f.username, fromEmail: f.fromEmail, fromName: f.fromName,
+          replyTo: f.replyTo,
           password: f.password || undefined,
         },
       });
       if (error) throw error;
       const res = data as { ok?: boolean; error?: string; message?: string };
       if (!res?.ok) throw new Error(res?.message || res?.error || "Verbindung fehlgeschlagen");
-      toast.success("Verbindung zum SMTP-Server erfolgreich");
+      toast.success("Verbindung erfolgreich – Zugangsdaten gespeichert");
+      setHasSavedPassword(true);
+      setF((s) => ({ ...s, password: "" }));
     } catch (e: any) { toast.error(e.message || "Verbindung fehlgeschlagen"); }
     finally { setTesting(false); }
   };

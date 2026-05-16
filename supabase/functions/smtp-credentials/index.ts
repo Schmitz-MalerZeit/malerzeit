@@ -3,8 +3,8 @@
 // with AES-GCM, and stored in user_smtp_credentials. It is never returned.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { encryptPassword } from "../_shared/smtp-crypto.ts";
+import { decryptPassword, encryptPassword } from "../_shared/smtp-crypto.ts";
+import { getSmtpConfigError, sendViaSmtp } from "../_shared/smtp-transport.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,49 +19,38 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function getSmtpConfigError(host: string, port: number, secure: "ssl" | "starttls" | "none") {
-  const normalizedHost = host.toLowerCase();
-  if ([110, 143, 993, 995].includes(port)) {
-    return "Der eingestellte Port ist für Posteingang/IMAP/POP3. Für den Versand bitte den SMTP-Ausgangsserver verwenden – bei domainFACTORY/df.eu meist sslout.df.eu mit Port 465 und SSL/TLS.";
-  }
-  if (normalizedHost.includes("df.eu") && port !== 465) {
-    return "Für domainFACTORY/df.eu bitte sslout.df.eu mit Port 465 und SSL/TLS verwenden.";
-  }
-  if (port === 465 && secure !== "ssl") return "Port 465 benötigt SSL/TLS.";
-  if (port === 587 && secure !== "starttls") return "Port 587 benötigt STARTTLS.";
-  return null;
-}
-
-function smtpClientOptions(host: string, port: number, secure: "ssl" | "starttls" | "none", username: string, password: string) {
-  return {
-    debug: {
-      allowUnsecure: secure === "none",
-      noStartTLS: secure !== "starttls",
-    },
-    connection: {
-      hostname: host,
-      port,
-      tls: secure === "ssl",
-      auth: { username, password },
-    },
-  };
-}
-
 async function tryConnect(opts: {
   host: string; port: number; secure: "ssl" | "starttls" | "none";
   username: string; password: string; fromEmail: string;
 }): Promise<void> {
-  const client = new SMTPClient(smtpClientOptions(opts.host, opts.port, opts.secure, opts.username, opts.password));
-  try {
-    await client.send({
-      from: opts.fromEmail,
-      to: opts.fromEmail,
-      subject: "MalerZeit E-Mail-Test",
-      content: "Der E-Mail-Versand aus MalerZeit ist korrekt eingerichtet.",
+  await sendViaSmtp(opts, {
+    from: opts.fromEmail,
+    to: opts.fromEmail,
+    subject: "MalerZeit E-Mail-Test",
+    content: "Der E-Mail-Versand aus MalerZeit ist korrekt eingerichtet.",
+  });
+}
+
+async function loadExistingPassword(admin: any, userId: string): Promise<string | null> {
+  const { data: existing } = await admin
+    .from("user_smtp_credentials")
+    .select("password_encrypted")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!existing?.password_encrypted) return null;
+  return decryptPassword(existing.password_encrypted);
+}
+
+async function persistSettings(admin: any, userId: string, patch: Record<string, unknown>, password?: string) {
+  if (password) {
+    const enc = await encryptPassword(password);
+    await admin.from("user_smtp_credentials").upsert({
+      user_id: userId,
+      password_encrypted: enc,
+      updated_at: new Date().toISOString(),
     });
-  } finally {
-    try { await client.close(); } catch { /* ignore */ }
   }
+  return admin.from("user_settings").update(patch).eq("user_id", userId);
 }
 
 Deno.serve(async (req) => {
@@ -115,55 +104,46 @@ Deno.serve(async (req) => {
   const configError = getSmtpConfigError(host, port, secure);
   if (configError) return json({ error: "smtp_config_invalid", message: configError }, 400);
 
-  // Resolve password: use new one if given, else load existing encrypted one for tests.
+  // Resolve password once and use this exact value for test + optional persistence.
   let effectivePassword = password;
   if (!effectivePassword) {
-    const { data: existing } = await admin
-      .from("user_smtp_credentials")
-      .select("password_encrypted")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (!existing?.password_encrypted) {
-      return json({ error: "password_required" }, 400);
-    }
-    const { decryptPassword } = await import("../_shared/smtp-crypto.ts");
-    effectivePassword = await decryptPassword(existing.password_encrypted);
+    effectivePassword = await loadExistingPassword(admin, userId) ?? undefined;
+    if (!effectivePassword) return json({ error: "password_required" }, 400);
   }
 
-  if (action === "test") {
+  const settingsPatch: Record<string, unknown> = {
+    smtp_host: host,
+    smtp_port: port,
+    smtp_secure: secure,
+    smtp_username: username,
+    smtp_from_email: fromEmail,
+    smtp_from_name: fromName || null,
+    smtp_reply_to: replyTo || null,
+  };
+  if (typeof subjectTemplate === "string") {
+    settingsPatch.email_subject_template = subjectTemplate;
+  }
+
+  if (action === "test" || action === "save" || action === "save_and_test") {
     try {
       await tryConnect({ host, port, secure, username, password: effectivePassword, fromEmail });
+      console.log("smtp test successful", {
+        host,
+        port,
+        secure,
+        username,
+        fromEmail,
+        credentialSource: password ? "request" : "stored",
+        persisted: action !== "test",
+      });
+      if (action !== "test") {
+        const { error: upErr } = await persistSettings(admin, userId, settingsPatch, password);
+        if (upErr) return json({ error: "update_failed", message: upErr.message }, 500);
+      }
       return json({ ok: true });
     } catch (e: any) {
-      return json({ error: "smtp_failed", message: e?.message ?? String(e) }, 400);
+      return json({ ok: false, error: "smtp_failed", message: e?.message ?? String(e) }, 200);
     }
-  }
-
-  if (action === "save") {
-    if (password) {
-      const enc = await encryptPassword(password);
-      await admin.from("user_smtp_credentials").upsert({
-        user_id: userId,
-        password_encrypted: enc,
-        updated_at: new Date().toISOString(),
-      });
-    }
-    const settingsPatch: Record<string, unknown> = {
-      smtp_host: host,
-      smtp_port: port,
-      smtp_secure: secure,
-      smtp_username: username,
-      smtp_from_email: fromEmail,
-      smtp_from_name: fromName || null,
-      smtp_reply_to: replyTo || null,
-    };
-    if (typeof subjectTemplate === "string") {
-      settingsPatch.email_subject_template = subjectTemplate;
-    }
-    const { error: upErr } = await admin.from("user_settings")
-      .update(settingsPatch).eq("user_id", userId);
-    if (upErr) return json({ error: "update_failed", message: upErr.message }, 500);
-    return json({ ok: true });
   }
 
   return json({ error: "unknown_action" }, 400);

@@ -2,8 +2,8 @@
 // The PDF is uploaded as base64 in the request body. Auth required.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { decryptPassword } from "../_shared/smtp-crypto.ts";
+import { getSmtpConfigError, sendViaSmtp } from "../_shared/smtp-transport.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,34 +20,6 @@ function json(body: unknown, status = 200) {
 
 function isEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-}
-
-function getSmtpConfigError(host: string, port: number, secure: "ssl" | "starttls" | "none") {
-  const normalizedHost = host.toLowerCase();
-  if ([110, 143, 993, 995].includes(port)) {
-    return "Der gespeicherte Port ist für Posteingang/IMAP/POP3. Für den Versand bitte den SMTP-Ausgangsserver verwenden – bei domainFACTORY/df.eu meist sslout.df.eu mit Port 465 und SSL/TLS.";
-  }
-  if (normalizedHost.includes("df.eu") && port !== 465) {
-    return "Für domainFACTORY/df.eu bitte sslout.df.eu mit Port 465 und SSL/TLS verwenden.";
-  }
-  if (port === 465 && secure !== "ssl") return "Port 465 benötigt SSL/TLS.";
-  if (port === 587 && secure !== "starttls") return "Port 587 benötigt STARTTLS.";
-  return null;
-}
-
-function smtpClientOptions(host: string, port: number, secure: "ssl" | "starttls" | "none", username: string, password: string) {
-  return {
-    debug: {
-      allowUnsecure: secure === "none",
-      noStartTLS: secure !== "starttls",
-    },
-    connection: {
-      hostname: host,
-      port,
-      tls: secure === "ssl",
-      auth: { username, password },
-    },
-  };
 }
 
 Deno.serve(async (req) => {
@@ -129,10 +101,8 @@ Deno.serve(async (req) => {
   const configError = getSmtpConfigError(smtpHost, smtpPort, secure);
   if (configError) return json({ ok: false, error: "smtp_config_invalid", message: configError }, 200);
 
-  const client = new SMTPClient(smtpClientOptions(smtpHost, smtpPort, secure, settings.smtp_username, password));
-
   try {
-    await client.send({
+    await sendViaSmtp({ host: smtpHost, port: smtpPort, secure, username: settings.smtp_username, password }, {
       from: fromHeader,
       to,
       cc: cc && isEmail(cc) ? cc : undefined,
@@ -148,10 +118,8 @@ Deno.serve(async (req) => {
         encoding: "binary",
       }],
     });
-    await client.close();
     return json({ ok: true });
   } catch (e: any) {
-    try { await client.close(); } catch { /* ignore */ }
     const msg = e?.message ?? String(e);
     console.error("smtp send failed", {
       host: smtpHost,
