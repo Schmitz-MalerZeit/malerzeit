@@ -462,6 +462,90 @@ export type Database = {
         }
         Relationships: []
       }
+      smtp_delivery_diagnostics: {
+        Row: {
+          auth_pass_fingerprint: string | null
+          auth_pass_length: number | null
+          auth_pass_present: boolean
+          auth_user_present: boolean
+          created_at: string
+          credential_source: string | null
+          credentials_found: boolean
+          credentials_updated_at: string | null
+          credentials_user_id: string | null
+          error_message: string | null
+          from_address: string | null
+          from_header: string | null
+          id: string
+          password_contains_newline: boolean | null
+          password_has_outer_whitespace: boolean | null
+          phase: string
+          recipient: string | null
+          settings_found: boolean
+          settings_updated_at: string | null
+          settings_user_id: string | null
+          smtp_host: string | null
+          smtp_port: number | null
+          smtp_secure: string | null
+          trace_id: string
+          user_id: string
+        }
+        Insert: {
+          auth_pass_fingerprint?: string | null
+          auth_pass_length?: number | null
+          auth_pass_present?: boolean
+          auth_user_present?: boolean
+          created_at?: string
+          credential_source?: string | null
+          credentials_found?: boolean
+          credentials_updated_at?: string | null
+          credentials_user_id?: string | null
+          error_message?: string | null
+          from_address?: string | null
+          from_header?: string | null
+          id?: string
+          password_contains_newline?: boolean | null
+          password_has_outer_whitespace?: boolean | null
+          phase: string
+          recipient?: string | null
+          settings_found?: boolean
+          settings_updated_at?: string | null
+          settings_user_id?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          smtp_secure?: string | null
+          trace_id: string
+          user_id: string
+        }
+        Update: {
+          auth_pass_fingerprint?: string | null
+          auth_pass_length?: number | null
+          auth_pass_present?: boolean
+          auth_user_present?: boolean
+          created_at?: string
+          credential_source?: string | null
+          credentials_found?: boolean
+          credentials_updated_at?: string | null
+          credentials_user_id?: string | null
+          error_message?: string | null
+          from_address?: string | null
+          from_header?: string | null
+          id?: string
+          password_contains_newline?: boolean | null
+          password_has_outer_whitespace?: boolean | null
+          phase?: string
+          recipient?: string | null
+          settings_found?: boolean
+          settings_updated_at?: string | null
+          settings_user_id?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          smtp_secure?: string | null
+          trace_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           cancel_at_period_end: boolean | null
