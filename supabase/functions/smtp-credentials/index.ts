@@ -3,8 +3,8 @@
 // with AES-GCM, and stored in user_smtp_credentials. It is never returned.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { decryptPassword, encryptPassword } from "../_shared/smtp-crypto.ts";
+import { getSmtpConfigError, sendViaSmtp } from "../_shared/smtp-transport.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,49 +19,16 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function getSmtpConfigError(host: string, port: number, secure: "ssl" | "starttls" | "none") {
-  const normalizedHost = host.toLowerCase();
-  if ([110, 143, 993, 995].includes(port)) {
-    return "Der eingestellte Port ist für Posteingang/IMAP/POP3. Für den Versand bitte den SMTP-Ausgangsserver verwenden – bei domainFACTORY/df.eu meist sslout.df.eu mit Port 465 und SSL/TLS.";
-  }
-  if (normalizedHost.includes("df.eu") && port !== 465) {
-    return "Für domainFACTORY/df.eu bitte sslout.df.eu mit Port 465 und SSL/TLS verwenden.";
-  }
-  if (port === 465 && secure !== "ssl") return "Port 465 benötigt SSL/TLS.";
-  if (port === 587 && secure !== "starttls") return "Port 587 benötigt STARTTLS.";
-  return null;
-}
-
-function smtpClientOptions(host: string, port: number, secure: "ssl" | "starttls" | "none", username: string, password: string) {
-  return {
-    debug: {
-      allowUnsecure: secure === "none",
-      noStartTLS: secure !== "starttls",
-    },
-    connection: {
-      hostname: host,
-      port,
-      tls: secure === "ssl",
-      auth: { username, password },
-    },
-  };
-}
-
 async function tryConnect(opts: {
   host: string; port: number; secure: "ssl" | "starttls" | "none";
   username: string; password: string; fromEmail: string;
 }): Promise<void> {
-  const client = new SMTPClient(smtpClientOptions(opts.host, opts.port, opts.secure, opts.username, opts.password));
-  try {
-    await client.send({
-      from: opts.fromEmail,
-      to: opts.fromEmail,
-      subject: "MalerZeit E-Mail-Test",
-      content: "Der E-Mail-Versand aus MalerZeit ist korrekt eingerichtet.",
-    });
-  } finally {
-    try { await client.close(); } catch { /* ignore */ }
-  }
+  await sendViaSmtp(opts, {
+    from: opts.fromEmail,
+    to: opts.fromEmail,
+    subject: "MalerZeit E-Mail-Test",
+    content: "Der E-Mail-Versand aus MalerZeit ist korrekt eingerichtet.",
+  });
 }
 
 async function loadExistingPassword(admin: any, userId: string): Promise<string | null> {
