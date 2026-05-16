@@ -4,7 +4,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decryptPassword, encryptPassword } from "../_shared/smtp-crypto.ts";
-import { createSmtpDiagnostic, getSmtpConfigError, sendViaSmtp } from "../_shared/smtp-transport.ts";
+import { createSmtpDiagnostic, getSmtpConfigError, passwordFingerprint, sendViaSmtp } from "../_shared/smtp-transport.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -157,6 +157,35 @@ Deno.serve(async (req) => {
       const testedUsername = String(stored.settings?.smtp_username ?? username);
       const testedFromEmail = String(stored.settings?.smtp_from_email ?? fromEmail);
       if (!stored.password) return json({ error: "password_required" }, 400);
+      if (action !== "test" && password) {
+        const requestFingerprint = await passwordFingerprint(password);
+        const storedFingerprint = await passwordFingerprint(stored.password);
+        if (requestFingerprint !== storedFingerprint) {
+          await createSmtpDiagnostic({
+            admin,
+            userId,
+            traceId,
+            phase: "smtp_persist_verify_failed",
+            smtpHost: testedHost,
+            smtpPort: testedPort,
+            secure: testedSecure,
+            username: testedUsername,
+            password: stored.password,
+            fromAddress: testedFromEmail,
+            fromHeader: testedFromEmail,
+            recipient: testedFromEmail,
+            settingsFound: Boolean(stored.settings),
+            credentialsFound: Boolean(stored.cred),
+            settingsUpdatedAt: stored.settings?.updated_at ?? null,
+            credentialsUpdatedAt: stored.cred?.updated_at ?? null,
+            settingsUserId: stored.settings?.user_id ?? userId,
+            credentialsUserId: stored.cred?.user_id ?? null,
+            credentialSource: "stored_after_persist",
+            errorMessage: "stored password fingerprint differs from request password fingerprint",
+          });
+          return json({ error: "credential_persist_mismatch", message: "SMTP-Passwort wurde nach dem Speichern nicht identisch wieder geladen." }, 500);
+        }
+      }
       await tryConnect({ host: testedHost, port: testedPort, secure: testedSecure, username: testedUsername, password: stored.password, fromEmail: testedFromEmail });
       const diagnostic = await createSmtpDiagnostic({
         admin,
