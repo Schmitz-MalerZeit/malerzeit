@@ -127,9 +127,18 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   } catch (e: any) {
     try { await client.close(); } catch { /* ignore */ }
-    return json({
-      error: "send_failed",
-      message: e?.message ?? String(e),
-    }, 502);
+    const msg = e?.message ?? String(e);
+    console.error("smtp send failed", {
+      host: settings.smtp_host,
+      port: settings.smtp_port,
+      secure,
+      username: settings.smtp_username,
+      from: fromHeader,
+      to,
+      error: msg,
+      stack: e?.stack,
+    });
+    // Return 200 so supabase-js exposes the body to the client instead of a generic "non-2xx".
+    return json({ ok: false, error: "send_failed", message: msg }, 200);
   }
 });
