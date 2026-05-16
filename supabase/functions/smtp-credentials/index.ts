@@ -41,6 +41,21 @@ async function loadExistingPassword(admin: any, userId: string): Promise<string 
   return decryptPassword(existing.password_encrypted);
 }
 
+async function loadStoredSmtp(admin: any, userId: string) {
+  const { data: settings } = await admin
+    .from("user_settings")
+    .select("user_id, updated_at, smtp_host, smtp_port, smtp_secure, smtp_username, smtp_from_email, smtp_from_name, smtp_reply_to")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const { data: cred } = await admin
+    .from("user_smtp_credentials")
+    .select("user_id, updated_at, password_encrypted")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const password = cred?.password_encrypted ? await decryptPassword(cred.password_encrypted) : null;
+  return { settings, cred, password };
+}
+
 async function persistSettings(admin: any, userId: string, patch: Record<string, unknown>, password?: string) {
   const now = new Date().toISOString();
   if (password) {
@@ -129,41 +144,40 @@ Deno.serve(async (req) => {
   if (action === "test" || action === "save" || action === "save_and_test") {
     const traceId = crypto.randomUUID();
     try {
-      await tryConnect({ host, port, secure, username, password: effectivePassword, fromEmail });
       if (action !== "test") {
         const { error: upErr } = await persistSettings(admin, userId, settingsPatch, password);
         if (upErr) return json({ error: "update_failed", message: upErr.message }, 500);
       }
-      const { data: savedSettings } = await admin
-        .from("user_settings")
-        .select("user_id, updated_at")
-        .eq("user_id", userId)
-        .maybeSingle();
-      const { data: savedCred } = await admin
-        .from("user_smtp_credentials")
-        .select("user_id, updated_at")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const stored = action === "test"
+        ? { settings: { user_id: userId, updated_at: null }, cred: null, password: effectivePassword }
+        : await loadStoredSmtp(admin, userId);
+      const testedHost = String(stored.settings?.smtp_host ?? host);
+      const testedPort = Number(stored.settings?.smtp_port ?? port);
+      const testedSecure = (stored.settings?.smtp_secure ?? secure) as "ssl" | "starttls" | "none";
+      const testedUsername = String(stored.settings?.smtp_username ?? username);
+      const testedFromEmail = String(stored.settings?.smtp_from_email ?? fromEmail);
+      if (!stored.password) return json({ error: "password_required" }, 400);
+      await tryConnect({ host: testedHost, port: testedPort, secure: testedSecure, username: testedUsername, password: stored.password, fromEmail: testedFromEmail });
       const diagnostic = await createSmtpDiagnostic({
         admin,
         userId,
         traceId,
         phase: "smtp_test_success",
-        smtpHost: host,
-        smtpPort: port,
-        secure,
-        username,
-        password: effectivePassword,
-        fromAddress: fromEmail,
-        fromHeader: fromEmail,
-        recipient: fromEmail,
-        settingsFound: Boolean(savedSettings),
-        credentialsFound: Boolean(savedCred),
-        settingsUpdatedAt: savedSettings?.updated_at ?? null,
-        credentialsUpdatedAt: savedCred?.updated_at ?? null,
-        settingsUserId: savedSettings?.user_id ?? userId,
-        credentialsUserId: savedCred?.user_id ?? userId,
-        credentialSource: password ? "request" : "stored",
+        smtpHost: testedHost,
+        smtpPort: testedPort,
+        secure: testedSecure,
+        username: testedUsername,
+        password: stored.password,
+        fromAddress: testedFromEmail,
+        fromHeader: testedFromEmail,
+        recipient: testedFromEmail,
+        settingsFound: Boolean(stored.settings),
+        credentialsFound: Boolean(stored.cred || action === "test"),
+        settingsUpdatedAt: stored.settings?.updated_at ?? null,
+        credentialsUpdatedAt: stored.cred?.updated_at ?? null,
+        settingsUserId: stored.settings?.user_id ?? userId,
+        credentialsUserId: stored.cred?.user_id ?? (action === "test" ? userId : null),
+        credentialSource: action === "test" ? (password ? "request" : "stored") : "stored_after_persist",
       });
       console.log("smtp test successful", diagnostic);
       return json({ ok: true });
