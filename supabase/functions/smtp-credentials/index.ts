@@ -45,11 +45,12 @@ async function persistSettings(admin: any, userId: string, patch: Record<string,
   const now = new Date().toISOString();
   if (password) {
     const enc = await encryptPassword(password);
-    await admin.from("user_smtp_credentials").upsert({
+    const { error: credentialError } = await admin.from("user_smtp_credentials").upsert({
       user_id: userId,
       password_encrypted: enc,
       updated_at: now,
     });
+    if (credentialError) return { error: credentialError };
   }
   return admin.from("user_settings").upsert({ user_id: userId, ...patch, updated_at: now }, { onConflict: "user_id" });
 }
