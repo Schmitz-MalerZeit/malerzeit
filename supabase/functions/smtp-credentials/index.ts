@@ -4,7 +4,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decryptPassword, encryptPassword } from "../_shared/smtp-crypto.ts";
-import { getSmtpConfigError, sendViaSmtp } from "../_shared/smtp-transport.ts";
+import { createSmtpDiagnostic, getSmtpConfigError, sendViaSmtp } from "../_shared/smtp-transport.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,15 +42,16 @@ async function loadExistingPassword(admin: any, userId: string): Promise<string 
 }
 
 async function persistSettings(admin: any, userId: string, patch: Record<string, unknown>, password?: string) {
+  const now = new Date().toISOString();
   if (password) {
     const enc = await encryptPassword(password);
     await admin.from("user_smtp_credentials").upsert({
       user_id: userId,
       password_encrypted: enc,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     });
   }
-  return admin.from("user_settings").update(patch).eq("user_id", userId);
+  return admin.from("user_settings").upsert({ user_id: userId, ...patch, updated_at: now }, { onConflict: "user_id" });
 }
 
 Deno.serve(async (req) => {
@@ -125,23 +126,65 @@ Deno.serve(async (req) => {
   }
 
   if (action === "test" || action === "save" || action === "save_and_test") {
+    const traceId = crypto.randomUUID();
     try {
       await tryConnect({ host, port, secure, username, password: effectivePassword, fromEmail });
-      console.log("smtp test successful", {
-        host,
-        port,
-        secure,
-        username,
-        fromEmail,
-        credentialSource: password ? "request" : "stored",
-        persisted: action !== "test",
-      });
       if (action !== "test") {
         const { error: upErr } = await persistSettings(admin, userId, settingsPatch, password);
         if (upErr) return json({ error: "update_failed", message: upErr.message }, 500);
       }
+      const { data: savedSettings } = await admin
+        .from("user_settings")
+        .select("user_id, updated_at")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const { data: savedCred } = await admin
+        .from("user_smtp_credentials")
+        .select("user_id, updated_at")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const diagnostic = await createSmtpDiagnostic({
+        admin,
+        userId,
+        traceId,
+        phase: "smtp_test_success",
+        smtpHost: host,
+        smtpPort: port,
+        secure,
+        username,
+        password: effectivePassword,
+        fromAddress: fromEmail,
+        fromHeader: fromEmail,
+        recipient: fromEmail,
+        settingsFound: Boolean(savedSettings),
+        credentialsFound: Boolean(savedCred),
+        settingsUpdatedAt: savedSettings?.updated_at ?? null,
+        credentialsUpdatedAt: savedCred?.updated_at ?? null,
+        settingsUserId: savedSettings?.user_id ?? userId,
+        credentialsUserId: savedCred?.user_id ?? userId,
+        credentialSource: password ? "request" : "stored",
+      });
+      console.log("smtp test successful", diagnostic);
       return json({ ok: true });
     } catch (e: any) {
+      await createSmtpDiagnostic({
+        admin,
+        userId,
+        traceId,
+        phase: "smtp_test_failed",
+        smtpHost: host,
+        smtpPort: port,
+        secure,
+        username,
+        password: effectivePassword,
+        fromAddress: fromEmail,
+        fromHeader: fromEmail,
+        recipient: fromEmail,
+        settingsFound: true,
+        credentialsFound: Boolean(effectivePassword),
+        credentialSource: password ? "request" : "stored",
+        errorMessage: e?.message ?? String(e),
+      });
       return json({ ok: false, error: "smtp_failed", message: e?.message ?? String(e) }, 200);
     }
   }
