@@ -46,3 +46,68 @@ export async function sendViaSmtp(config: SmtpTransportConfig, message: Paramete
     try { await client.close(); } catch { /* ignore */ }
   }
 }
+
+function b64ToHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export async function passwordFingerprint(password: string): Promise<string> {
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const data = new TextEncoder().encode(`smtp-diagnostic::${serviceKey}::${password}`);
+  return b64ToHex(await crypto.subtle.digest("SHA-256", data)).slice(0, 24);
+}
+
+export async function createSmtpDiagnostic(config: {
+  admin: any;
+  userId: string;
+  traceId: string;
+  phase: string;
+  smtpHost?: string | null;
+  smtpPort?: number | null;
+  secure?: SmtpSecure | string | null;
+  username?: string | null;
+  password?: string | null;
+  fromAddress?: string | null;
+  fromHeader?: string | null;
+  recipient?: string | null;
+  settingsFound?: boolean;
+  credentialsFound?: boolean;
+  settingsUpdatedAt?: string | null;
+  credentialsUpdatedAt?: string | null;
+  settingsUserId?: string | null;
+  credentialsUserId?: string | null;
+  credentialSource?: string | null;
+  errorMessage?: string | null;
+}) {
+  const password = config.password ?? "";
+  const row = {
+    user_id: config.userId,
+    trace_id: config.traceId,
+    phase: config.phase,
+    smtp_host: config.smtpHost ?? null,
+    smtp_port: config.smtpPort ?? null,
+    smtp_secure: config.secure ?? null,
+    auth_user_present: Boolean(config.username),
+    auth_pass_present: password.length > 0,
+    auth_pass_length: password.length,
+    auth_pass_fingerprint: password ? await passwordFingerprint(password) : null,
+    password_has_outer_whitespace: password.length > 0 && password !== password.trim(),
+    password_contains_newline: /[\r\n]/.test(password),
+    from_address: config.fromAddress ?? null,
+    from_header: config.fromHeader ?? null,
+    recipient: config.recipient ?? null,
+    settings_found: Boolean(config.settingsFound),
+    credentials_found: Boolean(config.credentialsFound),
+    settings_updated_at: config.settingsUpdatedAt ?? null,
+    credentials_updated_at: config.credentialsUpdatedAt ?? null,
+    settings_user_id: config.settingsUserId ?? null,
+    credentials_user_id: config.credentialsUserId ?? null,
+    credential_source: config.credentialSource ?? null,
+    error_message: config.errorMessage ?? null,
+  };
+  const { error } = await config.admin.from("smtp_delivery_diagnostics").insert(row);
+  if (error) console.error("smtp diagnostic insert failed", { message: error.message, traceId: config.traceId, phase: config.phase });
+  return row;
+}

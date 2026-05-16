@@ -3,7 +3,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decryptPassword } from "../_shared/smtp-crypto.ts";
-import { getSmtpConfigError, sendViaSmtp } from "../_shared/smtp-transport.ts";
+import { createSmtpDiagnostic, getSmtpConfigError, sendViaSmtp } from "../_shared/smtp-transport.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +20,18 @@ function json(body: unknown, status = 200) {
 
 function isEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
+function relevantDiff(a: any, b: any) {
+  if (!a || !b) return { comparable: false };
+  const fields = [
+    "smtp_host", "smtp_port", "smtp_secure", "auth_user_present", "auth_pass_present",
+    "auth_pass_length", "auth_pass_fingerprint", "settings_user_id", "credentials_user_id",
+  ];
+  return fields.reduce((acc: Record<string, { test: unknown; send: unknown }>, field) => {
+    if (a[field] !== b[field]) acc[field] = { test: a[field], send: b[field] };
+    return acc;
+  }, {});
 }
 
 Deno.serve(async (req) => {
@@ -59,7 +71,7 @@ Deno.serve(async (req) => {
 
   const { data: settings, error: sErr } = await admin
     .from("user_settings")
-    .select("smtp_host, smtp_port, smtp_secure, smtp_username, smtp_from_name, smtp_from_email, smtp_reply_to")
+    .select("user_id, updated_at, smtp_host, smtp_port, smtp_secure, smtp_username, smtp_from_name, smtp_from_email, smtp_reply_to")
     .eq("user_id", userId)
     .maybeSingle();
   if (sErr || !settings?.smtp_host || !settings.smtp_port || !settings.smtp_username || !settings.smtp_from_email) {
@@ -68,7 +80,7 @@ Deno.serve(async (req) => {
 
   const { data: cred, error: cErr } = await admin
     .from("user_smtp_credentials")
-    .select("password_encrypted")
+    .select("user_id, updated_at, password_encrypted")
     .eq("user_id", userId)
     .maybeSingle();
   if (cErr || !cred?.password_encrypted) {
@@ -101,6 +113,45 @@ Deno.serve(async (req) => {
   const configError = getSmtpConfigError(smtpHost, smtpPort, secure);
   if (configError) return json({ ok: false, error: "smtp_config_invalid", message: configError }, 200);
 
+  const traceId = crypto.randomUUID();
+  const sendDiagnostic = await createSmtpDiagnostic({
+    admin,
+    userId,
+    traceId,
+    phase: "pdf_send_before_send",
+    smtpHost,
+    smtpPort,
+    secure,
+    username: settings.smtp_username,
+    password,
+    fromAddress: fromEmail,
+    fromHeader,
+    recipient: to,
+    settingsFound: true,
+    credentialsFound: true,
+    settingsUpdatedAt: settings.updated_at,
+    credentialsUpdatedAt: cred.updated_at,
+    settingsUserId: settings.user_id,
+    credentialsUserId: cred.user_id,
+    credentialSource: "stored",
+  });
+  const { data: lastTest } = await admin
+    .from("smtp_delivery_diagnostics")
+    .select("smtp_host, smtp_port, smtp_secure, auth_user_present, auth_pass_present, auth_pass_length, auth_pass_fingerprint, settings_user_id, credentials_user_id, created_at")
+    .eq("user_id", userId)
+    .eq("phase", "smtp_test_success")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const diff = relevantDiff(lastTest, sendDiagnostic);
+  console.log("smtp pdf send diagnostic compare", {
+    traceId,
+    hasLastSuccessfulTest: Boolean(lastTest),
+    lastSuccessfulTestAt: lastTest?.created_at ?? null,
+    diff,
+    send: sendDiagnostic,
+  });
+
   try {
     await sendViaSmtp({ host: smtpHost, port: smtpPort, secure, username: settings.smtp_username, password }, {
       from: fromHeader,
@@ -118,14 +169,61 @@ Deno.serve(async (req) => {
         encoding: "binary",
       }],
     });
+    await createSmtpDiagnostic({
+      admin,
+      userId,
+      traceId,
+      phase: "pdf_send_success",
+      smtpHost,
+      smtpPort,
+      secure,
+      username: settings.smtp_username,
+      password,
+      fromAddress: fromEmail,
+      fromHeader,
+      recipient: to,
+      settingsFound: true,
+      credentialsFound: true,
+      settingsUpdatedAt: settings.updated_at,
+      credentialsUpdatedAt: cred.updated_at,
+      settingsUserId: settings.user_id,
+      credentialsUserId: cred.user_id,
+      credentialSource: "stored",
+    });
     return json({ ok: true });
   } catch (e: any) {
     const msg = e?.message ?? String(e);
+    await createSmtpDiagnostic({
+      admin,
+      userId,
+      traceId,
+      phase: "pdf_send_failed",
+      smtpHost,
+      smtpPort,
+      secure,
+      username: settings.smtp_username,
+      password,
+      fromAddress: fromEmail,
+      fromHeader,
+      recipient: to,
+      settingsFound: true,
+      credentialsFound: true,
+      settingsUpdatedAt: settings.updated_at,
+      credentialsUpdatedAt: cred.updated_at,
+      settingsUserId: settings.user_id,
+      credentialsUserId: cred.user_id,
+      credentialSource: "stored",
+      errorMessage: msg,
+    });
     console.error("smtp send failed", {
+      traceId,
       host: smtpHost,
       port: smtpPort,
       secure,
       username: settings.smtp_username,
+      authUserPresent: Boolean(settings.smtp_username),
+      authPassPresent: password.length > 0,
+      authPassLength: password.length,
       from: fromHeader,
       to,
       error: msg,
