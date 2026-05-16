@@ -113,6 +113,45 @@ Deno.serve(async (req) => {
   const configError = getSmtpConfigError(smtpHost, smtpPort, secure);
   if (configError) return json({ ok: false, error: "smtp_config_invalid", message: configError }, 200);
 
+  const traceId = crypto.randomUUID();
+  const sendDiagnostic = await createSmtpDiagnostic({
+    admin,
+    userId,
+    traceId,
+    phase: "pdf_send_before_send",
+    smtpHost,
+    smtpPort,
+    secure,
+    username: settings.smtp_username,
+    password,
+    fromAddress: fromEmail,
+    fromHeader,
+    recipient: to,
+    settingsFound: true,
+    credentialsFound: true,
+    settingsUpdatedAt: settings.updated_at,
+    credentialsUpdatedAt: cred.updated_at,
+    settingsUserId: settings.user_id,
+    credentialsUserId: cred.user_id,
+    credentialSource: "stored",
+  });
+  const { data: lastTest } = await admin
+    .from("smtp_delivery_diagnostics")
+    .select("smtp_host, smtp_port, smtp_secure, auth_user_present, auth_pass_present, auth_pass_length, auth_pass_fingerprint, settings_user_id, credentials_user_id, created_at")
+    .eq("user_id", userId)
+    .eq("phase", "smtp_test_success")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const diff = relevantDiff(lastTest, sendDiagnostic);
+  console.log("smtp pdf send diagnostic compare", {
+    traceId,
+    hasLastSuccessfulTest: Boolean(lastTest),
+    lastSuccessfulTestAt: lastTest?.created_at ?? null,
+    diff,
+    send: sendDiagnostic,
+  });
+
   try {
     await sendViaSmtp({ host: smtpHost, port: smtpPort, secure, username: settings.smtp_username, password }, {
       from: fromHeader,
