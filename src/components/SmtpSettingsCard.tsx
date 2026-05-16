@@ -13,12 +13,24 @@ interface Preset {
 const PRESETS: Preset[] = [
   { label: "IONOS",        host: "smtp.ionos.de",       port: 465, secure: "ssl" },
   { label: "Strato",       host: "smtp.strato.de",      port: 465, secure: "ssl" },
+  { label: "domainFACTORY / df.eu", host: "sslout.df.eu", port: 465, secure: "ssl" },
   { label: "GMX",          host: "mail.gmx.net",        port: 465, secure: "ssl" },
   { label: "Web.de",       host: "smtp.web.de",         port: 587, secure: "starttls" },
   { label: "Telekom / T-Online", host: "securesmtp.t-online.de", port: 465, secure: "ssl" },
   { label: "Gmail (App-Passwort)", host: "smtp.gmail.com", port: 465, secure: "ssl" },
   { label: "Outlook / Microsoft 365", host: "smtp.office365.com", port: 587, secure: "starttls" },
 ];
+
+const getSmtpConfigError = (host: string, port: number, secure: "ssl" | "starttls" | "none") => {
+  const normalizedHost = host.toLowerCase();
+  if ([110, 143, 993, 995].includes(port)) {
+    return "Port 993/995/143/110 ist für Posteingang. Für den Versand bitte SMTP nutzen – bei domainFACTORY/df.eu: sslout.df.eu, Port 465, SSL/TLS.";
+  }
+  if (normalizedHost.includes("df.eu") && port !== 465) return "Für domainFACTORY/df.eu bitte Port 465 mit SSL/TLS verwenden.";
+  if (port === 465 && secure !== "ssl") return "Port 465 benötigt SSL/TLS.";
+  if (port === 587 && secure !== "starttls") return "Port 587 benötigt STARTTLS.";
+  return null;
+};
 
 export function SmtpSettingsCard() {
   const [loading, setLoading] = useState(true);
@@ -68,6 +80,8 @@ export function SmtpSettingsCard() {
       toast.error("Bitte SMTP-Passwort angeben.");
       return;
     }
+    const configError = getSmtpConfigError(f.host, f.port, f.secure);
+    if (configError) { toast.error(configError); return; }
     setBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke("smtp-credentials", {
@@ -90,6 +104,8 @@ export function SmtpSettingsCard() {
   };
 
   const test = async () => {
+    const configError = getSmtpConfigError(f.host, f.port, f.secure);
+    if (configError) { toast.error(configError); return; }
     setTesting(true);
     try {
       const { data, error } = await supabase.functions.invoke("smtp-credentials", {
